@@ -1,0 +1,153 @@
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-dim);
+    background: var(--bg-panel);
+    flex-shrink: 0;
+}
+
+.empireName {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.date {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+}
+
+.statBlock {
+    text-align: center;
+}
+
+.statNum {
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.statLbl {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.grid {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    padding: 14px;
+    align-content: start;
+}
+
+.rosterTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rosterTable th {
+    text-align: left;
+    padding: 10px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border-dim);
+    background: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    user-select: none;
+}
+
+.rosterTable th:hover {
+    color: var(--accent-blue);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rosterTable td {
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.rosterTable tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.colonyName {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.sortIcon {
+    margin-left: 4px;
+    font-size: 10px;
+}
+
+.metricsBar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.metricCard {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 12px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metricValue {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.metricLabel {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.ready {
+    color: var(--accent-green) !important;
+}
+
+.warning {
+    color: var(--accent-gold) !important;
+}
+
+.danger {
+    color: var(--accent-red) !important;
+}

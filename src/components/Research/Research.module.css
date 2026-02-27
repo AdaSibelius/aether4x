@@ -1,0 +1,260 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 14px;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+}
+
+.currentPanel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+.currentBody {
+    padding: 12px 14px;
+}
+
+.currentName {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    color: var(--accent-blue);
+    margin-bottom: 4px;
+}
+
+.currentDesc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.progressInfo {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.noResearch {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 8px 0;
+}
+
+.techGrid {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+    align-content: start;
+}
+
+.techCard {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    transition: all 0.15s ease;
+}
+
+.techCard.available {
+    cursor: pointer;
+}
+
+.techCard.available:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-bright);
+}
+
+.techCard.active {
+    border-color: var(--accent-blue);
+    background: var(--bg-selected);
+}
+
+.techCard.done {
+    opacity: 0.55;
+}
+
+.techCard.locked {
+    opacity: 0.4;
+}
+
+.techHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.techName {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.techDesc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+.prereqs {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.effect {
+    font-size: 10px;
+    padding: 1px 6px;
+    background: rgba(79, 195, 247, 0.08);
+    color: var(--accent-blue);
+    border-radius: 8px;
+}
+
+/* Multi-project Additions */
+.projectList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.projectItem {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+}
+
+.projectTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.projectName {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.projectScientist {
+    font-size: 10px;
+    color: var(--accent-blue);
+}
+
+.projectDetails {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.creationOverlay {
+    background: rgba(0, 0, 0, 0.7);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.creationPanel {
+    background: var(--bg-panel-dark);
+    border: 1px solid var(--accent-blue);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.creationField {
+    margin-bottom: 15px;
+}
+
+.creationLabel {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.creationInput {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-dim);
+    color: var(--text-primary);
+    padding: 8px;
+    font-size: 12px;
+    border-radius: var(--radius-sm);
+}
+
+.creationButtons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.confirmButton {
+    flex: 1;
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cancelButton {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.specMatch {
+    color: #4caf50;
+    font-weight: 700;
+    margin-left: 4px;
+}

@@ -1,0 +1,192 @@
+/* ─── Game Shell ─────────────────────────────────────────────────────────── */
+.shell {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+.starfield {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(30, 50, 100, 0.12) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 70%, rgba(20, 40, 80, 0.08) 0%, transparent 55%),
+        #050810;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+.content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ─── Main Menu ──────────────────────────────────────────────────────────── */
+.menuOverlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.menuBg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 50% 40%, rgba(10, 30, 80, 0.6) 0%, transparent 70%),
+        radial-gradient(ellipse at 20% 80%, rgba(0, 50, 80, 0.3) 0%, transparent 50%),
+        #040810;
+}
+
+.particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle ease-in-out infinite;
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.1;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+}
+
+.menuCard {
+    position: relative;
+    z-index: 1;
+    background: rgba(9, 13, 26, 0.92);
+    border: 1px solid rgba(79, 195, 247, 0.2);
+    border-radius: 16px;
+    padding: 40px 44px;
+    width: 440px;
+    box-shadow: 0 0 80px rgba(79, 195, 247, 0.1), 0 30px 60px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    animation: cardIn 0.4s ease forwards;
+}
+
+@keyframes cardIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.menuTitle {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 6px;
+    justify-content: center;
+}
+
+.menuTitleMain {
+    font-family: 'Playfair Display', serif;
+    font-size: 40px;
+    font-weight: 700;
+    color: #e8edf5;
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 40px rgba(79, 195, 247, 0.4);
+}
+
+.menuTitleSub {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--accent-blue);
+    letter-spacing: 0.1em;
+}
+
+.menuTagline {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+}
+
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(79, 195, 247, 0.3), transparent);
+    margin: 0 0 24px;
+}
+
+.menuForm {
+    margin-bottom: 24px;
+}
+
+.fieldLabel {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.startBtn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-top: 20px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    box-shadow: 0 0 30px rgba(79, 195, 247, 0.2);
+}
+
+.startBtn:hover {
+    box-shadow: 0 0 40px rgba(79, 195, 247, 0.35);
+}
+
+.menuFeatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}

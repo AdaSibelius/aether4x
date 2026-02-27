@@ -1,0 +1,769 @@
+/* ── Shell layout ─────────────────────────────────────────────────── */
+.shell {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* ── Colony sidebar ───────────────────────────────────────────────── */
+.colonySidebar {
+    width: 200px;
+    flex-shrink: 0;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-dim);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sidebarHeader {
+    padding: 12px 14px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.colonyItem {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s;
+}
+
+.colonyItem:hover {
+    background: rgba(79, 195, 247, 0.06);
+}
+
+.colonyItemActive {
+    background: var(--bg-selected) !important;
+    border-left: 3px solid var(--accent-blue);
+    padding-left: 11px;
+}
+
+.colonyItemName {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.colonyItemStats {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ── Main area ────────────────────────────────────────────────────── */
+.mainArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────── */
+.tabs {
+    display: flex;
+    gap: 2px;
+    padding: 8px 14px 0;
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+    background: var(--bg-base);
+}
+
+.tab {
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.15s;
+}
+
+.tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.tabActive {
+    color: var(--accent-blue);
+    background: var(--bg-panel);
+    border-color: var(--border-dim);
+}
+
+/* ── Tab content ──────────────────────────────────────────────────── */
+.tabContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+}
+
+/* ── Overview ─────────────────────────────────────────────────────── */
+.planetBanner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    margin-bottom: 14px;
+}
+
+.planetIcon {
+    font-size: 36px;
+    line-height: 1;
+}
+
+.planetName {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.planetMeta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+.colonyBadge {
+    margin-left: auto;
+    font-size: 12px;
+    background: var(--bg-selected);
+    border: 1px solid var(--border-dim);
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: var(--text-secondary);
+}
+
+.overviewGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+/* ── Colony type buttons ──────────────────────────────────────────── */
+.typeGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.typeBtn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+}
+
+.typeBtn:hover {
+    background: rgba(79, 195, 247, 0.06);
+    border-color: rgba(79, 195, 247, 0.3);
+}
+
+.typeBtnActive {
+    background: var(--bg-selected) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+.typeIcon {
+    font-size: 18px;
+    width: 24px;
+}
+
+.typeName {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 70px;
+}
+
+.typeDesc {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+/* ── Migration Controls ───────────────────────────────────────────── */
+.migrationGrid {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.migrationBtn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.migrationBtn:hover {
+    background: rgba(79, 195, 247, 0.06);
+    border-color: rgba(79, 195, 247, 0.3);
+}
+
+.migrationBtnActive {
+    background: var(--bg-selected) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+.migrationIcon {
+    font-size: 18px;
+}
+
+.migrationName {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Meters ───────────────────────────────────────────────────────── */
+.meterRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.meterLabel {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 90px;
+}
+
+.meterTrack {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.meterFill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.meterVal {
+    font-size: 10px;
+    min-width: 80px;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Industry layout ──────────────────────────────────────────────── */
+.industryLayout {
+    display: flex;
+    gap: 12px;
+    height: 100%;
+}
+
+.industryLeft {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.industryRight {
+    width: 300px;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+
+/* ── Facility grid ────────────────────────────────────────────────── */
+.facilityGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.facility {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+    gap: 2px;
+}
+
+.facilityIcon {
+    font-size: 20px;
+}
+
+.facilityCount {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    font-family: 'Playfair Display', serif;
+}
+
+.facilityName {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ── Ledger Table ─────────────────────────────────────────────────── */
+.ledgerTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.ledgerTable th {
+    text-align: left;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 6px 10px;
+    border-bottom: 2px solid var(--border-dim);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.ledgerTable td {
+    padding: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+}
+
+.ledgerTable tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ledgerCategory {
+    background: rgba(79, 195, 247, 0.05);
+    font-weight: 700;
+    color: var(--accent-blue);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ledgerLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ledgerIcon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+.ledgerName {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.ledgerValue {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+}
+
+.ledgerStaffing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.staffingText {
+    min-width: 40px;
+    text-align: right;
+}
+
+/* ── Output chips ─────────────────────────────────────────────────── */
+.outputChip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border: 1px solid var(--border-dim);
+    min-width: 70px;
+}
+
+.outputChip span {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.outputChip strong {
+    font-size: 16px;
+    color: var(--text-primary);
+    font-family: 'Playfair Display', serif;
+}
+
+/* ── Queue ────────────────────────────────────────────────────────── */
+.queueItem {
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+}
+
+.queueItemHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.queuePos {
+    width: 20px;
+    height: 20px;
+    background: var(--bg-selected);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.queueName {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.queueEta {
+    font-size: 11px;
+    color: var(--accent-gold);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Labor sliders ────────────────────────────────────────────────── */
+.sliderGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sliderRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sliderLabel {
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 110px;
+}
+
+.slider {
+    flex: 1;
+    accent-color: var(--accent-blue);
+}
+
+.sliderVal {
+    font-size: 11px;
+    color: var(--accent-blue);
+    min-width: 30px;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.sliderTotal {
+    font-size: 11px;
+    text-align: right;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Build items ──────────────────────────────────────────────────── */
+.buildItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.buildItem:hover {
+    background: rgba(79, 195, 247, 0.06);
+    border-color: rgba(79, 195, 247, 0.25);
+}
+
+.buildIcon {
+    font-size: 20px;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.buildInfo {
+    flex: 1;
+}
+
+.buildName {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+}
+
+.buildDesc {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.buildCost {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+/* ── Surface tab ──────────────────────────────────────────────────── */
+.surfaceLayout {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 12px;
+}
+
+.mineralTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.mineralTable th {
+    text-align: left;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.mineralTable td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+}
+
+.depBar {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 2px;
+    width: 60px;
+}
+
+.depFill {
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: 2px;
+}
+
+/* ── Planet Visualizer ────────────────────────────────────────────── */
+.visualizerCanvas {
+    display: block;
+    width: 100%;
+    height: 220px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-dim);
+    background: #070b14;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+
+/* ── Population Tab ──────────────────────────────────────────────── */
+.popGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+.popTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.popTable th {
+    text-align: left;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.popTable td {
+    padding: 8px;
+    vertical-align: middle;
+}
+
+.speciesPortrait {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-dim);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.habitBar {
+    width: 60px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.habitFill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.empTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.empTable th {
+    text-align: left;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.empTable td {
+    padding: 6px 8px;
+    font-size: 11px;
+}
+
+.empTable tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.welfareTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.welfareTable td {
+    padding: 5px 8px;
+}
+
+.welfareTable tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* ── Shipyard styles ──────────────────────────────────────────────── */
+.shipyardItem {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.syHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.slipwayList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.slipway {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.slipwayInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.slipwayLabel {
+    color: var(--text-muted);
+}
+
+.slipwayJob {
+    color: var(--text-primary);
+    font-weight: 500;
+    flex: 1;
+    margin: 0 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slipwayProgress {
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
+.slipwayEmpty {
+    color: var(--text-muted);
+    font-style: italic;
+}

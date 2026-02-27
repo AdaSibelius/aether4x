@@ -1,0 +1,146 @@
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100%;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-dim);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.logo {
+    padding: 16px 14px 12px;
+    border-bottom: 1px solid var(--border-dim);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.logoText {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.15em;
+}
+
+.logo4x {
+    font-family: 'Playfair Display', serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--accent-blue);
+    letter-spacing: 0.1em;
+}
+
+.empireCard {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-dim);
+    background: var(--bg-panel-alt);
+}
+
+.empireName {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--accent-blue);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.empireDate {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+}
+
+.empireStat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.nav {
+    flex: 1;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    border: 1px solid transparent;
+    width: 100%;
+    text-align: left;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.navItem:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-dim);
+}
+
+.navItem.active {
+    background: var(--bg-selected);
+    color: var(--accent-blue);
+    border-color: var(--border-accent);
+}
+
+.navIcon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+}
+
+.navLabel {
+    flex: 1;
+}
+
+.badge {
+    background: var(--accent-blue);
+    color: var(--bg-deep);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.minerals {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-dim);
+    background: var(--bg-panel-alt);
+}
+
+.mineralsTitle {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.mineralRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 2px 0;
+}

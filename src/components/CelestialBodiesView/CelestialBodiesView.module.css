@@ -1,0 +1,369 @@
+.shell {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 13px;
+    background: var(--bg-surface);
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────── */
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-dim);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.systemSelector {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-dim);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.systemDropdown {
+    width: 100%;
+    background: var(--bg-deep);
+    border: 1px solid var(--border-med);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.systemDropdown:focus {
+    border-color: var(--accent-blue);
+}
+
+.systemDropdown option {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    padding: 8px;
+}
+
+.sidebarScroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+}
+
+.sidebarGroup {
+    margin-top: 10px;
+}
+
+.groupHeader {
+    padding: 12px 14px 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent-blue);
+    font-weight: 700;
+    opacity: 0.8;
+}
+
+.sidebarItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    textAlign: left;
+    transition: background 0.15s;
+}
+
+.sidebarItem:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebarItemActive {
+    background: rgba(79, 195, 247, 0.12) !important;
+    border-left-color: var(--accent-blue);
+}
+
+.sidebarItemMain {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+}
+
+.thumbnailContainer {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebarItemName {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebarItemStats {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.starItem {
+    border-left-color: #ffd70033;
+}
+
+.moonList {
+    margin-bottom: 2px;
+}
+
+.moonItem {
+    padding-left: 32px;
+}
+
+.moonItem .sidebarItemName {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ── Main Area ────────────────────────────────────────────────────── */
+.mainArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-base);
+}
+
+.headerBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.headerInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.planetTitle {
+    margin: 0;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.planetSubtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────── */
+.tabs {
+    display: flex;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.tabBtn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.tabBtn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.tabBtn.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+}
+
+.tabContentContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* ── Modal overlay ────────────────────────────────────────────────── */
+.modalOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modalContent {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    width: 900px;
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.modalHeader h3 {
+    margin: 0;
+    font-family: 'Playfair Display', serif;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.closeBtn:hover {
+    color: var(--accent-red);
+}
+
+.modalBody {
+    padding: 16px;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.modalTable {
+    width: 100%;
+    min-width: 1000px;
+    border-collapse: collapse;
+}
+
+/* ── Modal Table Specifics ────────────────────────────────────────── */
+.sortableHeader {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+    white-space: nowrap;
+    padding-right: 24px !important;
+    /* give room for sort icon */
+    position: relative;
+    border-bottom: 2px solid var(--border-dim) !important;
+}
+
+.sortableHeader:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sortIcon {
+    font-size: 10px;
+    color: var(--accent-blue);
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.modalRow {
+    transition: background 0.1s;
+}
+
+.modalRow:hover {
+    background: rgba(79, 195, 247, 0.05);
+}
+
+/* Subtle alternating rows for the modal table */
+.modalRow:nth-child(even) {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.modalRow:nth-child(even):hover {
+    background: rgba(79, 195, 247, 0.05);
+}
+
+.mineralCell {
+    /* Do NOT use display:flex here — it overrides display:table-cell
+       and breaks the entire table column alignment */
+    white-space: nowrap;
+    padding: 6px 8px !important;
+    text-align: right;
+}
+
+.mineralAmount {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.mineralAcc {
+    display: block;
+    font-size: 10px;
+    color: var(--accent-blue);
+    opacity: 0.8;
+    line-height: 1.2;
+}
+
+.mineralEmpty {
+    color: var(--border-dim);
+    text-align: center !important;
+}

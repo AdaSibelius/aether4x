@@ -1,0 +1,81 @@
+.container {
+    display: flex;
+    height: 100%;
+    gap: 10px;
+    padding: 14px;
+    overflow: hidden;
+}
+
+.designList {
+    width: 200px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.designer {
+    flex: 1;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.hullPicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-dim);
+}
+
+.sizeBar {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 14px 4px;
+}
+
+.columns {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.compLib {
+    flex: 1;
+    padding: 10px 10px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-dim);
+}
+
+.fitted {
+    width: 280px;
+    padding: 10px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.locked {
+    opacity: 0.45;
+    cursor: not-allowed !important;
+}
+
+.typeHeader {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    background: rgba(0, 163, 255, 0.05);
+    border-left: 2px solid var(--accent-blue);
+    border-radius: 2px;
+}

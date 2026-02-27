@@ -1,0 +1,46 @@
+.container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-deep);
+    overflow: hidden;
+}
+
+.canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+.title {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.legend {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    display: flex;
+    gap: 14px;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
