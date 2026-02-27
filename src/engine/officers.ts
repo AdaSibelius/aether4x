@@ -209,11 +209,17 @@ function pickTraits(rng: RNG, role: OfficerRole, count: number): string[] {
     return picked;
 }
 
-export function createOfficer(role: OfficerRole, seed?: number): Officer {
+export function createOfficer(role: OfficerRole, empireBonuses: Record<string, number> = {}, seed?: number): Officer {
     const s = seed ?? (Date.now() + (++_officerCounter) * 7919);
     const rng = new RNG(s);
     const name = generateOfficerName(rng);
-    const traitCount = rng.intBetween(1, 2);  // 1-2 traits
+
+    // Starting Level (Base 1 + Tech Bonus)
+    const baseLevel = 1 + (empireBonuses['officer_starting_level'] || 0);
+
+    // Trait Count (Base 1-2 + Chance Bonus)
+    const traitBonusChance = empireBonuses['officer_trait_chance'] || 0;
+    const traitCount = rng.chance(0.3 + traitBonusChance) ? 2 : 1;
     const traits = pickTraits(rng, role, traitCount);
 
     // Aggregate bonuses from traits
@@ -238,7 +244,7 @@ export function createOfficer(role: OfficerRole, seed?: number): Officer {
         id: `officer_${s.toString(36)}`,
         name,
         role,
-        level: 1,
+        level: baseLevel,
         portraitSeed: s,
         traits,
         experience: 0,

@@ -3,6 +3,7 @@ import { useGameStore } from '@/store/gameStore';
 import { useUIStore } from '@/store/uiStore';
 import { TECH_TREE, TECH_CATEGORIES, getAvailableTechs } from '@/engine/research';
 import type { TechCategory, Officer, ResearchProject, Technology } from '@/types';
+import TechTreeVisualizer from './TechTreeVisualizer';
 import { useState } from 'react';
 import styles from './Research.module.css';
 import { generateId } from '@/utils/id';
@@ -194,34 +195,14 @@ export default function Research() {
                 ))}
             </div>
 
-            <div className={styles.techGrid}>
-                {TECH_TREE.filter(t => t.category === activeCategory).map(tech => {
-                    const isDone = completed.has(tech.id);
-                    const isAvail = availableIds.has(tech.id);
-                    const isActive = research.activeProjects.some(p => p.techId === tech.id);
-                    const isLocked = !isDone && !isAvail;
-
-                    return (
-                        <div key={tech.id}
-                            className={`${styles.techCard} ${isDone ? styles.done : ''} ${isActive ? styles.active : ''} ${isAvail && !isActive ? styles.available : ''} ${isLocked ? styles.locked : ''}`}
-                            onClick={() => !isDone && isAvail && !isActive && setSelectedTech(tech)}
-                        >
-                            <div className={styles.techHeader}>
-                                <span className={styles.techName}>{tech.name}</span>
-                                <span className={`badge ${isDone ? 'badge-green' : isActive ? 'badge-blue' : isAvail ? 'badge-gold' : 'badge-red'}`}>
-                                    {isDone ? 'Done' : isActive ? 'Active' : isAvail ? `${tech.cost} RP` : 'Locked'}
-                                </span>
-                            </div>
-                            <div className={styles.techDesc}>{tech.description}</div>
-                            <div className={styles.effects}>
-                                {tech.effects.map((e, i) => (
-                                    <span key={i} className={styles.effect}>+{e.type.replace(/_/g, ' ')}</span>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+            {/* Tree View */}
+            <TechTreeVisualizer
+                technologies={TECH_TREE.filter(t => t.category === activeCategory)}
+                completedTechs={completed}
+                availableTechs={availableIds}
+                activeTechIds={new Set(research.activeProjects.map(p => p.techId))}
+                onSelect={setSelectedTech}
+            />
 
             {/* Creation Modal */}
             {selectedTech && (

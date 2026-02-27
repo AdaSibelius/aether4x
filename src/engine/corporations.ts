@@ -3,6 +3,7 @@ import type { GameState, Empire, Company, CompanyType, GameEvent, OfficerRole, C
 import { generateId } from '@/utils/id';
 import { RNG } from '@/utils/rng';
 import { generateCompanyName, createOfficer } from './officers';
+import { getEmpireTechBonuses } from './research';
 import { BALANCING } from './constants';
 import { COMPONENT_LIBRARY, createDesign } from './ships';
 
@@ -229,7 +230,8 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                 ceoId = ceo.id;
                 ceo.assignedTo = `company_${name}`;
             } else {
-                const ceo = createOfficer('CEO', rng.next() * 1000000);
+                const bonuses = getEmpireTechBonuses(empire.research.completedTechs);
+                const ceo = createOfficer('CEO', bonuses, rng.next() * 1000000);
                 ceo.assignedTo = `company_${name}`;
                 empire.officers.push(ceo);
                 ceoId = ceo.id;
@@ -370,7 +372,8 @@ export function tickOfficerLifecycle(next: GameState, empire: Empire, rng: RNG, 
         if (empire.officers.length < 25 && rng.chance(0.15)) {
             const roles: OfficerRole[] = ['Governor', 'Scientist', 'Engineer', 'Admiral', 'Captain', 'CEO'];
             const role = rng.pick(roles);
-            const newOfficer = createOfficer(role, rng.next() * 1000000);
+            const bonuses = getEmpireTechBonuses(empire.research.completedTechs);
+            const newOfficer = createOfficer(role, bonuses, rng.next() * 1000000);
             empire.officers.push(newOfficer);
             events.push({
                 id: generateId('evt'),

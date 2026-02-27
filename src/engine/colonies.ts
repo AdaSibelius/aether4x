@@ -1,5 +1,6 @@
 import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent } from '@/types';
 import { getGovernorBonuses } from './officers';
+import { getEmpireTechBonuses } from './research';
 import { BALANCING } from './constants';
 import SimLogger from '@/utils/logger';
 import { generateId } from '@/utils/id';
@@ -150,8 +151,9 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
 
     const infraEff = 0.5 + (colony.infrastructure / 100) * 0.5;
     const empire = state.empires[colony.empireId];
+    const techBonuses = empire ? getEmpireTechBonuses(empire.research.completedTechs) : {};
     const govBonuses = getGovernorBonuses(empire?.officers || [], colony.governorId);
-    const prodBonus = 1 + (govBonuses.all_production ?? 0);
+    const prodBonus = (1 + (govBonuses.all_production ?? 0)) * (1 + (techBonuses.all_production ?? 0));
 
     const planet = Object.values(state.galaxy.stars).flatMap(s => s.planets).find(p => p.id === colony.planetId);
 
@@ -253,7 +255,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
         }
     }
 
-    const factoryBonus = 1 + (govBonuses.factory_output ?? 0);
+    const factoryBonus = (1 + (govBonuses.factory_output ?? 0)) * (1 + (techBonuses.factory_output ?? 0));
     // Base industrial capacity (Colonization Kit + Population Labor)
     const baseIndustrialBP = 5 + (colony.population * 0.5) * (colony.laborAllocation.industry / 100);
     const bpPerDay = (colony.factories * BALANCING.BP_PER_FACTORY + baseIndustrialBP) * staffingLevel * bonus.industry * infraEff * factoryBonus * prodBonus;
@@ -453,7 +455,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
 
     if (planet && empire) {
         for (const mineral of planet.minerals) {
-            const mineBonus = 1 + (govBonuses.mining_rate ?? 0);
+            const mineBonus = (1 + (govBonuses.mining_rate ?? 0)) * (1 + (techBonuses.mining_rate ?? 0));
             let extraction = (colony.mines + colony.civilianMines) * BALANCING.MINING_RATE_BASE * mineral.accessibility * staffingLevel * bonus.mining * infraEff * days * mineBonus * prodBonus;
             extraction = Math.min(extraction, mineral.amount);
             if (extraction > 0) {

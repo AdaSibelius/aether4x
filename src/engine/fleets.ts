@@ -2,6 +2,7 @@ import type { GameState, GameEvent, Fleet, Ship, Vec2, Empire, Star, Planet, Col
 import { RNG } from '@/utils/rng';
 import { makeEvent } from './events';
 import { getAdmiralBonuses } from './officers';
+import { getEmpireTechBonuses } from './research';
 import { generateId } from '@/utils/id';
 import { BALANCING } from './constants';
 
@@ -209,13 +210,21 @@ function processSurveyOrder(fleet: Fleet, order: ShipOrder, state: GameState, em
         return;
     }
 
+    const techBonuses = getEmpireTechBonuses(empire.research.completedTechs);
+    const surveyRange = 0.2 + (techBonuses.survey_range ?? 0);
+    const surveyAccuracy = 1.0 + (techBonuses.survey_accuracy ?? 0);
+
     const pPos = getPlanetPosition(targetPlanet, state.turn);
-    if (distance(fleet.position, pPos) < 0.2) {
+    if (distance(fleet.position, pPos) < surveyRange) {
         if (!targetPlanet.surveyedByEmpires.includes(empire.id)) {
             targetPlanet.surveyedByEmpires.push(empire.id);
-            const minDetails = targetPlanet.minerals.map(m => `${m.name}: ${Math.floor(m.amount)}`).join(', ');
+            // Survey accuracy could affect the detail level; for now it's flavor/placeholder for discovery logic
+            const minDetails = targetPlanet.minerals
+                .map(m => `${m.name}: ${Math.floor(m.amount * surveyAccuracy)}`)
+                .join(', ');
+
             events.push(makeEvent(state.turn, state.date, 'MineralsFound',
-                `Fleet "${fleet.name}" completed survey of ${targetPlanet.name}. Found: ${minDetails || 'Nothing'}`,
+                `Fleet "${fleet.name}" completed survey of ${targetPlanet.name}${techBonuses.survey_accuracy ? ' with advanced scanners' : ''}. Found: ${minDetails || 'Nothing'}`,
                 { starId: star.id, planetId: targetPlanet.id, important: true }));
         }
         fleet.orders.shift();
@@ -394,6 +403,9 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
         }
 
         if (cargoCapacity > 0) {
+            const techBonuses = getEmpireTechBonuses(empire.research.completedTechs);
+            cargoCapacity *= (1 + (techBonuses.cargo_capacity ?? 0));
+            const loadSpeedMult = (1 + (techBonuses.load_speed ?? 0));
             const res = order.resourceName || 'Iron';
             const amt = order.amount || cargoCapacity;
 
@@ -496,8 +508,11 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
  * Calculates current fleet speed and fuel consumption.
  */
 function getFleetStats(fleet: Fleet, state: GameState, empire: Empire) {
+    const techBonuses = getEmpireTechBonuses(empire.research.completedTechs);
     const admiralBonuses = getAdmiralBonuses(empire.officers, fleet.admiralId);
-    const speedBonus = 1 + (admiralBonuses.fleet_speed ?? 0);
+
+    const speedBonus = (1 + (admiralBonuses.fleet_speed ?? 0)) * (1 + (techBonuses.engine_thrust ?? 0));
+    const fuelEfficiencyBonus = 1 - (techBonuses.fuel_efficiency ?? 0); // Efficiency reduces consumption
 
     let baseSpeed = 0.5; // fallback AU/day
     let fuelPerTick = 0;
@@ -518,7 +533,10 @@ function getFleetStats(fleet: Fleet, state: GameState, empire: Empire) {
         if (minSpeed !== Infinity && minSpeed > 0) baseSpeed = minSpeed / 100;
     }
 
-    return { fleetSpeed: baseSpeed * speedBonus, fuelPerTick };
+    return {
+        fleetSpeed: baseSpeed * speedBonus,
+        fuelPerTick: fuelPerTick * fuelEfficiencyBonus
+    };
 }
 
 /**

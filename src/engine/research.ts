@@ -1,4 +1,4 @@
-import type { Technology, TechCategory, Empire, GameEvent, EventType } from '@/types';
+import type { Technology, TechCategory, Empire, GameEvent, EventType, TechBonuses } from '@/types';
 import { generateId } from '@/utils/id';
 
 export const TECH_TREE: Technology[] = [
@@ -46,6 +46,26 @@ export const TECH_TREE: Technology[] = [
         prerequisites: [],
         effects: [{ type: 'colony_power', value: 100 }],
     },
+    {
+        id: 'celestial_mapping',
+        name: 'Celestial Mapping',
+        description: 'Basic starmaps and sextants — the start of true navigation beyond the home planet.',
+        category: 'Astrogation',
+        tier: 1,
+        cost: 250,
+        prerequisites: [],
+        effects: [{ type: 'survey_range', value: 0.5 }],
+    },
+    {
+        id: 'standardized_containers',
+        name: 'Standardized Aether-Tight Containers',
+        description: 'Uniform cargo canisters that streamline interplanetary transport.',
+        category: 'Logistics',
+        tier: 1,
+        cost: 200,
+        prerequisites: [],
+        effects: [{ type: 'load_speed', value: 0.1 }],
+    },
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ERA II: THE IRON FRONTIER (Tier 2) — First player research choices
@@ -57,7 +77,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Advanced fractional distillation of raw aether. Unlocks Aetheric Scoops and Distilleries.',
         category: 'Power',
         tier: 2,
-        cost: 500,
+        cost: 4500,
         prerequisites: ['aetheric_dynamo'],
         effects: [{ type: 'unlock_distillery', value: 1 }],
     },
@@ -67,7 +87,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Liquid-fueled rockets enable the first tentative steps beyond the atmosphere.',
         category: 'Power',
         tier: 2,
-        cost: 600,
+        cost: 5500,
         prerequisites: ['aetheric_distillation'],
         effects: [{ type: 'engine_thrust', value: 100 }],
     },
@@ -77,9 +97,19 @@ export const TECH_TREE: Technology[] = [
         description: 'Second-generation mechanical computers with parallel computation gears.',
         category: 'Computation',
         tier: 2,
-        cost: 800,
+        cost: 6000,
         prerequisites: ['analytical_engine'],
         effects: [{ type: 'research_rate', value: 0.15 }],
+    },
+    {
+        id: 'officer_academy_foundation',
+        name: 'Imperial Naval Academy',
+        description: 'Formalizing officer training. New recruits start with slightly more experience.',
+        category: 'Military',
+        tier: 2,
+        cost: 7200,
+        prerequisites: ['analytical_engine'],
+        effects: [{ type: 'officer_starting_level', value: 1 }],
     },
     {
         id: 'aetheric_discharge',
@@ -87,19 +117,9 @@ export const TECH_TREE: Technology[] = [
         description: 'Focusing aetheric resonation to produce coherent energy discharges for naval combat.',
         category: 'Military',
         tier: 2,
-        cost: 750,
+        cost: 8000,
         prerequisites: ['steam_refinement'],
         effects: [{ type: 'unlock_laser', value: 1 }],
-    },
-    {
-        id: 'pneumatic_rifles',
-        name: 'Pneumatic Repeater Rifles',
-        description: 'High-pressure pneumatic weaponry for colonial defense forces.',
-        category: 'Military',
-        tier: 2,
-        cost: 700,
-        prerequisites: ['steam_refinement'],
-        effects: [{ type: 'ground_defense', value: 1 }],
     },
     {
         id: 'telegraph_networks',
@@ -107,7 +127,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Electromagnetic communication grids that extend survey and detection range.',
         category: 'Computation',
         tier: 2,
-        cost: 900,
+        cost: 5000,
         prerequisites: ['analytical_engine'],
         effects: [{ type: 'survey_range', value: 1 }],
     },
@@ -117,7 +137,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Advanced chemical processes enable the construction of sophisticated structures.',
         category: 'Engineering',
         tier: 2,
-        cost: 1000,
+        cost: 6500,
         prerequisites: ['bessemer_process'],
         effects: [{ type: 'shipyard_capacity', value: 0.2 }],
     },
@@ -127,7 +147,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Public health infrastructure improves colony growth rates.',
         category: 'Biology',
         tier: 2,
-        cost: 600,
+        cost: 3500,
         prerequisites: [],
         effects: [{ type: 'population_growth', value: 0.05 }],
     },
@@ -137,9 +157,39 @@ export const TECH_TREE: Technology[] = [
         description: 'Advanced geometric modeling for vessel hulls. Unlocks the Ship Designer interface.',
         category: 'Engineering',
         tier: 2,
-        cost: 800,
+        cost: 5500,
         prerequisites: ['steam_refinement', 'analytical_engine'],
         effects: [{ type: 'unlock_design', value: 1 }],
+    },
+    {
+        id: 'gravitational_surveying',
+        name: 'Gravitational Surveying',
+        description: 'Sensitive barometers detect subtle gravitational shifts, aiding in system exploration.',
+        category: 'Astrogation',
+        tier: 2,
+        cost: 4200,
+        prerequisites: ['celestial_mapping'],
+        effects: [{ type: 'survey_accuracy', value: 0.5 }],
+    },
+    {
+        id: 'hydrographic_surveys',
+        name: 'Hydrographic Surveys',
+        description: 'Advanced mapping of planetary water and liquid resources.',
+        category: 'Geology',
+        tier: 2,
+        cost: 4800,
+        prerequisites: ['bessemer_process'],
+        effects: [{ type: 'mining_rate', value: 0.1 }],
+    },
+    {
+        id: 'automated_docking',
+        name: 'Pneumatic Docking Clamps',
+        description: 'Standardized automated clamps that reduce ship turnaround time in port.',
+        category: 'Logistics',
+        tier: 2,
+        cost: 5200,
+        prerequisites: ['standardized_containers'],
+        effects: [{ type: 'load_speed', value: 0.2 }],
     },
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -152,7 +202,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Mechanical regulators control nuclear chain reactions — reliable atomic power.',
         category: 'Power',
         tier: 3,
-        cost: 1800,
+        cost: 45000,
         prerequisites: ['rocket_propulsion'],
         effects: [{ type: 'engine_thrust', value: 250 }, { type: 'fuel_efficiency', value: 0.2 }],
     },
@@ -162,9 +212,19 @@ export const TECH_TREE: Technology[] = [
         description: 'Computation-guided electromagnetic accelerators for devastating kinetic strikes.',
         category: 'Military',
         tier: 3,
-        cost: 1500,
-        prerequisites: ['pneumatic_rifles', 'difference_engine_mk2'],
+        cost: 55000,
+        prerequisites: ['aetheric_discharge', 'difference_engine_mk2'],
         effects: [{ type: 'unlock_railgun', value: 1 }],
+    },
+    {
+        id: 'psychological_profiling',
+        name: 'Imperial Psychological Profiling',
+        description: 'Statistical analysis of officer candidates. Higher chance for positive traits.',
+        category: 'Biology',
+        tier: 3,
+        cost: 42000,
+        prerequisites: ['sanitation_systems', 'difference_engine_mk2'],
+        effects: [{ type: 'officer_trait_chance', value: 0.25 }],
     },
     {
         id: 'mechanical_biology',
@@ -172,7 +232,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Clockwork prosthetics and mechanical medicine improve colony health.',
         category: 'Biology',
         tier: 3,
-        cost: 1200,
+        cost: 38000,
         prerequisites: ['sanitation_systems'],
         effects: [{ type: 'population_growth', value: 0.1 }],
     },
@@ -182,19 +242,29 @@ export const TECH_TREE: Technology[] = [
         description: 'Computation-optimized zero-gravity manufacturing expands shipyard capacity.',
         category: 'Engineering',
         tier: 3,
-        cost: 2000,
+        cost: 65000,
         prerequisites: ['industrial_chemistry', 'rocket_propulsion'],
         effects: [{ type: 'shipyard_capacity', value: 0.3 }],
     },
     {
         id: 'ambergris_theory',
         name: 'Ambergris Theory',
-        description: 'First scientific understanding of Ambergris — the mysterious substance enabling trans-Newtonian physics.',
+        description: 'First scientific understanding of Ambergris — the substance enabling trans-Newtonian physics.',
         category: 'Computation',
         tier: 3,
-        cost: 2500,
+        cost: 85000,
         prerequisites: ['difference_engine_mk2', 'telegraph_networks'],
         effects: [{ type: 'unlock_tn_elements', value: 1 }],
+    },
+    {
+        id: 'scientific_methodology',
+        name: 'Standardized Scientific Methodology',
+        description: 'Systematic peer-review and experimental rigour accelerate all research.',
+        category: 'Computation',
+        tier: 3,
+        cost: 72000,
+        prerequisites: ['difference_engine_mk2'],
+        effects: [{ type: 'research_rate', value: 0.2 }],
     },
     {
         id: 'guided_munitions',
@@ -202,9 +272,39 @@ export const TECH_TREE: Technology[] = [
         description: 'Self-correcting projectiles using miniaturized analytical engines.',
         category: 'Military',
         tier: 3,
-        cost: 2000,
-        prerequisites: ['analytical_ballistics'],
+        cost: 60000,
+        prerequisites: ['analytical_ballistics', 'telegraph_networks'],
         effects: [{ type: 'unlock_missile', value: 1 }],
+    },
+    {
+        id: 'warp_geometry',
+        name: 'Experimental Warp Geometry',
+        description: 'Theoretical models of space-time folding. Required for jump drive technology.',
+        category: 'Astrogation',
+        tier: 3,
+        cost: 68000,
+        prerequisites: ['gravitational_surveying'],
+        effects: [{ type: 'jump_efficiency', value: 0.05 }],
+    },
+    {
+        id: 'automated_mineral_sorting',
+        name: 'Automated Mineral Sorting',
+        description: 'Mechanical sieves that improve mining purity and throughput.',
+        category: 'Geology',
+        tier: 3,
+        cost: 52000,
+        prerequisites: ['bessemer_process'],
+        effects: [{ type: 'mining_rate', value: 0.2 }],
+    },
+    {
+        id: 'supply_chain_optimization',
+        name: 'Algorithmic Supply Chain',
+        description: 'Difference Engine-driven optimization of freight schedules reduces fuel waste.',
+        category: 'Logistics',
+        tier: 3,
+        cost: 48000,
+        prerequisites: ['automated_docking', 'difference_engine_mk2'],
+        effects: [{ type: 'fuel_efficiency', value: 0.1 }],
     },
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -217,7 +317,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Engines powered by Ambergris resonance achieve previously impossible thrust levels.',
         category: 'Power',
         tier: 4,
-        cost: 5000,
+        cost: 450000,
         prerequisites: ['clockwork_fission', 'ambergris_theory'],
         effects: [{ type: 'engine_thrust', value: 500 }, { type: 'fuel_efficiency', value: 0.3 }],
     },
@@ -227,19 +327,29 @@ export const TECH_TREE: Technology[] = [
         description: 'Third-generation computation engines with Ambergris-enhanced resonance gears.',
         category: 'Computation',
         tier: 4,
-        cost: 4500,
+        cost: 550000,
         prerequisites: ['ambergris_theory'],
         effects: [{ type: 'research_rate', value: 0.25 }],
     },
     {
+        id: 'specialist_training_regime',
+        name: 'Officer Specialist Regimes',
+        description: 'Intensive training for scientific and engineering disciplines.',
+        category: 'Computation',
+        tier: 4,
+        cost: 480000,
+        prerequisites: ['difference_engine_mk2'],
+        effects: [{ type: 'officer_specialization_bonus', value: 0.1 }],
+    },
+    {
         id: 'gene_alchemy',
         name: 'Gene Alchemy',
-        description: 'Ambergris-catalyzed biological manipulation enables advanced medicine and xenobiological study.',
+        description: 'Ambergris-catalyzed biological manipulation enables advanced medicine.',
         category: 'Biology',
         tier: 4,
-        cost: 4000,
+        cost: 420000,
         prerequisites: ['mechanical_biology', 'ambergris_theory'],
-        effects: [{ type: 'population_growth', value: 0.15 }],
+        effects: [{ type: 'population_growth', value: 0.2 }],
     },
     {
         id: 'aetheric_shields',
@@ -247,7 +357,7 @@ export const TECH_TREE: Technology[] = [
         description: 'Ambergris-tuned electromagnetic barriers that absorb incoming fire.',
         category: 'Military',
         tier: 4,
-        cost: 5500,
+        cost: 520000,
         prerequisites: ['guided_munitions', 'ambergris_theory'],
         effects: [{ type: 'shield_strength', value: 100 }],
     },
@@ -257,49 +367,49 @@ export const TECH_TREE: Technology[] = [
         description: 'Massive machines that reshape planetary atmospheres over decades.',
         category: 'Engineering',
         tier: 4,
-        cost: 6000,
+        cost: 650000,
         prerequisites: ['orbital_forge', 'ambergris_theory'],
         effects: [{ type: 'unlock_terraforming', value: 1 }],
     },
     {
-        id: 'volatility_management',
-        name: 'Volatility Management',
-        description: 'Advanced governor systems for unstable reactions. Unlocks Atomic Heart and Piston-Driven Atomic Engines.',
-        category: 'Power',
-        tier: 3,
-        cost: 2000,
-        prerequisites: ['clockwork_fission'],
-        effects: [{ type: 'unlock_atomic', value: 1 }],
+        id: 'industrial_robotics_tier1',
+        name: 'Steam-Powered Automata',
+        description: 'Rudimentary mechanical workers that augment human labor in factories.',
+        category: 'Engineering',
+        tier: 4,
+        cost: 580000,
+        prerequisites: ['orbital_forge'],
+        effects: [{ type: 'factory_output', value: 0.3 }],
     },
     {
-        id: 'resonance_mechanics',
-        name: 'Aetheric Resonance Mechanics',
-        description: 'Mastery of Ambergris vibrations. Unlocks the Resonator Core and Harmonic Nullifier.',
-        category: 'Power',
+        id: 'jump_lane_stabilization',
+        name: 'Jump Lane Stabilization',
+        description: 'Establishing resonance beacons reduces the strain of trans-Newtonian travel.',
+        category: 'Astrogation',
         tier: 4,
-        cost: 4500,
-        prerequisites: ['ambergris_drives', 'difference_engine_mk3'],
-        effects: [{ type: 'unlock_resonance', value: 1 }],
+        cost: 460000,
+        prerequisites: ['warp_geometry'],
+        effects: [{ type: 'jump_fuel', value: -0.1 }],
     },
     {
-        id: 'point_defense',
-        name: 'Clockwork Point Defense',
-        description: 'Rapid-fire analytical targeting systems to intercept incoming projectiles.',
-        category: 'Military',
+        id: 'deep_core_mining',
+        name: 'Ambergris Bore-Drills',
+        description: 'Resonance-tipped drills capable of reaching mantle-depth mineral deposits.',
+        category: 'Geology',
         tier: 4,
-        cost: 4000,
-        prerequisites: ['guided_munitions'],
-        effects: [{ type: 'unlock_pdc', value: 1 }],
+        cost: 512000,
+        prerequisites: ['automated_mineral_sorting', 'ambergris_theory'],
+        effects: [{ type: 'mining_rate', value: 0.4 }],
     },
     {
-        id: 'geothermal_tapping',
-        name: 'Geothermal Core Tapping',
-        description: 'Bore into planetary cores for effectively unlimited colony power.',
-        category: 'Power',
+        id: 'high_capacity_bays',
+        name: 'Resonant Cargo Expansion',
+        description: 'Ambergris-stabilized structures allow for denser packing of cargo containers.',
+        category: 'Logistics',
         tier: 4,
-        cost: 4500,
-        prerequisites: ['clockwork_fission'],
-        effects: [{ type: 'colony_power', value: 1000 }],
+        cost: 440000,
+        prerequisites: ['standardized_containers', 'ambergris_theory'],
+        effects: [{ type: 'cargo_capacity', value: 0.5 }],
     },
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -309,198 +419,164 @@ export const TECH_TREE: Technology[] = [
     {
         id: 'jump_calculus',
         name: 'Jump Point Calculus',
-        description: 'The ultimate breakthrough — computing stable passage through jump points using Ambergris harmonics.',
+        description: 'Computing stable passage through jump points using Ambergris harmonics.',
         category: 'Computation',
         tier: 5,
-        cost: 12000,
+        cost: 2500000,
         prerequisites: ['difference_engine_mk3', 'ambergris_drives'],
         effects: [{ type: 'jump_efficiency', value: 0.15 }],
     },
     {
+        id: 'advanced_officer_commissioning',
+        name: 'High Command Commissioning',
+        description: 'Elite recruitment protocols for the highest level of leadership.',
+        category: 'Military',
+        tier: 5,
+        cost: 2200000,
+        prerequisites: ['officer_academy_foundation', 'difference_engine_mk3'],
+        effects: [{ type: 'officer_starting_level', value: 2 }, { type: 'officer_trait_chance', value: 0.2 }],
+    },
+    {
         id: 'antimatter_forge',
         name: 'Antimatter Forge',
-        description: 'Ambergris-catalyzed antimatter production enables the most powerful engines conceivable.',
+        description: 'Ambergris-catalyzed antimatter production enables powerful engines.',
         category: 'Power',
         tier: 5,
-        cost: 15000,
+        cost: 3500000,
         prerequisites: ['ambergris_drives'],
         effects: [{ type: 'engine_thrust', value: 800 }, { type: 'fuel_efficiency', value: 0.5 }],
     },
     {
-        id: 'xenobiology',
-        name: 'Xenobiological Studies',
-        description: 'Deep understanding of alien biology opens diplomacy with other species.',
-        category: 'Biology',
-        tier: 5,
-        cost: 10000,
-        prerequisites: ['gene_alchemy'],
-        effects: [{ type: 'unlock_diplomacy', value: 1 }],
-    },
-    {
-        id: 'planetary_engines',
-        name: 'Planetary Engines',
-        description: 'Continent-scale terraforming machines powered by Ambergris resonance.',
-        category: 'Engineering',
-        tier: 5,
-        cost: 14000,
-        prerequisites: ['atmospheric_engines', 'ambergris_drives'],
-        effects: [{ type: 'terraforming_speed', value: 2 }],
-    },
-    {
-        id: 'ambergris_weaponry',
-        name: 'Ambergris Weaponry',
-        description: 'Weapons that channel raw Ambergris energy — devastating and unstoppable.',
-        category: 'Military',
-        tier: 5,
-        cost: 16000,
-        prerequisites: ['aetheric_shields', 'ambergris_drives'],
-        effects: [{ type: 'unlock_laser', value: 1 }],
-    },
-    {
-        id: 'jump_drive_efficiency',
-        name: 'Jump Drive Efficiency I',
-        description: 'Optimized Ambergris harmonics reduce jump fuel consumption by 20%.',
-        category: 'Computation',
-        tier: 5,
-        cost: 18000,
-        prerequisites: ['jump_calculus'],
-        effects: [{ type: 'jump_fuel', value: -0.20 }],
-    },
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // ADDITIONAL TECHS: Mining, Colony Management & Infrastructure
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    // Tier 2 additions
-    {
-        id: 'steam_drill',
-        name: 'Steam-Powered Bore Drill',
-        description: 'High-pressure steam drills that dramatically improve mine output on rocky worlds.',
-        category: 'Engineering',
-        tier: 2,
-        cost: 700,
-        prerequisites: ['bessemer_process'],
-        effects: [{ type: 'mining_rate', value: 0.25 }],
-    },
-    {
-        id: 'fuel_distillation',
-        name: 'Petroleum Distillation',
-        description: 'Refined fuel processing for early rocket engines. Reduces fuel costs.',
+        id: 'synthetic_ambergris',
+        name: 'Synthetic Ambergris Crystallization',
+        description: 'Laboratory-grown Ambergris reduces dependency on natural deposits and improves efficiency.',
         category: 'Power',
-        tier: 2,
-        cost: 500,
-        prerequisites: ['aetheric_dynamo'],
-        effects: [{ type: 'fuel_efficiency', value: 0.1 }],
-    },
-    {
-        id: 'colonial_administration',
-        name: 'Colonial Administration',
-        description: 'Bureaucratic frameworks for managing far-flung settlements. +10% colony infrastructure growth.',
-        category: 'Biology',
-        tier: 2,
-        cost: 800,
-        prerequisites: ['sanitation_systems'],
-        effects: [{ type: 'infra_growth', value: 0.10 }],
-    },
-
-    // Tier 3 additions
-    {
-        id: 'deep_core_mining',
-        name: 'Deep Core Mining',
-        description: 'Techniques for extracting minerals from planetary mantles. +30% mining rate.',
-        category: 'Engineering',
-        tier: 3,
-        cost: 1800,
-        prerequisites: ['steam_drill', 'clockwork_fission'],
-        effects: [{ type: 'mining_rate', value: 0.30 }],
-    },
-    {
-        id: 'prefab_habitats',
-        name: 'Prefabricated Habitats',
-        description: 'Mass-produced colony modules accelerate settlement construction.',
-        category: 'Engineering',
-        tier: 3,
-        cost: 1500,
-        prerequisites: ['industrial_chemistry'],
-        effects: [{ type: 'construction_speed', value: 0.25 }],
-    },
-    {
-        id: 'clockwork_surveyor',
-        name: 'Clockwork Geological Surveyor',
-        description: 'Automated mineral detection systems double survey accuracy and reveal deeper deposits.',
-        category: 'Computation',
-        tier: 3,
-        cost: 1600,
-        prerequisites: ['telegraph_networks'],
-        effects: [{ type: 'survey_accuracy', value: 2.0 }],
-    },
-    {
-        id: 'recycling_furnaces',
-        name: 'Recycling Furnaces',
-        description: 'Recover minerals from waste production. Reduces mineral costs by 15%.',
-        category: 'Engineering',
-        tier: 3,
-        cost: 1400,
-        prerequisites: ['bessemer_process', 'industrial_chemistry'],
-        effects: [{ type: 'mineral_cost_reduction', value: 0.15 }],
-    },
-
-    // Tier 4 additions
-    {
-        id: 'ambergris_extraction',
-        name: 'Ambergris Extraction Engines',
-        description: 'Specialized Ambergris-tuned extractors that double mining output from all deposits.',
-        category: 'Geology',
-        tier: 4,
-        cost: 5500,
-        prerequisites: ['deep_core_mining', 'ambergris_theory'],
-        effects: [{ type: 'mining_rate', value: 0.50 }],
-    },
-    {
-        id: 'pressurized_domes',
-        name: 'Pressurized Colony Domes',
-        description: 'Enable colonization of hostile worlds with thin or toxic atmospheres.',
-        category: 'Engineering',
-        tier: 4,
-        cost: 4500,
-        prerequisites: ['prefab_habitats', 'ambergris_theory'],
-        effects: [{ type: 'hostile_colony', value: 1 }],
-    },
-    {
-        id: 'population_management',
-        name: 'Population Management Systems',
-        description: 'Analytical engine-driven logistics for urban planning. +20% population capacity.',
-        category: 'Biology',
-        tier: 4,
-        cost: 4000,
-        prerequisites: ['gene_alchemy'],
-        effects: [{ type: 'population_cap', value: 0.20 }],
-    },
-
-    // Tier 5 additions
-    {
-        id: 'zero_g_refineries',
-        name: 'Zero-G Refineries',
-        description: 'Orbital mineral processing facilities that extract trace elements from gas giants.',
-        category: 'Geology',
         tier: 5,
-        cost: 14000,
-        prerequisites: ['ambergris_extraction', 'ambergris_drives'],
-        effects: [{ type: 'mining_rate', value: 0.75 }],
+        cost: 3200000,
+        prerequisites: ['antimatter_forge'],
+        effects: [{ type: 'fuel_efficiency', value: 0.3 }],
     },
     {
-        id: 'autonomous_factories',
-        name: 'Autonomous Clockwork Factories',
-        description: 'Self-operating factories that produce materials without human oversight.',
-        category: 'Computation',
+        id: 'interstellar_hubs',
+        name: 'Deep Space Navigation Hubs',
+        description: 'Massive orbital beacons that coordination fleet movements across the stars.',
+        category: 'Astrogation',
         tier: 5,
-        cost: 15000,
-        prerequisites: ['difference_engine_mk3', 'ambergris_drives'],
-        effects: [{ type: 'factory_output', value: 0.5 }],
+        cost: 2800000,
+        prerequisites: ['jump_lane_stabilization'],
+        effects: [{ type: 'survey_accuracy', value: 1.0 }],
+    },
+    {
+        id: 'planetary_logistics_grid',
+        name: 'Integrated Planetary Logistics',
+        description: 'Global-scale automated transport networks that maximize colony throughput.',
+        category: 'Logistics',
+        tier: 5,
+        cost: 2400000,
+        prerequisites: ['high_capacity_bays', 'difference_engine_mk3'],
+        effects: [{ type: 'load_speed', value: 0.5 }],
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ERA VI: RESONATED SOCIETY (Tier 6)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    {
+        id: 'aetheric_neural_links',
+        name: 'Aetheric Neural Links',
+        description: 'Interfacing scientist minds with analytical engines to accelerate discovery.',
+        category: 'Computation',
+        tier: 6,
+        cost: 12000000,
+        prerequisites: ['jump_calculus'],
+        effects: [{ type: 'research_rate', value: 0.5 }],
+    },
+    {
+        id: 'subspace_cartography',
+        name: 'Sub-Space Cartography',
+        description: 'Real-time monitoring of jump lane vibrations enables precise fleet tracking.',
+        category: 'Astrogation',
+        tier: 6,
+        cost: 15000000,
+        prerequisites: ['interstellar_hubs'],
+        effects: [{ type: 'survey_range', value: 5.0 }],
+    },
+    {
+        id: 'quantum_inventory_tracking',
+        name: 'Quantum Inventory Tracking',
+        description: 'Every mineral atom is tracked in real-time, eliminating loss and waste during transfer.',
+        category: 'Logistics',
+        tier: 6,
+        cost: 10000000,
+        prerequisites: ['planetary_logistics_grid'],
+        effects: [{ type: 'mineral_cost_reduction', value: 0.2 }],
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ERA VII: TRANS-AETHERIC ENGINEERING (Tier 7)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    {
+        id: 'void_fold_engines',
+        name: 'Void-Fold Engines',
+        description: 'Near-instantaneous transit between star systems by folding space-time.',
+        category: 'Power',
+        tier: 7,
+        cost: 65000000,
+        prerequisites: ['antimatter_forge', 'subspace_cartography'],
+        effects: [{ type: 'jump_efficiency', value: 0.5 }],
+    },
+    {
+        id: 'trans_planetary_pipelines',
+        name: 'Trans-Planetary Pipelines',
+        description: 'Massive surface-to-orbit mineral lifters capable of moving entire mountains hourly.',
+        category: 'Logistics',
+        tier: 7,
+        cost: 52000000,
+        prerequisites: ['quantum_inventory_tracking'],
+        effects: [{ type: 'load_speed', value: 1.0 }],
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ERA VIII: STELLAR CONSCIOUSNESS (Tier 8)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    {
+        id: 'ai_core_governors',
+        name: 'Aetheric Intelligence Governors',
+        description: 'Fully autonomous planetary management cores with 100% decision efficiency.',
+        category: 'Computation',
+        tier: 8,
+        cost: 250000000,
+        prerequisites: ['aetheric_neural_links'],
+        effects: [{ type: 'factory_output', value: 1.0 }],
+    },
+    {
+        id: 'teleportation_logistics',
+        name: 'Resonant Teleportation',
+        description: 'Instantaneous cargo transfer between any two points in a star system.',
+        category: 'Logistics',
+        tier: 8,
+        cost: 380000000,
+        prerequisites: ['trans_planetary_pipelines'],
+        effects: [{ type: 'load_speed', value: 10.0 }],
     },
 ];
 
 export const TECH_BY_ID: Record<string, Technology> = Object.fromEntries(TECH_TREE.map(t => [t.id, t]));
+
+export function getEmpireTechBonuses(completedTechs: string[]): TechBonuses {
+    const bonuses: TechBonuses = {};
+    completedTechs.forEach(techId => {
+        const tech = TECH_BY_ID[techId];
+        if (tech) {
+            tech.effects.forEach(effect => {
+                bonuses[effect.type] = (bonuses[effect.type] || 0) + effect.value;
+            });
+        }
+    });
+    return bonuses;
+}
 
 export const TECH_CATEGORIES: TechCategory[] = [
     'Computation',
@@ -541,6 +617,8 @@ export function tickResearch(empire: Empire, dt: number): GameEvent[] {
     // Base RP per lab (could be moved to constants)
     const BASE_RP_PER_LAB = 20;
 
+    const empireBonuses = getEmpireTechBonuses(research.completedTechs);
+
     // We use a traditional for loop to avoid issues with splice while iterating
     for (let i = research.activeProjects.length - 1; i >= 0; i--) {
         const project = research.activeProjects[i];
@@ -553,13 +631,20 @@ export function tickResearch(empire: Empire, dt: number): GameEvent[] {
         let bonus = 1.0;
         if (scientist) {
             const levelBonus = scientist.level * 0.05;
-            const specBonus = (scientist.specialization === tech.category) ? scientist.level * 0.10 : 0;
+
+            // Base specialization bonus is 10%, can be increased by research
+            const specMultiplier = 0.10 + (empireBonuses['officer_specialization_bonus'] || 0);
+            const specBonus = (scientist.specialization === tech.category) ? scientist.level * specMultiplier : 0;
+
             bonus += levelBonus + specBonus;
 
             // Apply trait bonuses (e.g., Visionary)
             const traitBonus = (scientist.bonuses['research_rate'] || 0);
             bonus += traitBonus;
         }
+
+        // Apply empire-wide research rate bonuses
+        bonus += (empireBonuses['research_rate'] || 0);
 
         const projectRate = (project.labs * BASE_RP_PER_LAB) * bonus;
         project.investedPoints += projectRate * (dt / 86400);

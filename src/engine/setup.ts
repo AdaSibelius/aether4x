@@ -4,6 +4,7 @@ import { generateRealSpaceGalaxy } from './realspace';
 import { createOfficer, generateCompanyName } from './officers';
 import { getPlanetPosition } from './fleets';
 import { createStartingDesigns } from './ships';
+import { getEmpireTechBonuses } from './research';
 import { generateId } from '@/utils/id';
 import { RNG } from '@/utils/rng';
 import { BALANCING } from './constants';
@@ -136,18 +137,19 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
     }
 
     // 4. Starting Personnel
-    const governor = createOfficer('Governor', rng.next() * 1000000);
+    const startBonuses = getEmpireTechBonuses(playerEmpire.research.completedTechs);
+    const governor = createOfficer('Governor', startBonuses, rng.next() * 1000000);
     const scientists = [
-        createOfficer('Scientist', rng.next() * 1000000),
-        createOfficer('Scientist', rng.next() * 1000000),
-        createOfficer('Scientist', rng.next() * 1000000),
+        createOfficer('Scientist', startBonuses, rng.next() * 1000000),
+        createOfficer('Scientist', startBonuses, rng.next() * 1000000),
+        createOfficer('Scientist', startBonuses, rng.next() * 1000000),
     ];
     const engineers = [
-        createOfficer('Engineer', rng.next() * 1000000),
-        createOfficer('Engineer', rng.next() * 1000000),
+        createOfficer('Engineer', startBonuses, rng.next() * 1000000),
+        createOfficer('Engineer', startBonuses, rng.next() * 1000000),
     ];
-    const admiral = createOfficer('Admiral', rng.next() * 1000000);
-    const startingCEOs = Array.from({ length: 5 }, () => createOfficer('CEO', rng.next() * 1000000));
+    const admiral = createOfficer('Admiral', startBonuses, rng.next() * 1000000);
+    const startingCEOs = Array.from({ length: 5 }, () => createOfficer('CEO', startBonuses, rng.next() * 1000000));
 
     governor.assignedTo = homeColony.id;
     homeColony.governorId = governor.id;

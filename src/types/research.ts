@@ -24,6 +24,10 @@ export interface TechEffect {
     value: number;
 }
 
+export interface TechBonuses {
+    [key: string]: number;
+}
+
 export interface ResearchProject {
     id: string;
     techId: string;

@@ -150,6 +150,111 @@
     padding: 8px;
 }
 
+.treeScrollContainer {
+    flex: 1;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    position: relative;
+}
+
+.treeSvg {
+    display: block;
+    min-width: 100%;
+}
+
+.treeNodeCard {
+    width: 240px;
+    height: 120px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+    color: var(--text-primary);
+}
+
+.treeNodeCard:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+    box-shadow: var(--glow-blue);
+}
+
+.nodeDone .treeNodeCard {
+    border-color: var(--accent-green);
+    background: rgba(105, 240, 174, 0.05);
+}
+
+.nodeAvailable .treeNodeCard {
+    border-color: var(--accent-gold);
+    background: rgba(255, 213, 79, 0.02);
+}
+
+.nodeActive .treeNodeCard {
+    border-color: var(--accent-blue);
+    background: var(--bg-selected);
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+}
+
+.nodeLocked .treeNodeCard {
+    opacity: 0.5;
+    background: #000;
+}
+
+.nodeCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2px;
+}
+
+.nodeCardName {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.nodeCardCost {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0.8;
+}
+
+.nodeCardDesc {
+    font-size: 10px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.nodeCardEffects {
+    margin-top: auto;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.connector {
+    fill: none;
+    stroke-width: 2px;
+    transition: all 0.3s ease;
+}
+
+.nodeBox {
+    /* Kept for marker or fallback */
+    fill: none;
+}
+
 .projectTop {
     display: flex;
     justify-content: space-between;
