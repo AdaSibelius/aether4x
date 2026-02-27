@@ -4,7 +4,7 @@ import DebugOverlay from "@/components/Debug/DebugOverlay";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Nebula4X — Space Strategy",
+  title: "Aether 4x — Space Strategy",
   description: "A 4X space strategy game inspired by Aurora 4X",
 };
 

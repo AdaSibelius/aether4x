@@ -507,7 +507,7 @@ export const useGameStore = create<GameStore>()(
             }
         }),
         {
-            name: 'nebula4x-game',
+            name: 'aether-4x-game',
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({ game: state.game, snapshots: state.snapshots }),
         }

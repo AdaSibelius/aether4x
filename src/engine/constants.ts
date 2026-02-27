@@ -1,6 +1,6 @@
 /**
  * EPIC_BALANCING_CONSTANTS
- * Centralized game balance parameters for Nebula4X.
+ * Centralized game balance parameters for Aether 4x.
  * Adjusting these values will affect the global economy and production speed.
  */
 

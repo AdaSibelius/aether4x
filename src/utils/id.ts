@@ -1,5 +1,5 @@
 /**
- * Standard ID generation for the Nebula4X codebase.
+ * Standard ID generation for the Aether 4x codebase.
  * Uses a combination of timestamp and random characters for collision resistance.
  */
 export function generateId(prefix: string): string {
