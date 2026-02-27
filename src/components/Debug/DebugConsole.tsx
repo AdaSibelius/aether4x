@@ -24,7 +24,7 @@ export default function DebugConsole() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            (window as any).nebulaAPI = {
+            (window as any).aetherAPI = {
                 getState: () => useGameStore.getState().game,
                 getEntity: (type: string, id: string) => {
                     const game = useGameStore.getState().game;
@@ -219,7 +219,7 @@ export default function DebugConsole() {
                                         </div>
                                     </div>
                                     <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-muted)' }}>
-                                        Full structural diff available in window.nebulaAPI.diff(a, b)
+                                        Full structural diff available in window.aetherAPI.diff(a, b)
                                     </div>
                                 </div>
                             )}

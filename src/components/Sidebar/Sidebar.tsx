@@ -31,7 +31,7 @@ export default function Sidebar() {
         <aside className={styles.sidebar}>
             {/* Logo */}
             <div className={styles.logo}>
-                <span className={styles.logoText}>NEBULA</span>
+                <span className={styles.logoText}>AETHER</span>
                 <span className={styles.logo4x}>4X</span>
             </div>
 

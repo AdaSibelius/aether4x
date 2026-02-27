@@ -69,7 +69,7 @@ function MainMenu() {
       <div className={styles.menuCard}>
         {/* Title */}
         <div className={styles.menuTitle}>
-          <span className={styles.menuTitleMain}>NEBULA</span>
+          <span className={styles.menuTitleMain}>AETHER</span>
           <span className={styles.menuTitleSub}>4X</span>
         </div>
         <div className={styles.menuTagline}>A space strategy experience</div>
