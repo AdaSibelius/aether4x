@@ -8,7 +8,7 @@ import { getPlanetPosition } from './fleets';
  * Handles civilian economy and trade demand generation.
  * @intent Orchestrates colony-level supply/demand signals to drive physical trade.
  */
-export function tickCivilianEconomy(next: GameState, empire: Empire, dt: number): GameEvent[] {
+export function tickCivilianEconomy(next: GameState, empire: Empire, dt: number, rng: RNG): GameEvent[] {
     const events: GameEvent[] = [];
     const empireColonies = Object.values(next.colonies).filter(c => c.empireId === empire.id);
 
@@ -29,7 +29,7 @@ export function tickCivilianEconomy(next: GameState, empire: Empire, dt: number)
                 // Instead, we just establish/update the trade route signal.
                 // tickCorporateLogistics will use these routes to task REAL fleets.
 
-                const routeId = generateId('route');
+                const routeId = generateId('route', rng);
                 let route = empire.tradeRoutes?.find(r => r.sourceColonyId === supplier.id && r.targetColonyId === colony.id && r.resource === res);
                 if (!route) {
                     route = {

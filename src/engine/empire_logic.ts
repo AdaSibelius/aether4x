@@ -19,7 +19,7 @@ export function tickEmpire(state: GameState, empire: Empire, rng: RNG, dt: numbe
     recordEmpireHistory(state, empire, isSnapshotTick);
 
     // 2. Research & Development
-    events.push(...tickResearch(empire, dt));
+    events.push(...tickResearch(empire, dt, rng));
 
     // 3. Planetary Operations (Colonies)
     const empireColonies = Object.values(state.colonies).filter(c => c.empireId === empire.id);
@@ -30,7 +30,7 @@ export function tickEmpire(state: GameState, empire: Empire, rng: RNG, dt: numbe
     // 4. Civilian Economy & Population Migration
     // @intent generateColonyResourceDemand must run before economy tick to set physical signals.
     generateColonyResourceDemand(state, empire);
-    events.push(...tickCivilianEconomy(state, empire, dt));
+    events.push(...tickCivilianEconomy(state, empire, dt, rng));
     tickCivilianMigration(state, empire, rng);
 
     // 5. Corporate Sector & Leadership

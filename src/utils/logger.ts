@@ -9,7 +9,7 @@ class SimLogger {
         console.log(`[SimLogger] Trace mode: ${enabled ? 'ENABLED' : 'DISABLED'}`);
     }
 
-    static log(channel: LogChannel, level: LogLevel, message: string, data?: any) {
+    static log(channel: LogChannel, level: LogLevel, message: string, data?: unknown) {
         if (!this.isTraceEnabled && level === 'DEBUG') return;
 
         const timestamp = new Date().toISOString().split('T')[1].split('Z')[0];
@@ -17,29 +17,29 @@ class SimLogger {
 
         switch (level) {
             case 'ERROR':
-                console.error(prefix, message, data || '');
+                console.error(prefix, message, (data as string) || '');
                 break;
             case 'WARN':
-                console.warn(prefix, message, data || '');
+                console.warn(prefix, message, (data as string) || '');
                 break;
             default:
-                console.log(prefix, message, data || '');
+                console.log(prefix, message, (data as string) || '');
         }
     }
 
-    static debug(channel: LogChannel, message: string, data?: any) {
+    static debug(channel: LogChannel, message: string, data?: unknown) {
         this.log(channel, 'DEBUG', message, data);
     }
 
-    static info(channel: LogChannel, message: string, data?: any) {
+    static info(channel: LogChannel, message: string, data?: unknown) {
         this.log(channel, 'INFO', message, data);
     }
 
-    static warn(channel: LogChannel, message: string, data?: any) {
+    static warn(channel: LogChannel, message: string, data?: unknown) {
         this.log(channel, 'WARN', message, data);
     }
 
-    static error(channel: LogChannel, message: string, data?: any) {
+    static error(channel: LogChannel, message: string, data?: unknown) {
         this.log(channel, 'ERROR', message, data);
     }
 }

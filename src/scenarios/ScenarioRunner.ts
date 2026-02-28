@@ -14,11 +14,12 @@ export class ScenarioRunner {
                 SimLogger.error('SYSTEM', `Scenario ${scenario.name} FAILED: ${result.message}`);
             }
             return result;
-        } catch (error: any) {
-            SimLogger.error('SYSTEM', `Scenario ${scenario.name} CRASHED: ${error.message}`);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            SimLogger.error('SYSTEM', `Scenario ${scenario.name} CRASHED: ${msg}`);
             return {
                 success: false,
-                message: `Scenario crash: ${error.message}`,
+                message: `Scenario crash: ${msg}`,
                 metrics: {}
             };
         }

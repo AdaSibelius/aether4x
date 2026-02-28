@@ -24,7 +24,12 @@ export function advanceTick(state: GameState): GameState {
     next.turn += dt;
     next.date = new Date(new Date(next.date).getTime() + dt * 1000);
 
-    const rng = new RNG((next.initialSeed || next.seed) || 0 + next.turn);
+    /**
+     * Simulation Contract: All randomness in the tick cycle MUST derive from this seeded RNG.
+     * The seed is derived from the initial game seed + the total elapsed turn time, 
+     * ensuring identical replays from the same starting state.
+     */
+    const rng = new RNG((next.initialSeed || 0) + next.turn);
 
     // 2. Snapshot Logic
     const SNAPSHOT_INTERVAL = 86400 * 30;
