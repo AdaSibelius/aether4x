@@ -1,6 +1,7 @@
 'use client';
 import type { GameState, Empire, Colony, EmpireSnapshot } from '@/types';
 import { BALANCING } from './constants';
+import { createExternalAccount, createTreasuryAccount, transferWithLedger } from './economy_ledger';
 
 export interface BudgetBreakdown {
     taxes: number;
@@ -131,7 +132,21 @@ export function tickEmpireFinances(next: GameState, empire: Empire, dt: number):
         }
     }
 
-    empire.treasury += totalTax - totalMaint;
+    const treasury = createTreasuryAccount(empire);
+    transferWithLedger({
+        state: next,
+        source: createExternalAccount(`system:${empire.id}:tax-revenue`),
+        sink: treasury,
+        amount: totalTax,
+        reason: `Empire tax inflow (${days.toFixed(2)} days)`,
+    });
+    transferWithLedger({
+        state: next,
+        source: treasury,
+        sink: createExternalAccount(`system:${empire.id}:facility-maintenance`),
+        amount: totalMaint,
+        reason: `Empire maintenance outflow (${days.toFixed(2)} days)`,
+    });
 }
 
 export function recordEmpireHistory(next: GameState, empire: Empire, isSnapshotTick: boolean): void {

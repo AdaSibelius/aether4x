@@ -17,6 +17,19 @@ export interface GameStats {
     totalConsumed: Record<string, number>;
     totalConverted: Record<string, number>; // e.g., Aether to Fuel
     cashflowLedger?: CashflowEntry[];
+    monetaryLedger?: MonetaryTransferEntry[];
+}
+
+export type MonetaryAccountType = 'treasury' | 'colonyPrivateWealth' | 'companyWealth' | 'external';
+
+export interface MonetaryTransferEntry {
+    source: string;
+    sink: string;
+    sourceType: MonetaryAccountType;
+    sinkType: MonetaryAccountType;
+    amount: number;
+    reason: string;
+    tick: number;
 }
 
 export interface CashflowEntry {
