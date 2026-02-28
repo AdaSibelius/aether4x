@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:sims": "tsx src/scenarios/ExpansionTest.ts",
-    "test:regression": "tsx src/scripts/verify_determinism.ts"
+    "test:determinism": "tsx src/scripts/verify_determinism.ts",
+    "test:logistics": "tsx src/scenarios/run.ts LogisticsValidation 365 12345"
   },
   "dependencies": {
     "next": "16.1.6",

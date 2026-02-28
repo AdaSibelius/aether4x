@@ -182,7 +182,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 <div className={styles.colonyBadge}>{COLONY_TYPE_ICON[colony.colonyType]} {colony.colonyType}</div>
             </div>
 
-            {planet && !canHostBuildings(planet as any) && (
+            {planet && !canHostBuildings(planet) && (
                 <div className="alert alert-warning" style={{ margin: '0 20px 20px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span>⚠️</span>
                     <div>
@@ -456,7 +456,11 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
 
 // ─── Labor Report ─────────────────────────────────────────────────────────────
 
-function LaborReport({ report, staffing, population }: { report: any; staffing: number; population: number }) {
+function LaborReport({ report, staffing, population }: {
+    report: ReturnType<typeof calcEffectiveRates>['laborReport'];
+    staffing: number;
+    population: number;
+}) {
     if (!report) return null;
 
     const staffingColor = staffing >= 1.0 ? 'var(--accent-green)' : staffing > 0.7 ? 'var(--accent-gold)' : 'var(--accent-red)';
@@ -473,7 +477,7 @@ function LaborReport({ report, staffing, population }: { report: any; staffing: 
         { name: 'Reserve', value: report.unemployed || 0, color: '#9b9b9b' },
     ].filter(s => s.value > 0);
 
-    const CustomTooltip = ({ active, payload }: any) => {
+    const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
         if (active && payload && payload.length) {
             return (
                 <div style={{
@@ -614,7 +618,7 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
     };
 
     const buildAction = (type: ProductionItemType) => {
-        const isAllowed = planet ? canHostBuildings(planet as any) : true;
+        const isAllowed = planet ? canHostBuildings(planet) : true;
         const isDistillery = type === 'AethericDistillery';
         if (!isAllowed && !isDistillery) return null;
 
