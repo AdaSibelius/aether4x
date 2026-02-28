@@ -4,6 +4,7 @@ import { useUIStore } from '@/store/uiStore';
 import { BALANCING } from '@/engine/constants';
 import { SurfaceTab, AtmosphereTab, PlanetVisualizer } from '@/components/SharedTabs/SharedTabs';
 import { RosterShell, SidebarSection, RosterGroup, RosterItem, MainArea, NestedList } from '@/components/Roster/Roster';
+import type { Planet } from '@/types';
 import styles from './CelestialBodiesView.module.css';
 
 type Tab = 'Surface' | 'Atmosphere';
@@ -34,7 +35,7 @@ export default function CelestialBodiesView() {
     }
 
     // Helper to find any body (planet or moon) by ID
-    const findBodyById = (id: string | null): any => {
+    const findBodyById = (id: string | null): Planet | null => {
         if (!id || !star) return null;
         for (const p of star.planets) {
             if (p.id === id) return p;
@@ -64,12 +65,12 @@ export default function CelestialBodiesView() {
         if (!sortConfig) return 0;
         const { key, direction } = sortConfig;
 
-        let aVal: any;
-        let bVal: any;
+        let aVal: string | number;
+        let bVal: string | number;
 
         if (key === 'name' || key === 'bodyType' || key === 'atmosphere') {
-            aVal = a[key as keyof typeof a];
-            bVal = b[key as keyof typeof b];
+            aVal = a[key as keyof Planet] as string | number;
+            bVal = b[key as keyof Planet] as string | number;
         } else {
             aVal = a.minerals.find(m => m.name === key)?.amount || 0;
             bVal = b.minerals.find(m => m.name === key)?.amount || 0;
@@ -119,10 +120,10 @@ export default function CelestialBodiesView() {
                                     id: star.id,
                                     name: star.name,
                                     type: 'Star',
-                                    subtype: star.spectralType as any,
-                                    bodyType: star.spectralType as any,
+                                    subtype: 'MainSequence',
+                                    bodyType: 'MainSequence',
                                     atmosphere: 'None',
-                                } as any}
+                                } as Planet}
                                 compact
                             />
                         }
@@ -196,7 +197,7 @@ export default function CelestialBodiesView() {
 
             <MainArea
                 title={isStarSelected ? star.name : (selectedPlanet?.name || 'No Object Selected')}
-                subtitle={isStarSelected ? `Primary Star · ${star.spectralType} Type` : selectedPlanet && `${selectedPlanet.type} · ${selectedPlanet.subtype}`}
+                subtitle={isStarSelected ? `Primary Star · ${star.spectralType} Type` : (selectedPlanet ? `${selectedPlanet.type} · ${selectedPlanet.subtype}` : undefined)}
                 headerActions={
                     <div style={{ display: 'flex', gap: 8 }}>
                         {isStarSelected && (() => {
@@ -235,10 +236,10 @@ export default function CelestialBodiesView() {
                                 id: star.id,
                                 name: star.name,
                                 type: 'Star',
-                                subtype: star.spectralType as any,
-                                bodyType: star.spectralType as any,
+                                subtype: 'MainSequence',
+                                bodyType: 'MainSequence',
                                 atmosphere: 'None',
-                            } as any}
+                            } as Planet}
                         />
                     </div>
                 ) : (

@@ -1,7 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameState, TickLength, Fleet, ShipDesign, MiningTender, Colony, ProductionItem, Star, JumpPoint, Empire, Ship, Vec2, GamePhase, GameEvent, GameSnapshot, DiffReport } from '@/types';
+import type { GameState, TickLength, Fleet, ShipDesign, MiningTender, Colony, GameSnapshot, DiffReport } from '@/types';
 import { generateId } from '@/utils/id';
 import { BALANCING } from '@/engine/constants';
 import { setupNewGame } from '@/engine/setup';

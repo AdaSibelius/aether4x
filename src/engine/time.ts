@@ -29,7 +29,8 @@ export function advanceTick(state: GameState): GameState {
      * The seed is derived from the initial game seed + the total elapsed turn time, 
      * ensuring identical replays from the same starting state.
      */
-    const rng = new RNG((next.initialSeed || 0) + next.turn);
+    const baseSeed = next.initialSeed ?? next.seed ?? 0;
+    const rng = new RNG(baseSeed + next.turn);
 
     // 2. Snapshot Logic
     const SNAPSHOT_INTERVAL = 86400 * 30;

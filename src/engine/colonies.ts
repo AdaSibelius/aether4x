@@ -1,4 +1,4 @@
-import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent } from '@/types';
+import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent, Planet, GameStats } from '@/types';
 import { getGovernorBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
 import { BALANCING } from './constants';
@@ -97,7 +97,7 @@ function updateColonyPopulation(colony: Colony, policyGrowthMod: number, agricul
     }
 }
 
-function simulateColonyEconomy(colony: Colony, planet: any, infraEff: number, days: number): number {
+function simulateColonyEconomy(colony: Colony, planet: Planet | undefined, infraEff: number, days: number): number {
     const baseCommerceW = (colony.laborAllocation.commerce ?? 0) / 100 * colony.population;
     const habMod = planet ? getAtmosphereHabitabilityMod(planet) : 0.1;
 
@@ -123,7 +123,7 @@ function simulateColonyEconomy(colony: Colony, planet: any, infraEff: number, da
     return consumedGoods;
 }
 
-function processAetherDistillation(colony: Colony, stats: any, infraEff: number, days: number): number {
+function processAetherDistillation(colony: Colony, stats: GameStats, infraEff: number, days: number): number {
     const distillers = colony.aethericDistillery || 0;
     if (distillers <= 0) return 0;
 
@@ -169,7 +169,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         for (const seg of colony.populationSegments) {
             const speciesDef = SPECIES[seg.speciesId];
             if (speciesDef) {
-                seg.habitability = computeHabitability(speciesDef, planet as any);
+                seg.habitability = computeHabitability(speciesDef, planet);
             }
         }
     }

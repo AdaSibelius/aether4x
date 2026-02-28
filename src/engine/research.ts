@@ -811,8 +811,8 @@ export function getAvailableTechs(completedTechs: string[]): Technology[] {
 function makeEvent(type: EventType, message: string, rng: RNG, opts?: { starId?: string; planetId?: string; important?: boolean }): GameEvent {
     return {
         id: generateId('evt', rng),
-        turn: 0, // Placeholder, will be updated by caller if needed or used as relative
-        date: new Date().toISOString().split('T')[0],
+        turn: 0, // Placeholder, will be updated by caller if needed or used
+        date: '', // Will be stamped by time.ts
         type,
         message,
         important: opts?.important ?? false,
