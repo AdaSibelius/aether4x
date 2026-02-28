@@ -5,15 +5,11 @@ import { getAdmiralBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
 import { generateId } from '@/utils/id';
 import { BALANCING } from './constants';
+import { createColonyPrivateWealthAccount, createCompanyWealthAccount, createTreasuryAccount, MonetaryAccount, transferWithLedger } from './economy_ledger';
 
 type FeeCategory = 'MigrationFee' | 'TransportFee';
 
-interface FeePayerAccount {
-    key: string;
-    label: string;
-    getBalance: () => number;
-    debit: (amount: number) => void;
-}
+type FeePayerAccount = MonetaryAccount;
 
 function getIsoDate(date: Date): string {
     return date.toISOString().split('T')[0];
@@ -71,17 +67,24 @@ function settleFreightFee(params: {
         const contribution = Math.min(available, remaining);
         if (contribution <= 0) continue;
 
-        payer.debit(contribution);
-        company.wealth += contribution;
-        paid += contribution;
-        remaining -= contribution;
+        const settled = transferWithLedger({
+            state,
+            source: payer,
+            sink: createCompanyWealthAccount(company),
+            amount: contribution,
+            reason: `${category}: ${description}`,
+        });
+        if (settled <= 0) continue;
+
+        paid += settled;
+        remaining -= settled;
 
         recordCashflow(
             state,
             category,
             description,
-            contribution,
-            payer.label,
+            settled,
+            payer.id,
             `Company:${company.name} (${company.id})`,
             remaining > 0 ? 'Partial' : 'Settled',
             metadata
@@ -473,22 +476,13 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                                 description: `Migration fee for ${totalUnloaded.toFixed(2)}M colonists to ${colony.name}`,
                                 payerAccounts: [
                                     {
-                                        key: `colony:${colony.id}:privateWealth`,
-                                        label: `Colony:${colony.name} privateWealth`,
-                                        getBalance: () => colony.privateWealth || 0,
-                                        debit: (amount) => { colony.privateWealth = Math.max(0, (colony.privateWealth || 0) - amount); },
+                                        ...createColonyPrivateWealthAccount(colony),
                                     },
                                     ...(sourceColony ? [{
-                                        key: `colony:${sourceColony.id}:privateContractBudget`,
-                                        label: `Colony:${sourceColony.name} private contracts`,
-                                        getBalance: () => sourceColony.privateWealth || 0,
-                                        debit: (amount: number) => { sourceColony.privateWealth = Math.max(0, (sourceColony.privateWealth || 0) - amount); },
+                                        ...createColonyPrivateWealthAccount(sourceColony),
                                     }] : []),
                                     {
-                                        key: `empire:${empire.id}:treasurySubsidy`,
-                                        label: `Empire:${empire.name} treasury subsidy`,
-                                        getBalance: () => empire.treasury,
-                                        debit: (amount) => { empire.treasury = Math.max(0, empire.treasury - amount); },
+                                        ...createTreasuryAccount(empire),
                                     },
                                 ],
                                 metadata: {
@@ -635,22 +629,13 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                                 description: `Transport fee for ${Math.floor(totalUnloaded)}t of ${res} to ${colony.name}`,
                                 payerAccounts: [
                                     {
-                                        key: `colony:${colony.id}:privateWealth`,
-                                        label: `Colony:${colony.name} privateWealth`,
-                                        getBalance: () => colony.privateWealth || 0,
-                                        debit: (amount) => { colony.privateWealth = Math.max(0, (colony.privateWealth || 0) - amount); },
+                                        ...createColonyPrivateWealthAccount(colony),
                                     },
                                     ...(sourceColony ? [{
-                                        key: `colony:${sourceColony.id}:privateContractBudget`,
-                                        label: `Colony:${sourceColony.name} private contracts`,
-                                        getBalance: () => sourceColony.privateWealth || 0,
-                                        debit: (amount: number) => { sourceColony.privateWealth = Math.max(0, (sourceColony.privateWealth || 0) - amount); },
+                                        ...createColonyPrivateWealthAccount(sourceColony),
                                     }] : []),
                                     {
-                                        key: `empire:${empire.id}:treasurySubsidy`,
-                                        label: `Empire:${empire.name} treasury subsidy`,
-                                        getBalance: () => empire.treasury,
-                                        debit: (amount) => { empire.treasury = Math.max(0, empire.treasury - amount); },
+                                        ...createTreasuryAccount(empire),
                                     },
                                 ],
                                 metadata: {
