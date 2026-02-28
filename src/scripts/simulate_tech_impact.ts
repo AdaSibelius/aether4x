@@ -1,5 +1,5 @@
 import { setupNewGame } from '../engine/setup';
-import { tickGame } from '../engine/time';
+import { advanceTick } from '../engine/time';
 import { RNG } from '../utils/rng';
 import { getEmpireTechBonuses } from '../engine/research';
 import fs from 'fs';
@@ -11,9 +11,9 @@ import fs from 'fs';
 function simulateTechImpact() {
     const rng = new RNG(42);
     let state = setupNewGame('Player', 42);
+    state.tickLength = 86400; // 1 day ticks
     const durationYears = 50;
     const ticksPerDay = 1;
-    const dt = 86400 / ticksPerDay;
     const totalTicks = durationYears * 365 * ticksPerDay;
 
     console.log(`Starting 50-year Tech Impact Simulation...`);
@@ -22,7 +22,7 @@ function simulateTechImpact() {
     const snapshots: any[] = [];
 
     for (let i = 0; i < totalTicks; i++) {
-        state = tickGame(state, dt);
+        state = advanceTick(state);
 
         // Every year, log status
         if (i % (365 * ticksPerDay) === 0) {

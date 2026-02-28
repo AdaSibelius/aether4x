@@ -5,6 +5,7 @@ import { BALANCING } from './constants';
 import SimLogger from '@/utils/logger';
 import { generateId } from '@/utils/id';
 import { getPlanetPosition } from './fleets';
+import { RNG } from '@/utils/rng';
 import { SPECIES, computeHabitability, getSpeciesGrowthMod, getAtmosphereHabitabilityMod } from './species';
 
 export const COLONY_TYPE_BONUS: Record<string, Record<string, number>> = {
@@ -145,7 +146,7 @@ function processAetherDistillation(colony: Colony, stats: any, infraEff: number,
     return amountToProcess;
 }
 
-export function tickColony(colony: Colony, state: GameState, dt: number): GameEvent[] {
+export function tickColony(colony: Colony, state: GameState, dt: number, rng: RNG): GameEvent[] {
     const events: GameEvent[] = [];
     // Reset rates for the new tick
     colony.lastMineralRates = {};
@@ -270,7 +271,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
     if (colony.productionQueue.length > 0) {
         const item = colony.productionQueue[0];
         const totalBpNeeded = item.bpCostPerUnit * item.quantity;
-        let bpAppliedTarget = Math.min(bpPerDay * days, totalBpNeeded * (1 - item.progress / 100));
+        const bpAppliedTarget = Math.min(bpPerDay * days, totalBpNeeded * (1 - item.progress / 100));
 
         if (bpAppliedTarget > 0) {
             let fractionOfJob = bpAppliedTarget / totalBpNeeded;
@@ -306,7 +307,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
                 case 'GroundDefense': colony.groundDefenses += item.quantity; break;
                 case 'Spaceport': colony.spaceport = (colony.spaceport || 0) + 1; break;
                 case 'Infrastructure': colony.infrastructure = Math.min(100, colony.infrastructure + item.quantity * 5); break;
-                case 'Shipyard': colony.shipyards.push({ id: generateId('sy'), name: `${colony.name} Shipyard ${colony.shipyards.length + 1}`, slipways: 1, maxTonnage: 5000, activeBuilds: [] }); break;
+                case 'Shipyard': colony.shipyards.push({ id: generateId('sy', rng), name: `${colony.name} Shipyard ${colony.shipyards.length + 1}`, slipways: 1, maxTonnage: 5000, activeBuilds: [] }); break;
                 case 'ShipyardExpansion_Slipway':
                     if (colony.shipyards.length > 0) {
                         const targetShipyard = colony.shipyards.find(sy => sy.id === item.targetId);
@@ -358,7 +359,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
     // For now let's assume shipyards use their own internal capacity or a share of the colony's industrial base.
     // Calculate total available BP for shipyards: baseline per slipway + share of industrial BP
     const industrialShareBP = (bpPerDay ?? 0) * BALANCING.SHIPYARD_BP_ALLOCATION_FACTOR;
-    let remainingShipyardBP = industrialShareBP + (colony.shipyards.length * 5); // 5 BP per day base
+    const remainingShipyardBP = industrialShareBP + (colony.shipyards.length * 5); // 5 BP per day base
 
     for (const sy of colony.shipyards) {
         if (!sy.activeBuilds) sy.activeBuilds = []; // Repair state if missing
@@ -379,7 +380,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
                     continue;
                 }
                 const totalBpNeeded = item.bpCostPerUnit * item.quantity;
-                let bpToApply = Math.min(bpPerSlipway, Math.max(0.1, totalBpNeeded * (1 - item.progress / 100)));
+                const bpToApply = Math.min(bpPerSlipway, Math.max(0.1, totalBpNeeded * (1 - item.progress / 100)));
 
                 if (bpToApply > 0) {
                     let fractionOfJob = bpToApply / totalBpNeeded;
@@ -419,7 +420,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
                         const design = empire.designLibrary.find(d => d.id === item.designId);
                         if (design) {
                             for (let j = 0; j < item.quantity; j++) {
-                                const shipId = generateId('ship');
+                                const shipId = generateId('ship', rng);
                                 state.ships[shipId] = {
                                     id: shipId,
                                     name: `${design.name} ${String.fromCharCode(65 + (j % 26))}`,
@@ -449,8 +450,8 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
                                 }
 
                                 empire.fleets.push({
-                                    id: generateId('fleet'),
-                                    name: item.sourceCompanyId ? `${design.name} (Civilian)` : `${colony.name} Defense Flotilla ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`,
+                                    id: generateId('fleet', rng),
+                                    name: item.sourceCompanyId ? `${design.name} (Civilian)` : `${colony.name} Defense Flotilla ${String.fromCharCode(65 + Math.floor(rng.next() * 26))}`,
                                     empireId: empire.id,
                                     shipIds: [shipId],
                                     currentStarId: parentStar?.id || 'star_0',
@@ -507,7 +508,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
     colony.privateWealth = (colony.privateWealth || 0) + (consumedGoods * BALANCING.TRADE_GOOD_VALUE * 0.8);
 
     if ((colony.privateWealth || 0) > BALANCING.CIVILIAN_EXPANSION_THRESHOLD && colony.population > (colony.factories + colony.mines + colony.civilianFactories + colony.civilianMines) * 10) {
-        if (Math.random() > 0.5) { colony.civilianFactories += 1; } else { colony.civilianMines += 1; }
+        if (rng.next() > 0.5) { colony.civilianFactories += 1; } else { colony.civilianMines += 1; }
         colony.privateWealth -= BALANCING.CIVILIAN_EXPANSION_COST;
         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Civilian investment on ${colony.name} built a new facility.`, { important: false }));
     }

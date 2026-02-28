@@ -24,7 +24,7 @@ export function tickEmpire(state: GameState, empire: Empire, rng: RNG, dt: numbe
     // 3. Planetary Operations (Colonies)
     const empireColonies = Object.values(state.colonies).filter(c => c.empireId === empire.id);
     for (const colony of empireColonies) {
-        events.push(...tickColony(colony, state, dt));
+        events.push(...tickColony(colony, state, dt, rng));
     }
 
     // 4. Civilian Economy & Population Migration

@@ -1,8 +1,8 @@
 import { Star, JumpPoint } from './celestial';
+import { GamePhase, TickLength } from './base';
 import { Empire, MiningTender } from './empire';
 import { Ship } from './fleet';
 import { Colony } from './colony';
-import { Vec2, GamePhase, TickLength, GameEvent } from './base';
 
 export interface Galaxy {
     stars: Record<string, Star>;
@@ -33,4 +33,31 @@ export interface GameState {
     playerEmpireId: string;
     tickLength: TickLength;
     stats: GameStats;
+}
+export interface GameSnapshot {
+    id: string;
+    name: string;
+    turn: number;
+    date: Date;
+    gameState: GameState;
+}
+
+export interface DiffReport {
+    idA: string;
+    idB: string;
+    turnA: number;
+    turnB: number;
+    dateA: string;
+    dateB: string;
+    deltaPopulation: number;
+    deltaResources: number;
+    deltaValuation: number;
+}
+
+export interface AuditReport {
+    [resource: string]: {
+        current: number;
+        prod: number;
+        cons: number;
+    };
 }

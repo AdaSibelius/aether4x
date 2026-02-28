@@ -12,7 +12,10 @@ const SECTOR_COLORS: Record<CompanyType, string> = {
     'Transport': 'var(--accent-blue)',
     'Manufacturing': 'var(--accent-green)',
     'Agricultural': '#27ae60',
-    'Commercial': '#9b59b6'
+    'Commercial': '#9b59b6',
+    'AethericSiphon': '#af7ac5',
+    'DeepCoreMining': '#e67e22',
+    'Reclamation': '#1abc9c'
 };
 
 const SECTOR_ICONS: Record<CompanyType, string> = {
@@ -20,7 +23,10 @@ const SECTOR_ICONS: Record<CompanyType, string> = {
     'Transport': '🚀',
     'Manufacturing': '🏭',
     'Agricultural': '🌾',
-    'Commercial': '⚖️'
+    'Commercial': '⚖️',
+    'AethericSiphon': '🌀',
+    'DeepCoreMining': '🌋',
+    'Reclamation': '♻️'
 };
 
 export default function CorporateManager() {
@@ -34,7 +40,7 @@ export default function CorporateManager() {
     const companies = empire.companies || [];
 
     // Group companies by sector
-    const sectors: CompanyType[] = ['Extraction', 'Transport', 'Manufacturing', 'Agricultural', 'Commercial'];
+    const sectors: CompanyType[] = ['Extraction', 'Transport', 'Manufacturing', 'Agricultural', 'Commercial', 'AethericSiphon', 'DeepCoreMining', 'Reclamation'];
     const grouped = sectors.reduce((acc, s) => {
         const list = companies.filter(c => c.type === s);
         if (list.length > 0) acc[s] = list;

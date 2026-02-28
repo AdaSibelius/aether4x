@@ -1,4 +1,4 @@
-import { GameState } from '@/types';
+import { GameState, AuditReport } from '@/types';
 import { getGlobalMineralInventory } from '../debug';
 import SimLogger from '@/utils/logger';
 
@@ -17,15 +17,15 @@ export class AuditService {
 
             // For now, let's just log every 10 ticks for visibility if there's significant drift.
             if (state.turn % 10 === 0) {
-                // SimLogger.debug('AUDIT', `${res}: Current=${Math.floor(current)} | Net=${Math.floor(prod - cons)}`);
+                // SimLogger.debug('SYSTEM', `${res}: Current=${Math.floor(current)} | Net=${Math.floor(prod - cons)}`);
             }
         });
     }
 
-    static runLogisticsAudit(state: GameState): { success: boolean, report: any } {
+    static runLogisticsAudit(state: GameState): { success: boolean, report: AuditReport } {
         const inventory = getGlobalMineralInventory(state);
-        const report: any = {};
-        let success = true;
+        const report: AuditReport = {};
+        const success = true;
 
         Object.keys(inventory).forEach(res => {
             const prod = state.stats.totalProduced[res] || 0;

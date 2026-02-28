@@ -70,7 +70,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
 
     // 3. Create Home Colony
     const homeColony: Colony = {
-        id: generateId('colony'),
+        id: generateId('colony', rng),
         empireId: playerEmpireId,
         planetId: homePlanetId,
         name: realSpace ? 'Earth' : 'New Terra',
@@ -120,7 +120,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         researchLabs: 3,
         spaceport: 1,
         groundDefenses: 0,
-        shipyards: [{ id: generateId('sy'), name: 'Royal Orbital Yards', slipways: 1, maxTonnage: 100000, activeBuilds: [] }],
+        shipyards: [{ id: generateId('sy', rng), name: 'Royal Orbital Yards', slipways: 1, maxTonnage: 100000, activeBuilds: [] }],
         constructionOffices: 10,
         farms: realSpace ? 300 : 100,
         commercialCenters: 20,
@@ -129,6 +129,9 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         migrationMode: 'Stable',
         history: [],
         aethericDistillery: 5,
+        aethericSiphons: 0,
+        deepCoreExtractors: 0,
+        reclamationPlants: 0,
     };
 
     if (homePlanet) {
@@ -158,11 +161,12 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
     // 5. Initial Research
     playerEmpire.research.activeProjects = [
         {
-            id: generateId('prj'),
+            id: generateId('prj', rng),
             techId: 'rocket_propulsion',
             scientistId: scientists[0].id,
             labs: 3,
-            investedPoints: 0
+            investedPoints: 0,
+            priority: 1
         }
     ];
     scientists[0].assignedTo = playerEmpire.research.activeProjects[0].id;
@@ -179,13 +183,13 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         const name = generateCompanyName(rng, type);
         ceo.assignedTo = `company_${name}`;
 
-        const corpId = generateId('corp');
+        const corpId = generateId('corp', rng);
 
         // Spawn starting freighter for Transport company
         if (type === 'Transport') {
             const design = playerEmpire.designLibrary.find(d => d.id === 'design_freighter');
             if (design) {
-                const shipId = generateId('ship');
+                const shipId = generateId('ship', rng);
                 const ship: Ship = {
                     id: shipId,
                     name: `GSC ${design.name} Alpha`, // GSC for Grand Shipping Co (tradition)
@@ -201,7 +205,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
                 };
                 ships[shipId] = ship;
 
-                const fleetId = generateId('fleet');
+                const fleetId = generateId('fleet', rng);
                 const fleet: Fleet = {
                     id: fleetId,
                     name: `${name} Fleet #1`,
@@ -262,7 +266,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         };
         ships[shipId] = ship;
 
-        const fleetId = generateId('fleet');
+        const fleetId = generateId('fleet', rng);
         const fleet: Fleet = {
             id: fleetId,
             name: config.n,

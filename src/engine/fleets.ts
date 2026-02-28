@@ -553,7 +553,7 @@ function handleFleetMovement(fleet: Fleet, state: GameState, empire: Empire, dt:
     const days = dt / 86400;
     const fuelConsumed = fuelPerTick * days;
 
-    let outOfFuel = false;
+    const outOfFuel = false;
     for (const sid of fleet.shipIds) {
         const s = state.ships[sid];
         if (s) {

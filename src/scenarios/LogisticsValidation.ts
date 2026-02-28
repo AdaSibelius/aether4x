@@ -8,7 +8,7 @@ export const LogisticsValidation: Scenario = {
     name: 'Logistics Validation',
     description: 'Verifies physical trade loop and Conservation of Mass invariant across 10 years.',
     setup: (seed: number) => {
-        let state: GameState = setupNewGame("Mechanical Spring", seed, true);
+        const state: GameState = setupNewGame("Mechanical Spring", seed, true);
         state.tickLength = 86400; // 1 day ticks
 
         const earth = Object.values(state.colonies).find(c => c.name === 'Earth');
@@ -37,6 +37,7 @@ export const LogisticsValidation: Scenario = {
                 laborAllocation: { industry: 40, mining: 20, research: 10, construction: 10, agriculture: 10, commerce: 10 },
                 productionQueue: [{ id: 'init_port', type: 'Spaceport', name: 'Planetary Spaceport', quantity: 1, progress: 0, costPerUnit: { Iron: 500, Copper: 200 }, bpCostPerUnit: 3000 }],
                 factories: 0, mines: 0, civilianFactories: 0, civilianMines: 0, researchLabs: 0, spaceport: 0, shipyards: [], groundDefenses: 0, constructionOffices: 0, farms: 0, commercialCenters: 0, terraformProgress: 0, aethericDistillery: 0, logisticsHubs: 0,
+                aethericSiphons: 0, deepCoreExtractors: 0, reclamationPlants: 0,
                 migrationMode: 'Target',
                 privateWealth: 0,
                 history: []

@@ -180,7 +180,7 @@ export function generateCompanyName(rng: RNG, type: CompanyType): string {
 }
 
 function pickTraits(rng: RNG, role: OfficerRole, count: number): string[] {
-    let available = [...TRAITS];
+    const available = [...TRAITS];
     const picked: string[] = [];
 
     // Define roles that should ONLY get affinity traits

@@ -931,7 +931,7 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
                                             <button className="btn btn-danger btn-sm btn-icon" onClick={() => removeItem(item.id)} title="Remove">×</button>
                                         </div>
                                         {i === 0 && (() => {
-                                            let missingResources: string[] = [];
+                                            const missingResources: string[] = [];
                                             if (item.costPerUnit) {
                                                 const remainingFrac = 1 - (item.progress / 100);
                                                 for (const [res, cost] of Object.entries(item.costPerUnit)) {

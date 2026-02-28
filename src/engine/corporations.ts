@@ -73,7 +73,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
             const buildThreshold = 5000 / revBonus;
 
             if (homeColony && company.wealth > buildThreshold) {
-                let messageValue = '';
+                const messageValue = '';
                 if (company.wealth > buildThreshold) {
                     let messageValue = '';
 

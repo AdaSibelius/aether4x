@@ -66,6 +66,9 @@ async function runSimulation() {
             terraformProgress: 0,
             aethericDistillery: 0,
             logisticsHubs: 0,
+            aethericSiphons: 0,
+            deepCoreExtractors: 0,
+            reclamationPlants: 0,
             migrationMode: 'Target', // Set to Target for growth
             privateWealth: 0,
             history: []

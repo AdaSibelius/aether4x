@@ -12,21 +12,28 @@ import SimLogger from '@/utils/logger';
 
 export function advanceTick(state: GameState): GameState {
     SimLogger.info('SYSTEM', `Advancing tick: ${state.tickLength}s`);
-    const next = { ...state, empires: { ...state.empires }, ships: { ...state.ships }, colonies: { ...state.colonies } };
+
+    // 1. Initial State Preparation
+    const next = {
+        ...state,
+        empires: { ...state.empires },
+        ships: { ...state.ships },
+        colonies: { ...state.colonies }
+    };
     const dt = state.tickLength;
     next.turn += dt;
     next.date = new Date(new Date(next.date).getTime() + dt * 1000);
 
-    const rng = new RNG((next.initialSeed || next.seed) + next.turn);
+    const rng = new RNG((next.initialSeed || next.seed) || 0 + next.turn);
 
-    // Aether Harvesting
-    tickAetherHarvesting(next, dt);
-
-    // ── Granular History Recording (Every 30 days) ──
+    // 2. Snapshot Logic
     const SNAPSHOT_INTERVAL = 86400 * 30;
     const isSnapshotTick = Math.floor(next.turn / SNAPSHOT_INTERVAL) > Math.floor(state.turn / SNAPSHOT_INTERVAL);
 
-    for (const empire of Object.values(next.empires)) {
+    // 3. Phase: Empire & Institutional Logic
+    // This includes research, budgets, and national events.
+    for (const empireId in next.empires) {
+        const empire = { ...next.empires[empireId] };
         const events = tickEmpire(next, empire, rng, dt, isSnapshotTick);
 
         // Stamp turn on newly created events
@@ -39,29 +46,35 @@ export function advanceTick(state: GameState): GameState {
             ...events,
             ...empire.events.slice(0, 99), // keep last 100 events
         ];
+        next.empires[empireId] = empire;
     }
 
-    // Ship/fleet movement
+    // 4. Phase: Infrastructure & Harvesting
+    // Resources are extracted and processed before movement to ensure fuel/material availability.
+    // This call is now deduplicated.
+    tickAetherHarvesting(next, dt);
+
+    // 5. Phase: Movement & Physics
+    // Ships and fleets move based on their orders and physics.
     const shipEvents = tickFleets(next, dt, rng);
 
-    // Distribute ship events to the correct empire (tickFleets just returns flat events right now,
-    // we can stamp them and push to the empire that owns the fleet)
+    // 6. Phase: Event Distribution
+    // Distribute ship events to the correct empire logs.
     for (const evt of shipEvents) {
         evt.turn = next.turn;
         evt.date = next.date.toISOString().split('T')[0];
 
-        // Find which empire this event belongs to (for SystemExplored, it mentions the fleet)
-        // For simplicity, we can just push it to all, or broadcast. We'll just push to player for now
-        // if we can't figure it out, but realistically we need to pass empireId in the event.
-        if (next.empires[next.playerEmpireId]) {
-            next.empires[next.playerEmpireId].events.push(evt);
+        // Route to the empire that owns the relevant fleet/ship
+        const targetEmpireId = evt.empireId || next.playerEmpireId;
+        if (next.empires[targetEmpireId]) {
+            next.empires[targetEmpireId].events = [
+                evt,
+                ...next.empires[targetEmpireId].events.slice(0, 99)
+            ];
         }
     }
 
-    // Aether Harvesting
-    tickAetherHarvesting(next, dt);
-
-    // Audit resource consistency
+    // 7. Phase: Integrity & Audit
     AuditService.checkConservationOfMass(next);
 
     return next;

@@ -37,6 +37,7 @@ export interface GameEvent {
     message: string;
     starId?: string;
     planetId?: string;
+    empireId?: string;
     important: boolean;
 }
 

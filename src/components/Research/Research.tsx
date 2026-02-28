@@ -39,7 +39,8 @@ export default function Research() {
                 techId: selectedTech.id,
                 scientistId: selectedScientistId,
                 labs: labsToAssign,
-                investedPoints: 0
+                investedPoints: 0,
+                priority: 1
             };
 
             const updatedOfficers = empire.officers.map(o =>

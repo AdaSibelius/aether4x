@@ -1,12 +1,13 @@
 'use client';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameState, TickLength, Fleet, ShipDesign, MiningTender, Colony, ProductionItem } from '@/types';
+import type { GameState, TickLength, Fleet, ShipDesign, MiningTender, Colony, ProductionItem, Star, JumpPoint, Empire, Ship, Vec2, GamePhase, GameEvent, GameSnapshot, DiffReport } from '@/types';
 import { generateId } from '@/utils/id';
 import { BALANCING } from '@/engine/constants';
 import { setupNewGame } from '@/engine/setup';
 import { advanceTick } from '@/engine/time';
 import { useUIStore } from './uiStore';
+import SimLogger from '@/utils/logger';
 
 interface GameStore {
     game: GameState | null;
@@ -26,10 +27,11 @@ interface GameStore {
     transferShip: (empireId: string, fromFleetId: string, toFleetId: string, shipId: string) => void;
     splitFleet: (empireId: string, fleetId: string, shipId: string) => void;
     // Snapshot Actions
-    snapshots: { id: string; name: string; date: Date; turn: number }[];
-    createSnapshot: (name: string) => void;
+    snapshots: GameSnapshot[];
+    createSnapshot: (name?: string) => void;
     loadSnapshot: (id: string) => void;
     deleteSnapshot: (id: string) => void;
+    diffSnapshots: (idA: string, idB: string) => DiffReport | null;
     // Debug Actions
     debug: {
         addWealth: (amount: number) => void;
@@ -43,7 +45,6 @@ interface GameStore {
     };
     openMiningTender: (systemId: string) => void;
     establishColony: (planetId: string, name: string) => void;
-    diffSnapshots: (idA: string, idB: string) => any;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -215,34 +216,31 @@ export const useGameStore = create<GameStore>()(
 
             snapshots: [],
 
-            createSnapshot: (name: string) => {
+            createSnapshot: (name?: string) => {
                 const { game, snapshots } = get();
                 if (!game) return;
-                const id = `snap_${Date.now()}`;
-                const newSnapshot = {
-                    id,
-                    name,
-                    date: new Date(),
+                const newSnapshot: GameSnapshot = {
+                    id: generateId('snap'),
+                    name: name || `Snapshot ${snapshots.length + 1}`,
                     turn: game.turn,
+                    date: game.date,
                     gameState: structuredClone(game)
                 };
-                // We store the full state in a separate key to keep the main store slim if possible,
-                // but since we use Zustand persist, we'll just add it to the snapshots array for now.
-                // In a real app we might use IndexedDB for large states.
-                set({ snapshots: [...snapshots, newSnapshot as any] });
+                set({ snapshots: [...snapshots, newSnapshot] });
             },
 
             loadSnapshot: (id: string) => {
                 const { snapshots } = get();
-                const snap = snapshots.find((s: any) => s.id === id);
+                const snap = snapshots.find((s) => s.id === id);
                 if (snap) {
-                    set({ game: structuredClone((snap as any).gameState), isRunning: false });
+                    set({ game: structuredClone(snap.gameState), isRunning: false });
+                    SimLogger.info('SYSTEM', `Loaded snapshot ${id}`);
                 }
             },
 
             deleteSnapshot: (id: string) => {
                 const { snapshots } = get();
-                set({ snapshots: snapshots.filter((s: any) => s.id !== id) });
+                set({ snapshots: snapshots.filter((s) => s.id !== id) });
             },
 
             debug: {
@@ -301,7 +299,7 @@ export const useGameStore = create<GameStore>()(
                     let next = structuredClone(game);
                     // Force daily ticks (86400s) for precision during warp
                     const originalTL = next.tickLength;
-                    next.tickLength = 86400 as any;
+                    next.tickLength = 86400 as TickLength;
                     for (let i = 0; i < days; i++) {
                         next = advanceTick(next);
                     }
@@ -418,6 +416,10 @@ export const useGameStore = create<GameStore>()(
                     aethericDistillery: 0,
                     logisticsHubs: 0,
                     migrationMode: 'Stable',
+                    history: [],
+                    aethericSiphons: 0,
+                    deepCoreExtractors: 0,
+                    reclamationPlants: 0,
                     minerals: {
                         Iron: 600, // Enough to build the Spaceport (cost: 500)
                         Copper: 300,
@@ -425,7 +427,6 @@ export const useGameStore = create<GameStore>()(
                     },
                     demand: {},
                     privateWealth: 0,
-                    history: [],
                 };
 
                 // Queue the Spaceport project as requested by the user
@@ -446,7 +447,7 @@ export const useGameStore = create<GameStore>()(
                     const planet = star.planets.find(p => p.id === planetId);
                     if (planet) {
                         if (!planet.colonies) planet.colonies = [];
-                        planet.colonies.push(newColony as any);
+                        planet.colonies.push(newColony);
                         break;
                     }
                     for (const p of star.planets) {
@@ -454,7 +455,7 @@ export const useGameStore = create<GameStore>()(
                             const moon = p.moons.find(m => m.id === planetId);
                             if (moon) {
                                 if (!moon.colonies) moon.colonies = [];
-                                moon.colonies.push(newColony as any);
+                                moon.colonies.push(newColony);
                                 break;
                             }
                         }
@@ -465,44 +466,39 @@ export const useGameStore = create<GameStore>()(
                 useUIStore.getState().addNotification(`New colony established on ${name}. Construction of Planetary Spaceport initiated.`);
             },
 
-            diffSnapshots: (idA: string, idB: string) => {
+            diffSnapshots: (idA: string, idB: string): DiffReport | null => {
                 const { snapshots } = get();
                 const snapA = snapshots.find(s => s.id === idA);
                 const snapB = snapshots.find(s => s.id === idB);
                 if (!snapA || !snapB) return null;
 
-                const stateA = (snapA as any).gameState;
-                const stateB = (snapB as any).gameState;
-                const pId = stateA.playerEmpireId;
+                const stateA = snapA.gameState;
+                const stateB = snapB.gameState;
 
-                const getStats = (state: any) => {
-                    const empire = state.empires[pId];
-                    const colonies = Object.values(state.colonies) as any[];
-
-                    const totalPop = colonies.reduce((sum, c) => sum + (c.population || 0), 0);
-                    const totalMinerals = colonies.reduce((sum, c) => {
-                        return sum + Object.values(c.minerals || {}).reduce((mSum: number, m: any) => mSum + (m || 0), 0);
+                const getStats = (state: GameState) => {
+                    const pop = Object.values(state.colonies).reduce((sum, c) => sum + (c.population || 0), 0);
+                    const colonies = Object.values(state.colonies);
+                    const resources = colonies.reduce((sum, c) => {
+                        return sum + Object.values(c.minerals || {}).reduce((mSum: number, m) => mSum + (m || 0), 0);
                     }, 0);
 
-                    const fleetCount = empire?.fleets?.length || 0;
-                    const shipCount = Object.keys(state.ships || {}).length;
-                    const totalValuation = empire?.companies?.reduce((sum: number, c: any) => sum + (c.valuation || 0), 0) || 0;
-
-                    return { totalPop, totalMinerals, fleetCount, shipCount, totalValuation, treasury: empire?.treasury || 0, privateWealth: empire?.privateWealth || 0 };
+                    const empire = state.empires[state.playerEmpireId];
+                    const totalValuation = empire?.companies?.reduce((sum: number, c) => sum + (c.valuation || 0), 0) || 0;
+                    return { pop, resources, totalValuation };
                 };
 
                 const statsA = getStats(stateA);
                 const statsB = getStats(stateB);
 
                 return {
-                    turnDelta: stateB.turn - stateA.turn,
-                    treasury: statsB.treasury - statsA.treasury,
-                    privateWealth: statsB.privateWealth - statsA.privateWealth,
-                    popDelta: statsB.totalPop - statsA.totalPop,
-                    mineralDelta: statsB.totalMinerals - statsA.totalMinerals,
-                    fleetDelta: statsB.fleetCount - statsA.fleetCount,
-                    shipDelta: statsB.shipCount - statsA.shipCount,
-                    valuationDelta: statsB.totalValuation - statsA.totalValuation
+                    idA, idB,
+                    turnA: stateA.turn,
+                    turnB: stateB.turn,
+                    dateA: stateA.date.toISOString(),
+                    dateB: stateB.date.toISOString(),
+                    deltaPopulation: statsB.pop - statsA.pop,
+                    deltaResources: statsB.resources - statsA.resources,
+                    deltaValuation: statsB.totalValuation - statsA.totalValuation
                 };
             }
         }),
