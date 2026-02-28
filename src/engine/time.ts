@@ -25,7 +25,7 @@ export function advanceTick(state: GameState): GameState {
     next.date = new Date(new Date(next.date).getTime() + dt * 1000);
 
     const baseSeed = next.initialSeed ?? next.seed ?? 0;
-    const rng = new RNG(baseSeed + next.turn); // Determinism contract: stable base seed, with turn offset for a distinct stream per tick.
+    const rng = new RNG(baseSeed + next.turn); // Determinism: stable base seed reproduces runs; +turn gives each tick its own stream.
 
     // 2. Snapshot Logic
     const SNAPSHOT_INTERVAL = 86400 * 30;
