@@ -56,6 +56,32 @@ export interface GameStats {
     totalProduced: Record<string, number>;
     totalConsumed: Record<string, number>;
     totalConverted: Record<string, number>; // e.g., Aether to Fuel
+    cashflowLedger?: CashflowEntry[];
+    monetaryLedger?: MonetaryTransferEntry[];
+}
+
+export type MonetaryAccountType = 'treasury' | 'colonyPrivateWealth' | 'companyWealth' | 'external';
+
+export interface MonetaryTransferEntry {
+    source: string;
+    sink: string;
+    sourceType: MonetaryAccountType;
+    sinkType: MonetaryAccountType;
+    amount: number;
+    reason: string;
+    tick: number;
+}
+
+export interface CashflowEntry {
+    id: string;
+    date: string;
+    category: 'MigrationFee' | 'TransportFee';
+    description: string;
+    amount: number;
+    debitAccount: string;
+    creditAccount: string;
+    status: 'Settled' | 'Partial' | 'DebtRecorded';
+    metadata?: Record<string, string | number>;
 }
 
 export interface GameState {

@@ -145,7 +145,7 @@ export function tickEmpireFinances(next: GameState, empire: Empire, dt: number):
             treasuryAccount,
             budget.taxes,
             'TAX_COLLECTION',
-            { colonyId: colony.id, empireId: empire.id, shortfall: 0 },
+            { colonyId: colony.id, empireId: empire.id },
         );
         totalSettledTax += settled;
 

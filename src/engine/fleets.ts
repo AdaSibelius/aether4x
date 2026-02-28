@@ -10,7 +10,122 @@ import {
     createTreasuryAccount,
     createColonyPrivateWealthAccount,
     createCompanyAccount,
+    MonetaryAccount,
 } from './economy_ledger';
+
+type FeeCategory = 'MigrationFee' | 'TransportFee';
+type FeePayerAccount = MonetaryAccount;
+
+function getIsoDate(date: Date): string {
+    return date.toISOString().split('T')[0];
+}
+
+function recordCashflow(
+    state: GameState,
+    category: FeeCategory,
+    description: string,
+    amount: number,
+    debitAccount: string,
+    creditAccount: string,
+    status: 'Settled' | 'Partial' | 'DebtRecorded',
+    metadata?: Record<string, string | number>
+) {
+    if (!state.stats.cashflowLedger) state.stats.cashflowLedger = [];
+    state.stats.cashflowLedger.push({
+        id: generateId('cashflow', new RNG(state.turn + state.seed + state.stats.cashflowLedger.length + 1)),
+        date: getIsoDate(state.date),
+        category,
+        description,
+        amount,
+        debitAccount,
+        creditAccount,
+        status,
+        metadata,
+    });
+}
+
+/**
+ * Policy: fees are best-effort. We debit payer accounts in priority order
+ * (destination colony private wealth -> origin colony private contracts budget -> empire treasury subsidy).
+ * If funds are insufficient, we execute the service and pay the carrier partially, then record unpaid
+ * amount as debt in the shared cashflow ledger for later auditing.
+ */
+function settleFreightFee(params: {
+    state: GameState;
+    empire: Empire;
+    company: Empire['companies'][number];
+    fee: number;
+    category: FeeCategory;
+    description: string;
+    payerAccounts: FeePayerAccount[];
+    metadata?: Record<string, string | number>;
+}) {
+    const { state, empire, company, fee, category, description, payerAccounts, metadata } = params;
+    if (fee <= 0) return { paid: 0, unpaid: 0 };
+
+    let remaining = fee;
+    let paid = 0;
+
+    const companyAccount = createCompanyAccount(company);
+    const reason = category === 'MigrationFee' ? 'MIGRATION_FEE' : 'FREIGHT_FEE';
+
+    for (const payer of payerAccounts) {
+        if (remaining <= 0) break;
+        const available = Math.max(0, payer.getBalance());
+        const contribution = Math.min(available, remaining);
+        if (contribution <= 0) continue;
+
+        const settled = transferWithLedger(
+            state,
+            payer,
+            companyAccount,
+            contribution,
+            reason as any, // Cast to any to avoid strict reason code check if necessary, or ensure codes match
+            { ...metadata, reasonDetail: `${category}: ${description}` }
+        );
+
+        if (settled <= 0) continue;
+
+        paid += settled;
+        remaining -= settled;
+
+        recordCashflow(
+            state,
+            category,
+            description,
+            settled,
+            payer.label,
+            `Company:${company.name} (${company.id})`,
+            remaining > 0 ? 'Partial' : 'Settled',
+            metadata
+        );
+    }
+
+    if (remaining > 0) {
+        recordCashflow(
+            state,
+            category,
+            `${description} (unfunded debt)`,
+            remaining,
+            `Debt:${empire.name} freight payable`,
+            `Company:${company.name} (${company.id})`,
+            'DebtRecorded',
+            metadata
+        );
+    }
+
+    if (!company.transactions) company.transactions = [];
+    if (paid > 0) {
+        company.transactions.push({
+            date: getIsoDate(state.date),
+            amount: paid,
+            type: 'Revenue',
+            description: `${description}${remaining > 0 ? ' (partial settlement)' : ''}`,
+        });
+    }
+
+    return { paid, unpaid: remaining };
+}
 
 // Helper to calculate distance
 function distance(p1: Vec2, p2: Vec2): number {
@@ -123,7 +238,6 @@ function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, even
         case 'Survey':
             processSurveyOrder(fleet, order, state, empire, events, rng);
             break;
-            break;
         case 'Transport':
             processTransportOrder(fleet, order, state, empire, events, rng);
             break;
@@ -224,7 +338,6 @@ function processSurveyOrder(fleet: Fleet, order: ShipOrder, state: GameState, em
     if (distance(fleet.position, pPos) < surveyRange) {
         if (!targetPlanet.surveyedByEmpires.includes(empire.id)) {
             targetPlanet.surveyedByEmpires.push(empire.id);
-            // Survey accuracy could affect the detail level; for now it's flavor/placeholder for discovery logic
             const minDetails = targetPlanet.minerals
                 .map(m => `${m.name}: ${Math.floor(m.amount * surveyAccuracy)}`)
                 .join(', ');
@@ -240,7 +353,6 @@ function processSurveyOrder(fleet: Fleet, order: ShipOrder, state: GameState, em
         fleet.destination = { x: interceptPos.x, y: interceptPos.y, etaSeconds: 0 };
     }
 }
-
 
 function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
     const star = state.galaxy.stars[fleet.currentStarId];
@@ -319,7 +431,11 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                     }
                 }
             } else if (order.cargoAction === 'Unload') {
-                if (colony && (colony.spaceport > 0 || colony.migrationMode === 'Target')) { // Target colonies can receive even without full spaceport maybe? No, let's be strict if user asked.
+                if (colony && (colony.spaceport > 0 || colony.migrationMode === 'Target')) {
+                    const firstShip = state.ships[fleet.shipIds[0]];
+                    const sourceColonyId = order.originId || firstShip?.inventory?.find(i => i.res === 'Civilians')?.originId;
+                    const sourceColony = sourceColonyId ? state.colonies[sourceColonyId] : undefined;
+
                     if (colony.spaceport <= 0) {
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Passenger fleet "${fleet.name}" cannot unload colonists at ${colony.name} - no spaceport!`, rng));
                         fleet.orders.shift();
@@ -333,7 +449,6 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                         const toUnload = Math.min(order.amount || has, has);
                         s.cargo['Civilians'] -= toUnload;
 
-                        // Structured manifest removal
                         if (s.inventory) {
                             let removed = 0;
                             for (let i = s.inventory.length - 1; i >= 0; i--) {
@@ -354,19 +469,34 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                             colony.populationSegments[0].count += totalUnloaded;
                         }
 
-                        // Pay the company
-                        const firstShip = state.ships[fleet.shipIds[0]];
+                        // Pay the company (best-effort settlement + ledger)
                         const company = empire.companies.find(c => c.id === firstShip?.sourceCompanyId);
                         if (company) {
                             const fee = totalUnloaded * 500; // 500 wealth per million colonists
-                            transferWithLedger(state, createTreasuryAccount(empire), createCompanyAccount(company), fee, 'MIGRATION_FEE',
-                                { companyId: company.id, empireId: empire.id, colonyId: colony.id, amount: totalUnloaded });
-                            company.transactions?.push({
-                                date: state.date.toISOString().split('T')[0],
-                                amount: fee,
-                                type: 'Revenue',
-                                description: `Migration fee for ${totalUnloaded.toFixed(2)}M colonists to ${colony.name}`
+                            const result = settleFreightFee({
+                                state,
+                                empire,
+                                company,
+                                fee,
+                                category: 'MigrationFee',
+                                description: `Migration fee for ${totalUnloaded.toFixed(2)}M colonists to ${colony.name}`,
+                                payerAccounts: [
+                                    createColonyPrivateWealthAccount(colony),
+                                    ...(sourceColony ? [createColonyPrivateWealthAccount(sourceColony)] : []),
+                                    createTreasuryAccount(empire),
+                                ],
+                                metadata: {
+                                    fleetId: fleet.id,
+                                    targetColonyId: colony.id,
+                                    sourceColonyId: sourceColony?.id || 'unknown',
+                                    amountMovedM: totalUnloaded,
+                                },
                             });
+
+                            if (result.unpaid > 0) {
+                                events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
+                                    `Migration service for fleet "${fleet.name}" was only partially funded (${result.paid.toFixed(0)}W paid / ${result.unpaid.toFixed(0)}W debt recorded).`, rng));
+                            }
                         }
 
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
@@ -382,6 +512,7 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
         fleet.destination = { x: interceptPos.x, y: interceptPos.y, etaSeconds: 0 };
     }
 }
+
 function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
     const star = state.galaxy.stars[fleet.currentStarId];
     if (!star || !order.targetPlanetId) {
@@ -412,7 +543,6 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
         if (cargoCapacity > 0) {
             const techBonuses = getEmpireTechBonuses(empire.research.completedTechs);
             cargoCapacity *= (1 + (techBonuses.cargo_capacity ?? 0));
-            const loadSpeedMult = (1 + (techBonuses.load_speed ?? 0));
             const res = order.resourceName || 'Iron';
             const amt = order.amount || cargoCapacity;
 
@@ -455,7 +585,11 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                 }
             } else if (order.cargoAction === 'Unload') {
                 const colony = Object.values(state.colonies).find(c => c.planetId === order.targetPlanetId && c.empireId === fleet.empireId);
-                if (colony) { // Spaceport NOT required for unloading supplies/infrastructure
+                if (colony) {
+                    const firstShip = state.ships[fleet.shipIds[0]];
+                    const sourceColonyId = order.originId || firstShip?.inventory?.find(i => i.res === res)?.originId;
+                    const sourceColony = sourceColonyId ? state.colonies[sourceColonyId] : undefined;
+
                     let totalUnloaded = 0;
                     for (const sid of fleet.shipIds) {
                         const s = state.ships[sid];
@@ -464,7 +598,6 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                         const toUnload = Math.min(amt - totalUnloaded, has);
                         s.cargo[res] -= toUnload;
 
-                        // Structured manifest removal
                         if (s.inventory) {
                             let removed = 0;
                             for (let i = s.inventory.length - 1; i >= 0; i--) {
@@ -482,19 +615,35 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                     if (totalUnloaded > 0) {
                         colony.minerals[res] = (colony.minerals[res] || 0) + totalUnloaded;
 
-                        // Pay the company
-                        const firstShip = state.ships[fleet.shipIds[0]];
+                        // Pay the company (best-effort settlement + ledger)
                         const company = empire.companies.find(c => c.id === firstShip?.sourceCompanyId);
                         if (company) {
                             const fee = totalUnloaded * 0.5; // 0.5 wealth per ton
-                            transferWithLedger(state, createColonyPrivateWealthAccount(colony), createCompanyAccount(company), fee, 'FREIGHT_FEE',
-                                { companyId: company.id, colonyId: colony.id, res, amount: totalUnloaded });
-                            company.transactions?.push({
-                                date: state.date.toISOString().split('T')[0],
-                                amount: fee,
-                                type: 'Revenue',
-                                description: `Transport fee for ${Math.floor(totalUnloaded)}t of ${res} to ${colony.name}`
+                            const result = settleFreightFee({
+                                state,
+                                empire,
+                                company,
+                                fee,
+                                category: 'TransportFee',
+                                description: `Transport fee for ${Math.floor(totalUnloaded)}t of ${res} to ${colony.name}`,
+                                payerAccounts: [
+                                    createColonyPrivateWealthAccount(colony),
+                                    ...(sourceColony ? [createColonyPrivateWealthAccount(sourceColony)] : []),
+                                    createTreasuryAccount(empire),
+                                ],
+                                metadata: {
+                                    fleetId: fleet.id,
+                                    resource: res,
+                                    amountMovedTons: totalUnloaded,
+                                    targetColonyId: colony.id,
+                                    sourceColonyId: sourceColony?.id || 'unknown',
+                                },
                             });
+
+                            if (result.unpaid > 0) {
+                                events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
+                                    `Transport service for fleet "${fleet.name}" was only partially funded (${result.paid.toFixed(0)}W paid / ${result.unpaid.toFixed(0)}W debt recorded).`, rng));
+                            }
                         }
 
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
@@ -511,7 +660,6 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
     }
 }
 
-
 /**
  * Calculates current fleet speed and fuel consumption.
  */
@@ -520,9 +668,9 @@ function getFleetStats(fleet: Fleet, state: GameState, empire: Empire) {
     const admiralBonuses = getAdmiralBonuses(empire.officers, fleet.admiralId);
 
     const speedBonus = (1 + (admiralBonuses.fleet_speed ?? 0)) * (1 + (techBonuses.engine_thrust ?? 0));
-    const fuelEfficiencyBonus = 1 - (techBonuses.fuel_efficiency ?? 0); // Efficiency reduces consumption
+    const fuelEfficiencyBonus = 1 - (techBonuses.fuel_efficiency ?? 0);
 
-    let baseSpeed = 0.5; // fallback AU/day
+    let baseSpeed = 0.5;
     let fuelPerTick = 0;
 
     if (fleet.shipIds.length > 0) {
@@ -561,7 +709,7 @@ function handleFleetMovement(fleet: Fleet, state: GameState, empire: Empire, dt:
     const days = dt / 86400;
     const fuelConsumed = fuelPerTick * days;
 
-    const outOfFuel = false;
+    const outOfFuel = fleet.shipIds.some(sid => state.ships[sid]?.fuel <= 0);
     for (const sid of fleet.shipIds) {
         const s = state.ships[sid];
         if (s) {
@@ -579,7 +727,6 @@ function handleFleetMovement(fleet: Fleet, state: GameState, empire: Empire, dt:
         fleet.position.y = fleet.destination.y;
         fleet.destination = undefined;
 
-        // Orbit lock
         const star = state.galaxy.stars[fleet.currentStarId];
         if (star) {
             for (const p of star.planets) {
@@ -635,30 +782,17 @@ function checkFleetRefueling(fleet: Fleet, state: GameState, empire: Empire) {
  */
 export function tickFleets(state: GameState, dt: number, rng: RNG): GameEvent[] {
     const events: GameEvent[] = [];
-
-    // Flatten fleets into a single list for processing
     const allFleets = Object.values(state.empires).flatMap(e => e.fleets);
 
     for (const fleet of allFleets) {
         const empire = state.empires[fleet.empireId];
         if (!empire) continue;
 
-        // 1. Maintenance & GC (Filter out empty/dead fleets)
         if (handleFleetMaintenance(fleet, empire)) continue;
-
-        // 2. Orbital Tracking (Update position if in orbit)
         handleFleetOrbit(fleet, state);
-
-        // 2b. Logistics (Unload Aether to colony)
         handleFleetLogistics(fleet, state);
-
-        // 3. Order Processing (Check if new orders can be started)
         processFleetOrders(fleet, state, empire, events, rng);
-
-        // 4. Movement Execution (Progress towards destination)
         handleFleetMovement(fleet, state, empire, dt);
-
-        // 5. Refueling (If idle near a colony with a spaceport)
         checkFleetRefueling(fleet, state, empire);
     }
 

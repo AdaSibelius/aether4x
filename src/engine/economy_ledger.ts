@@ -14,33 +14,36 @@ import { BALANCING } from './constants';
 
 // ─── Account References ───────────────────────────────────────────────────────
 
-export interface LedgerAccount {
-    /** Human-readable label for debug / UI */
+/** Interface for an account that can be used in a monetary transfer.
+ *  Uses the naming convention from origin/main (MonetaryAccount). */
+export interface MonetaryAccount {
+    id: string;
     label: string;
-    /** Get the current balance */
     getBalance: () => number;
-    /** Mutate the balance by delta (positive = credit, negative = debit) */
     applyDelta: (delta: number) => void;
 }
 
-export function createTreasuryAccount(empire: Empire): LedgerAccount {
+export function createTreasuryAccount(empire: Empire): MonetaryAccount {
     return {
+        id: `empire:${empire.id}:treasury`,
         label: `treasury:${empire.id}`,
         getBalance: () => empire.treasury,
         applyDelta: (d) => { empire.treasury += d; },
     };
 }
 
-export function createColonyPrivateWealthAccount(colony: Colony): LedgerAccount {
+export function createColonyPrivateWealthAccount(colony: Colony): MonetaryAccount {
     return {
+        id: `colony:${colony.id}:privateWealth`,
         label: `colony_pw:${colony.id}`,
         getBalance: () => colony.privateWealth,
         applyDelta: (d) => { colony.privateWealth += d; },
     };
 }
 
-export function createCompanyAccount(company: Company): LedgerAccount {
+export function createCompanyAccount(company: Company): MonetaryAccount {
     return {
+        id: `company:${company.id}:wealth`,
         label: `company:${company.id}`,
         getBalance: () => company.wealth,
         applyDelta: (d) => { company.wealth += d; },
@@ -52,8 +55,9 @@ export function createCompanyAccount(company: Company): LedgerAccount {
  * (e.g. startup grants, AI subsidies, event rewards). Using this is intentional
  * and must be explicitly named so audits can identify external minting.
  */
-export function createExternalAccount(label: string): LedgerAccount {
+export function createExternalAccount(label: string): MonetaryAccount {
     return {
+        id: `external:${label}`,
         label: `external:${label}`,
         getBalance: () => Infinity,
         applyDelta: (_d) => { /* external — no balance to track */ },
@@ -83,8 +87,8 @@ export interface TransferResult {
  */
 export function transferWithLedger(
     game: GameState,
-    from: LedgerAccount,
-    to: LedgerAccount,
+    from: MonetaryAccount,
+    to: MonetaryAccount,
     amount: number,
     reasonCode: MonetaryReasonCode,
     metadata?: Record<string, string | number | boolean>,
@@ -112,6 +116,19 @@ export function transferWithLedger(
     };
 
     game.monetaryLedger.push(entry);
+
+    // Also mirror to stats for backward compatibility with main branch analytics if needed
+    if (!game.stats.monetaryLedger) game.stats.monetaryLedger = [];
+    game.stats.monetaryLedger.push({
+        source: from.id,
+        sink: to.id,
+        sourceType: (from.label.split(':')[0] as any), // Best effort cast
+        sinkType: (to.label.split(':')[0] as any),
+        amount: settled,
+        reason: reasonCode,
+        tick: game.turn,
+    });
+
     pruneMonetaryLedger(game);
 
     return { settled, shortfall };
@@ -124,13 +141,6 @@ export function pruneMonetaryLedger(game: GameState): void {
     const max = BALANCING.MAX_MONETARY_LEDGER_ENTRIES;
     if (game.monetaryLedger.length > max) {
         game.monetaryLedger = game.monetaryLedger.slice(-max);
-    }
-}
-
-export function pruneCashflowLedger(game: GameState): void {
-    const max = BALANCING.MAX_CASHFLOW_LEDGER_ENTRIES;
-    if (game.cashflowLedger.length > max) {
-        game.cashflowLedger = game.cashflowLedger.slice(-max);
     }
 }
 
