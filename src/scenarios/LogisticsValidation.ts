@@ -65,7 +65,7 @@ export const LogisticsValidation: Scenario = {
 
         const endInventory = getGlobalMineralInventory(state);
         let driftFound = false;
-        const driftDetails: any = {};
+        const driftDetails: Record<string, { start: number, prod: number, cons: number, end: number, drift: number, driftPct: number }> = {};
 
         Object.keys(startInventory).forEach(res => {
             const start = startInventory[res] || 0;

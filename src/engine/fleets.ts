@@ -103,7 +103,7 @@ function handleFleetOrbit(fleet: Fleet, state: GameState) {
 /**
  * Processes the current order for a fleet if it's idle.
  */
-function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, events: GameEvent[]) {
+function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
     if (fleet.destination || !fleet.orders || fleet.orders.length === 0) return;
 
     const order = fleet.orders[0];
@@ -112,17 +112,17 @@ function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, even
             processMoveOrder(fleet, order, state);
             break;
         case 'Jump':
-            processJumpOrder(fleet, order, state, empire, events);
+            processJumpOrder(fleet, order, state, empire, events, rng);
             break;
         case 'Survey':
-            processSurveyOrder(fleet, order, state, empire, events);
+            processSurveyOrder(fleet, order, state, empire, events, rng);
             break;
             break;
         case 'Transport':
-            processTransportOrder(fleet, order, state, empire, events);
+            processTransportOrder(fleet, order, state, empire, events, rng);
             break;
         case 'Migrate':
-            processMigrateOrder(fleet, order, state, empire, events);
+            processMigrateOrder(fleet, order, state, empire, events, rng);
             break;
         default:
             fleet.orders.shift(); // Invalid/unimplemented
@@ -162,7 +162,7 @@ function processMoveOrder(fleet: Fleet, order: ShipOrder, state: GameState) {
     }
 }
 
-function processJumpOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[]) {
+function processJumpOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
     const star = state.galaxy.stars[fleet.currentStarId];
     if (!star || !order.targetStarId) {
         fleet.orders.shift();
@@ -187,7 +187,7 @@ function processJumpOrder(fleet: Fleet, order: ShipOrder, state: GameState, empi
                 destStar.surveyedByEmpires.push(empire.id);
                 for (const djp of destStar.jumpPoints) djp.discovered = true;
                 events.push(makeEvent(state.turn, state.date, 'SystemExplored',
-                    `Fleet "${fleet.name}" jumped to ${destStar.name}`, { starId: destStar.id, important: true }));
+                    `Fleet "${fleet.name}" jumped to ${destStar.name}`, rng, { starId: destStar.id, important: true }));
             }
         }
         fleet.orders.shift();
@@ -197,7 +197,7 @@ function processJumpOrder(fleet: Fleet, order: ShipOrder, state: GameState, empi
     }
 }
 
-function processSurveyOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[]) {
+function processSurveyOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
     const star = state.galaxy.stars[fleet.currentStarId];
     if (!star || !order.targetPlanetId) {
         fleet.orders.shift();
@@ -225,7 +225,7 @@ function processSurveyOrder(fleet: Fleet, order: ShipOrder, state: GameState, em
 
             events.push(makeEvent(state.turn, state.date, 'MineralsFound',
                 `Fleet "${fleet.name}" completed survey of ${targetPlanet.name}${techBonuses.survey_accuracy ? ' with advanced scanners' : ''}. Found: ${minDetails || 'Nothing'}`,
-                { starId: star.id, planetId: targetPlanet.id, important: true }));
+                rng, { starId: star.id, planetId: targetPlanet.id, important: true }));
         }
         fleet.orders.shift();
     } else {
@@ -236,7 +236,7 @@ function processSurveyOrder(fleet: Fleet, order: ShipOrder, state: GameState, em
 }
 
 
-function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[]) {
+function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
     const star = state.galaxy.stars[fleet.currentStarId];
     if (!star || !order.targetPlanetId) {
         fleet.orders.shift();
@@ -309,13 +309,13 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                         }
 
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
-                            `Passenger fleet "${fleet.name}" loaded ${actualLoaded.toFixed(2)}M colonists from ${colony.name}.`));
+                            `Passenger fleet "${fleet.name}" loaded ${actualLoaded.toFixed(2)}M colonists from ${colony.name}.`, rng));
                     }
                 }
             } else if (order.cargoAction === 'Unload') {
                 if (colony && (colony.spaceport > 0 || colony.migrationMode === 'Target')) { // Target colonies can receive even without full spaceport maybe? No, let's be strict if user asked.
                     if (colony.spaceport <= 0) {
-                        events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Passenger fleet "${fleet.name}" cannot unload colonists at ${colony.name} - no spaceport!`));
+                        events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Passenger fleet "${fleet.name}" cannot unload colonists at ${colony.name} - no spaceport!`, rng));
                         fleet.orders.shift();
                         return;
                     }
@@ -363,7 +363,7 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                         }
 
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
-                            `Passenger fleet "${fleet.name}" unloaded ${totalUnloaded.toFixed(2)}M colonists to ${colony.name}.`));
+                            `Passenger fleet "${fleet.name}" unloaded ${totalUnloaded.toFixed(2)}M colonists to ${colony.name}.`, rng));
                     }
                 }
             }
@@ -375,7 +375,7 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
         fleet.destination = { x: interceptPos.x, y: interceptPos.y, etaSeconds: 0 };
     }
 }
-function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[]) {
+function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
     const star = state.galaxy.stars[fleet.currentStarId];
     if (!star || !order.targetPlanetId) {
         fleet.orders.shift();
@@ -443,7 +443,7 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                         colony.minerals[res] -= actualLoaded;
 
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
-                            `Freighter fleet "${fleet.name}" loaded ${Math.floor(actualLoaded)}t of ${res} from ${colony.name}.`));
+                            `Freighter fleet "${fleet.name}" loaded ${Math.floor(actualLoaded)}t of ${res} from ${colony.name}.`, rng));
                     }
                 }
             } else if (order.cargoAction === 'Unload') {
@@ -490,7 +490,7 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                         }
 
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
-                            `Freighter fleet "${fleet.name}" unloaded ${Math.floor(totalUnloaded)}t of ${res} to ${colony.name}.`));
+                            `Freighter fleet "${fleet.name}" unloaded ${Math.floor(totalUnloaded)}t of ${res} to ${colony.name}.`, rng));
                     }
                 }
             }
@@ -645,7 +645,7 @@ export function tickFleets(state: GameState, dt: number, rng: RNG): GameEvent[] 
         handleFleetLogistics(fleet, state);
 
         // 3. Order Processing (Check if new orders can be started)
-        processFleetOrders(fleet, state, empire, events);
+        processFleetOrders(fleet, state, empire, events, rng);
 
         // 4. Movement Execution (Progress towards destination)
         handleFleetMovement(fleet, state, empire, dt);

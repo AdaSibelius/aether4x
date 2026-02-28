@@ -259,7 +259,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         colony.terraformProgress = Math.min(100, colony.terraformProgress + tfRate * days);
         if (colony.terraformProgress >= 100) {
             events.push(makeEvent(state.turn, state.date, 'ResearchComplete',
-                `Research complete: ${colony.name} terraforming`, { important: true }));
+                `Research complete: ${colony.name} terraforming`, rng, { important: true }));
         }
     }
 
@@ -347,7 +347,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
                     colony.reclamationPlants = (colony.reclamationPlants ?? 0) + item.quantity;
                     break;
             }
-            events.push(makeEvent(state.turn, state.date, 'ProductionComplete', `${colony.name}: Completed ${item.quantity}x ${item.name}`, { important: false }));
+            events.push(makeEvent(state.turn, state.date, 'ProductionComplete', `${colony.name}: Completed ${item.quantity}x ${item.name}`, rng, { important: false }));
         }
     }
 
@@ -464,7 +464,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
                             }
                         }
                     }
-                    events.push(makeEvent(state.turn, state.date, 'ShipBuilt', `${colony.name}: Completed shipyard project ${item.name}`, { important: false }));
+                    events.push(makeEvent(state.turn, state.date, 'ShipBuilt', `${colony.name}: Completed shipyard project ${item.name}`, rng, { important: false }));
                 }
             }
         }
@@ -510,7 +510,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
     if ((colony.privateWealth || 0) > BALANCING.CIVILIAN_EXPANSION_THRESHOLD && colony.population > (colony.factories + colony.mines + colony.civilianFactories + colony.civilianMines) * 10) {
         if (rng.next() > 0.5) { colony.civilianFactories += 1; } else { colony.civilianMines += 1; }
         colony.privateWealth -= BALANCING.CIVILIAN_EXPANSION_COST;
-        events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Civilian investment on ${colony.name} built a new facility.`, { important: false }));
+        events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Civilian investment on ${colony.name} built a new facility.`, rng, { important: false }));
     }
 
     const SNAPSHOT_INTERVAL = 86400 * 30;

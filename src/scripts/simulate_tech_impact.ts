@@ -19,7 +19,7 @@ function simulateTechImpact() {
     console.log(`Starting 50-year Tech Impact Simulation...`);
 
     // Track stats over time
-    const snapshots: any[] = [];
+    const snapshots: Record<string, number | string | boolean>[] = [];
 
     for (let i = 0; i < totalTicks; i++) {
         state = advanceTick(state);

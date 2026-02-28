@@ -251,7 +251,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         const design = playerEmpire.designLibrary.find(d => d.id === config.d);
         if (!design) continue;
 
-        const shipId = generateId('ship');
+        const shipId = generateId('ship', rng);
         const ship: Ship = {
             id: shipId,
             name: `${design.name} Alpha`,

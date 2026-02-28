@@ -41,8 +41,9 @@ export function runStressTest(initialState: GameState, turns: number): StressTes
                 issues.push(`Turn ${i}: Global population collapse (>50% lost)`);
             }
 
-        } catch (err: any) {
-            issues.push(`Turn ${i}: Simulation crashed: ${err.message}`);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            issues.push(`Turn ${i}: Simulation crashed: ${msg}`);
             return createReport(i, initialTreasury, initialPop, state, issues);
         }
     }

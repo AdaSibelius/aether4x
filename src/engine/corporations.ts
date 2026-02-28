@@ -160,7 +160,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                                 empire.treasury += govTax;
 
                                 sy.activeBuilds.push({
-                                    id: generateId('item'),
+                                    id: generateId('item', rng),
                                     type: 'Ship',
                                     name: selectedDesign.name,
                                     designId: selectedDesign.id,
@@ -218,7 +218,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
 
                 if (messageValue) {
                     events.push({
-                        id: generateId('evt'),
+                        id: generateId('evt', rng),
                         turn: next.turn,
                         date: next.date.toISOString().split('T')[0],
                         type: 'CivilianExpansion',
@@ -284,7 +284,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
 
             const designBias = rng.pick(['Speed', 'Efficiency', 'Capacity']);
             const newCompany: Company = {
-                id: generateId('corp'),
+                id: generateId('corp', rng),
                 name,
                 type,
                 homeColonyId: colony.id,
@@ -293,7 +293,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                 activeFreighters: type === 'Transport' ? 1 : 0,
                 ceoId,
                 strategy: rng.pick(['Expansionist', 'Optimized', 'Vanguard']),
-                designBias: designBias as any,
+                designBias: designBias as 'Speed' | 'Efficiency' | 'Capacity',
                 explorationLicenseIds: [],
                 history: [],
                 transactions: []
@@ -301,7 +301,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
             colony.privateWealth -= 5000;
             empire.companies.push(newCompany);
             events.push({
-                id: generateId('evt'),
+                id: generateId('evt', rng),
                 turn: next.turn,
                 date: next.date.toISOString().split('T')[0],
                 type: 'CompanyFounded',
@@ -360,10 +360,10 @@ function assignTaskToFleet(fleet: Fleet, company: Company, state: GameState, emp
             const target = targets.sort((a, b) => (a.population / a.maxPopulation) - (b.population / b.maxPopulation))[0];
 
             fleet.orders = [
-                { id: generateId('order'), type: 'MoveTo', targetPlanetId: source.planetId },
-                { id: generateId('order'), type: 'Migrate', targetPlanetId: source.planetId, cargoAction: 'Load', amount: 1.0, originId: source.id, targetId: target.id },
-                { id: generateId('order'), type: 'MoveTo', targetPlanetId: target.planetId },
-                { id: generateId('order'), type: 'Migrate', targetPlanetId: target.planetId, cargoAction: 'Unload', originId: source.id, targetId: target.id }
+                { id: generateId('order', rng), type: 'MoveTo', targetPlanetId: source.planetId },
+                { id: generateId('order', rng), type: 'Migrate', targetPlanetId: source.planetId, cargoAction: 'Load', amount: 1.0, originId: source.id, targetId: target.id },
+                { id: generateId('order', rng), type: 'MoveTo', targetPlanetId: target.planetId },
+                { id: generateId('order', rng), type: 'Migrate', targetPlanetId: target.planetId, cargoAction: 'Unload', originId: source.id, targetId: target.id }
             ];
             return true;
         }
@@ -396,10 +396,10 @@ function assignTaskToFleet(fleet: Fleet, company: Company, state: GameState, emp
             const supplier = surplus.find(sup => sup.res === validTrade.res)!.colony;
 
             fleet.orders = [
-                { id: generateId('order'), type: 'MoveTo', targetPlanetId: supplier.planetId },
-                { id: generateId('order'), type: 'Transport', targetPlanetId: supplier.planetId, resourceName: validTrade.res, cargoAction: 'Load', originId: supplier.id, targetId: validTrade.colony.id },
-                { id: generateId('order'), type: 'MoveTo', targetPlanetId: validTrade.colony.planetId },
-                { id: generateId('order'), type: 'Transport', targetPlanetId: validTrade.colony.planetId, resourceName: validTrade.res, cargoAction: 'Unload', originId: supplier.id, targetId: validTrade.colony.id }
+                { id: generateId('order', rng), type: 'MoveTo', targetPlanetId: supplier.planetId },
+                { id: generateId('order', rng), type: 'Transport', targetPlanetId: supplier.planetId, resourceName: validTrade.res, cargoAction: 'Load', originId: supplier.id, targetId: validTrade.colony.id },
+                { id: generateId('order', rng), type: 'MoveTo', targetPlanetId: validTrade.colony.planetId },
+                { id: generateId('order', rng), type: 'Transport', targetPlanetId: validTrade.colony.planetId, resourceName: validTrade.res, cargoAction: 'Unload', originId: supplier.id, targetId: validTrade.colony.id }
             ];
             return true;
         }
@@ -421,7 +421,7 @@ export function tickOfficerLifecycle(next: GameState, empire: Empire, rng: RNG, 
             const newOfficer = createOfficer(role, bonuses, rng.next() * 1000000);
             empire.officers.push(newOfficer);
             events.push({
-                id: generateId('evt'),
+                id: generateId('evt', rng),
                 turn: next.turn,
                 date: next.date.toISOString().split('T')[0],
                 type: 'OfficerSpawned',
@@ -437,7 +437,7 @@ export function tickOfficerLifecycle(next: GameState, empire: Empire, rng: RNG, 
                 empire.officers = empire.officers.filter(o => o.id !== officer.id);
                 const reason = rng.chance(0.2) ? 'died peacefully' : 'retired from active service';
                 events.push({
-                    id: generateId('evt'),
+                    id: generateId('evt', rng),
                     turn: next.turn,
                     date: next.date.toISOString().split('T')[0],
                     type: 'OfficerRetired',
@@ -481,7 +481,7 @@ export function processTenders(next: GameState, empire: Empire, rng: RNG): GameE
                     tender.bids.push({ companyId: company.id, amount: newBid });
 
                     events.push({
-                        id: generateId('evt'),
+                        id: generateId('evt', rng),
                         turn: next.turn,
                         date: nowStr,
                         type: 'TenderBid',
@@ -515,7 +515,7 @@ export function processTenders(next: GameState, empire: Empire, rng: RNG): GameE
                     empire.treasury += tender.highestBid;
 
                     events.push({
-                        id: generateId('evt'),
+                        id: generateId('evt', rng),
                         turn: next.turn,
                         date: nowStr,
                         type: 'TenderResolved',
@@ -525,7 +525,7 @@ export function processTenders(next: GameState, empire: Empire, rng: RNG): GameE
                 }
             } else {
                 events.push({
-                    id: generateId('evt'),
+                    id: generateId('evt', rng),
                     turn: next.turn,
                     date: nowStr,
                     type: 'TenderResolved',

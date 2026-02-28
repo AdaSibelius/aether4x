@@ -1,5 +1,6 @@
 import type { Technology, TechCategory, Empire, GameEvent, EventType, TechBonuses } from '@/types';
 import { generateId } from '@/utils/id';
+import { RNG } from '@/utils/rng';
 
 export const TECH_TREE: Technology[] = [
     // ═══════════════════════════════════════════════════════════════════════════
@@ -807,9 +808,9 @@ export function getAvailableTechs(completedTechs: string[]): Technology[] {
     );
 }
 
-function makeEvent(type: EventType, message: string, opts?: { starId?: string; planetId?: string; important?: boolean }): GameEvent {
+function makeEvent(type: EventType, message: string, rng: RNG, opts?: { starId?: string; planetId?: string; important?: boolean }): GameEvent {
     return {
-        id: generateId('evt'),
+        id: generateId('evt', rng),
         turn: 0, // Placeholder, will be updated by caller if needed or used as relative
         date: new Date().toISOString().split('T')[0],
         type,
@@ -820,7 +821,7 @@ function makeEvent(type: EventType, message: string, opts?: { starId?: string; p
     };
 }
 
-export function tickResearch(empire: Empire, dt: number): GameEvent[] {
+export function tickResearch(empire: Empire, dt: number, rng: RNG): GameEvent[] {
     const events: GameEvent[] = [];
     const { research, officers } = empire;
 
@@ -878,7 +879,7 @@ export function tickResearch(empire: Empire, dt: number): GameEvent[] {
 
         research.completedTechs.push(tech.id);
         events.push(makeEvent('ResearchComplete',
-            `Research complete: ${tech.name}`, { important: tech.tier >= 2 }));
+            `Research complete: ${tech.name}`, rng, { important: tech.tier >= 2 }));
 
         research.activeProjects.splice(idx, 1);
     }
