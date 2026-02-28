@@ -9,14 +9,19 @@ import { COMPONENT_LIBRARY, createDesign } from './ships';
 
 export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: number): GameEvent[] {
     const events: GameEvent[] = [];
+    const days = dt / 86400;
     const empireColonies = Object.values(next.colonies).filter(c => c.empireId === empire.id);
+
+    // Unit conventions:
+    // - Recurring economic rates below are expressed in per-day terms.
+    // - Tick-level cashflow must multiply those rates by `days` for consistency across tick lengths.
 
     // ── Corporate Operations (Every Tick) ──
     for (const company of empire.companies) {
         const homeColony = empireColonies.find(c => c.id === company.homeColonyId);
 
         // 1. Maintenance & Revenue
-        const maintenance = calculateMaintenance(company, empire, homeColony?.staffingLevel);
+        const maintenance = calculateMaintenance(company, empire, homeColony?.staffingLevel) * days;
         company.wealth -= maintenance;
 
 
@@ -42,6 +47,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                 tickRevenue = (homeColony.reclamationPlants || 0) * 40 * staffingEff;
             }
         }
+        tickRevenue *= days;
         company.wealth += tickRevenue;
 
         // 2. Valuation Update
@@ -62,7 +68,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
     }
 
     // ── Corporate Strategy (Yearly odds for yearly logic) ──
-    const chancePerTick = (dt / 86400) / 365;
+    const chancePerTick = days / 365;
     if (rng.chance(chancePerTick)) {
         const totalMigrantDemand = empireColonies.reduce((sum, c) => sum + (c.migrantsWaiting || 0), 0);
 
