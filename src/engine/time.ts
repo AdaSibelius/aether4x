@@ -1,14 +1,14 @@
 import type {
     GameState, Empire, Colony, Ship, Fleet, GameEvent, EventType,
     TickLength, SpeciesId, Company, CompanyType, EmpireSnapshot, ColonySnapshot
-} from '@/types';
-import { RNG } from '@/utils/rng';
+} from '../types';
+import { RNG } from '../utils/rng';
 import { tickEmpire } from './empire_logic';
 import { tickAetherHarvesting } from './colonies';
 import { tickFleets, getPlanetPosition } from './fleets';
 import { AuditService } from './debug/AuditService';
 
-import SimLogger from '@/utils/logger';
+import SimLogger from '../utils/logger';
 
 export function advanceTick(state: GameState): GameState {
     SimLogger.info('SYSTEM', `Advancing tick: ${state.tickLength}s`);

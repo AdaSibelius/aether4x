@@ -1,5 +1,5 @@
-import type { Officer, OfficerRole, CompanyType } from '@/types';
-import { RNG } from '@/utils/rng';
+import type { Officer, OfficerRole, CompanyType } from '../types';
+import { RNG } from '../utils/rng';
 
 // ─── Name Tables ─────────────────────────────────────────────────────────────
 

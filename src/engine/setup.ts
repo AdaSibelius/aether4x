@@ -1,12 +1,12 @@
-import { GameState, TickLength, Fleet, Company, Ship, Colony, Empire, ShipDesign, Officer, CompanyType } from '@/types';
+import { GameState, TickLength, Fleet, Company, Ship, Colony, Empire, ShipDesign, Officer, CompanyType } from '../types';
 import { generateGalaxy } from './galaxy';
 import { generateRealSpaceGalaxy } from './realspace';
 import { createOfficer, generateCompanyName } from './officers';
 import { getPlanetPosition } from './fleets';
 import { createStartingDesigns } from './ships';
 import { getEmpireTechBonuses } from './research';
-import { generateId } from '@/utils/id';
-import { RNG } from '@/utils/rng';
+import { generateId } from '../utils/id';
+import { RNG } from '../utils/rng';
 import { BALANCING } from './constants';
 
 export function setupNewGame(playerName: string, seed: number, realSpace?: boolean): GameState {
@@ -304,5 +304,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
             totalConsumed: {},
             totalConverted: {},
         },
+        monetaryLedger: [],
+        cashflowLedger: [],
     };
 }

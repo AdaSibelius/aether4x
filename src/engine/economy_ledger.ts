@@ -1,131 +1,160 @@
-import type { Colony, Company, Empire, GameState, MonetaryAccountType, MonetaryTransferEntry } from '@/types';
+/**
+ * economy_ledger.ts
+ *
+ * Single source of truth for all monetary transfers in the simulation.
+ * All wealth movements MUST go through transferWithLedger() to maintain
+ * conservation invariants. No silent money creation is permitted.
+ *
+ * @module economy_ledger
+ */
 
+import type { GameState, Colony, MonetaryLedgerEntry, MonetaryReasonCode } from '../types';
+import type { Empire, Company } from '../types';
+import { BALANCING } from './constants';
+
+// ─── Account References ───────────────────────────────────────────────────────
+
+/** Interface for an account that can be used in a monetary transfer.
+ *  Uses the naming convention from origin/main (MonetaryAccount). */
 export interface MonetaryAccount {
     id: string;
-    type: MonetaryAccountType;
+    label: string;
     getBalance: () => number;
-    setBalance: (value: number) => void;
-}
-
-export interface MonetaryTransferOptions {
-    state: GameState;
-    source: MonetaryAccount;
-    sink: MonetaryAccount;
-    amount: number;
-    reason: string;
-    tick?: number;
-}
-
-export interface TickMonetaryAuditReport {
-    tick: number;
-    transfers: number;
-    amountMoved: number;
-    netByAccountType: {
-        treasury: number;
-        colonyPrivateWealth: number;
-        companyWealth: number;
-    };
-}
-
-function ensureLedger(state: GameState): MonetaryTransferEntry[] {
-    if (!state.stats.monetaryLedger) state.stats.monetaryLedger = [];
-    return state.stats.monetaryLedger;
-}
-
-export function createExternalAccount(id: string): MonetaryAccount {
-    return {
-        id,
-        type: 'external',
-        getBalance: () => Number.POSITIVE_INFINITY,
-        setBalance: () => undefined,
-    };
+    applyDelta: (delta: number) => void;
 }
 
 export function createTreasuryAccount(empire: Empire): MonetaryAccount {
     return {
         id: `empire:${empire.id}:treasury`,
-        type: 'treasury',
+        label: `treasury:${empire.id}`,
         getBalance: () => empire.treasury,
-        setBalance: (value: number) => {
-            empire.treasury = value;
-        },
+        applyDelta: (d) => { empire.treasury += d; },
     };
 }
 
 export function createColonyPrivateWealthAccount(colony: Colony): MonetaryAccount {
     return {
         id: `colony:${colony.id}:privateWealth`,
-        type: 'colonyPrivateWealth',
-        getBalance: () => colony.privateWealth || 0,
-        setBalance: (value: number) => {
-            colony.privateWealth = value;
-        },
+        label: `colony_pw:${colony.id}`,
+        getBalance: () => colony.privateWealth,
+        applyDelta: (d) => { colony.privateWealth += d; },
     };
 }
 
-export function createCompanyWealthAccount(company: Company): MonetaryAccount {
+export function createCompanyAccount(company: Company): MonetaryAccount {
     return {
         id: `company:${company.id}:wealth`,
-        type: 'companyWealth',
+        label: `company:${company.id}`,
         getBalance: () => company.wealth,
-        setBalance: (value: number) => {
-            company.wealth = value;
-        },
+        applyDelta: (d) => { company.wealth += d; },
     };
 }
 
-export function transferWithLedger(options: MonetaryTransferOptions): number {
-    const { state, source, sink, amount, reason } = options;
-    const tick = options.tick ?? state.turn;
-    if (amount <= 0) return 0;
+/**
+ * An external account represents money entering/leaving the simulation system
+ * (e.g. startup grants, AI subsidies, event rewards). Using this is intentional
+ * and must be explicitly named so audits can identify external minting.
+ */
+export function createExternalAccount(label: string): MonetaryAccount {
+    return {
+        id: `external:${label}`,
+        label: `external:${label}`,
+        getBalance: () => Infinity,
+        applyDelta: (_d) => { /* external — no balance to track */ },
+    };
+}
 
-    const maxAvailable = source.type === 'external' ? amount : Math.max(0, source.getBalance());
-    const settledAmount = Math.min(amount, maxAvailable);
-    if (settledAmount <= 0) return 0;
+// ─── Transfer Primitive ───────────────────────────────────────────────────────
 
-    if (source.type !== 'external') {
-        source.setBalance(Math.max(0, source.getBalance() - settledAmount));
+export interface TransferResult {
+    /** Amount that was successfully transferred */
+    settled: number;
+    /** Amount that could not be transferred (payer had insufficient funds) */
+    shortfall: number;
+}
+
+/**
+ * Transfer wealth from one account to another, recording the event in the
+ * monetary ledger. If the payer has insufficient funds the transfer is
+ * settled partially — the shortfall is logged but no panic is thrown.
+ *
+ * @param game   Current game state (ledger is appended to game.monetaryLedger)
+ * @param from   Source account
+ * @param to     Destination account
+ * @param amount Desired transfer amount (must be positive)
+ * @param reasonCode Typed reason for the transfer (enables machine analytics)
+ * @param metadata Optional structured metadata (colonyId, empireId, etc.)
+ */
+export function transferWithLedger(
+    game: GameState,
+    from: MonetaryAccount,
+    to: MonetaryAccount,
+    amount: number,
+    reasonCode: MonetaryReasonCode,
+    metadata?: Record<string, string | number | boolean>,
+): TransferResult {
+    if (amount <= 0) return { settled: 0, shortfall: 0 };
+
+    const available = isFinite(from.getBalance()) ? from.getBalance() : Infinity;
+    const settled = Math.min(amount, Math.max(0, available));
+    const shortfall = amount - settled;
+
+    if (settled > 0) {
+        from.applyDelta(-settled);
+        to.applyDelta(settled);
     }
-    if (sink.type !== 'external') {
-        sink.setBalance(sink.getBalance() + settledAmount);
-    }
 
-    ensureLedger(state).push({
-        source: source.id,
-        sink: sink.id,
-        sourceType: source.type,
-        sinkType: sink.type,
-        amount: settledAmount,
-        reason,
-        tick,
+    const entry: MonetaryLedgerEntry = {
+        id: `ml_${game.turn}_${game.monetaryLedger.length}`,
+        turn: game.turn,
+        from: from.label,
+        to: to.label,
+        amount: settled,
+        shortfall,
+        reasonCode,
+        metadata: metadata ?? {},
+    };
+
+    game.monetaryLedger.push(entry);
+
+    // Also mirror to stats for backward compatibility with main branch analytics if needed
+    if (!game.stats.monetaryLedger) game.stats.monetaryLedger = [];
+    game.stats.monetaryLedger.push({
+        source: from.id,
+        sink: to.id,
+        sourceType: (from.label.split(':')[0] as any), // Best effort cast
+        sinkType: (to.label.split(':')[0] as any),
+        amount: settled,
+        reason: reasonCode,
+        tick: game.turn,
     });
 
-    return settledAmount;
+    pruneMonetaryLedger(game);
+
+    return { settled, shortfall };
 }
 
-export function buildTickMonetaryAuditReport(state: GameState, tick: number): TickMonetaryAuditReport {
-    const ledger = state.stats.monetaryLedger || [];
-    const entries = ledger.filter(entry => entry.tick === tick);
+// ─── Pruning ──────────────────────────────────────────────────────────────────
 
-    const netByAccountType = {
-        treasury: 0,
-        colonyPrivateWealth: 0,
-        companyWealth: 0,
-    };
-
-    for (const entry of entries) {
-        if (entry.sourceType in netByAccountType) {
-            netByAccountType[entry.sourceType as keyof typeof netByAccountType] -= entry.amount;
-        }
-        if (entry.sinkType in netByAccountType) {
-            netByAccountType[entry.sinkType as keyof typeof netByAccountType] += entry.amount;
-        }
+/** Keep only the most recent entries to prevent unbounded memory growth. */
+export function pruneMonetaryLedger(game: GameState): void {
+    const max = BALANCING.MAX_MONETARY_LEDGER_ENTRIES;
+    if (game.monetaryLedger.length > max) {
+        game.monetaryLedger = game.monetaryLedger.slice(-max);
     }
+}
 
-    return {
-        tick,
-        transfers: entries.length,
-        amountMoved: entries.reduce((sum, entry) => sum + entry.amount, 0),
-        netByAccountType,
-    };
+// ─── Debug / Export ───────────────────────────────────────────────────────────
+
+/** Returns all ledger entries for external audit. Safe to call in any context. */
+export function exportMonetaryLedger(game: GameState): MonetaryLedgerEntry[] {
+    return [...game.monetaryLedger];
+}
+
+/** Filter ledger by reason code for targeted analysis. */
+export function queryLedger(
+    game: GameState,
+    reasonCode: MonetaryReasonCode,
+): MonetaryLedgerEntry[] {
+    return game.monetaryLedger.filter(e => e.reasonCode === reasonCode);
 }

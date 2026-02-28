@@ -1,6 +1,6 @@
-import type { GameEvent, EventType } from '@/types';
-import { generateId } from '@/utils/id';
-import { RNG } from '@/utils/rng';
+import type { GameEvent, EventType } from '../types';
+import { generateId } from '../utils/id';
+import { RNG } from '../utils/rng';
 
 /**
  * Standard factory for creating game events.
