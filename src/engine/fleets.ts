@@ -422,6 +422,10 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                 }
             } else if (order.cargoAction === 'Unload') {
                 if (colony && (colony.spaceport > 0 || colony.migrationMode === 'Target')) { // Target colonies can receive even without full spaceport maybe? No, let's be strict if user asked.
+                    const firstShip = state.ships[fleet.shipIds[0]];
+                    const sourceColonyId = order.originId || firstShip?.inventory?.find(i => i.res === 'Civilians')?.originId;
+                    const sourceColony = sourceColonyId ? state.colonies[sourceColonyId] : undefined;
+
                     if (colony.spaceport <= 0) {
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Passenger fleet "${fleet.name}" cannot unload colonists at ${colony.name} - no spaceport!`, rng));
                         fleet.orders.shift();
@@ -457,12 +461,9 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                         }
 
                         // Pay the company (best-effort settlement + ledger)
-                        const firstShip = state.ships[fleet.shipIds[0]];
                         const company = empire.companies.find(c => c.id === firstShip?.sourceCompanyId);
                         if (company) {
                             const fee = totalUnloaded * 500; // 500 wealth per million colonists
-                            const sourceColonyId = order.originId || firstShip?.inventory?.find(i => i.res === 'Civilians')?.originId;
-                            const sourceColony = sourceColonyId ? state.colonies[sourceColonyId] : undefined;
                             const result = settleFreightFee({
                                 state,
                                 empire,
@@ -591,6 +592,10 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
             } else if (order.cargoAction === 'Unload') {
                 const colony = Object.values(state.colonies).find(c => c.planetId === order.targetPlanetId && c.empireId === fleet.empireId);
                 if (colony) { // Spaceport NOT required for unloading supplies/infrastructure
+                    const firstShip = state.ships[fleet.shipIds[0]];
+                    const sourceColonyId = order.originId || firstShip?.inventory?.find(i => i.res === res)?.originId;
+                    const sourceColony = sourceColonyId ? state.colonies[sourceColonyId] : undefined;
+
                     let totalUnloaded = 0;
                     for (const sid of fleet.shipIds) {
                         const s = state.ships[sid];
@@ -618,12 +623,9 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                         colony.minerals[res] = (colony.minerals[res] || 0) + totalUnloaded;
 
                         // Pay the company (best-effort settlement + ledger)
-                        const firstShip = state.ships[fleet.shipIds[0]];
                         const company = empire.companies.find(c => c.id === firstShip?.sourceCompanyId);
                         if (company) {
                             const fee = totalUnloaded * 0.5; // 0.5 wealth per ton
-                            const sourceColonyId = order.originId || firstShip?.inventory?.find(i => i.res === res)?.originId;
-                            const sourceColony = sourceColonyId ? state.colonies[sourceColonyId] : undefined;
                             const result = settleFreightFee({
                                 state,
                                 empire,
