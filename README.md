@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aether4X
 
-## Getting Started
+Aether4X is a deterministic 4X simulation prototype built on Next.js for UI + TypeScript simulation systems for repeatable, auditable game-state evolution.
 
-First, run the development server:
+## Architecture map
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+For the full architectural walkthrough, see [`docs/architecture.md`](docs/architecture.md).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+High-level map:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **UI layer (`src/app`, `src/components`)**: Renders simulation state and user controls.
+- **State layer (`src/store`)**: Zustand-backed runtime state and UI orchestration.
+- **Simulation engine (`src/engine`)**: Tick orchestration plus economy, logistics, colonies, fleets, research, and event routing.
+- **Domain types (`src/types`)**: Shared contracts for game entities and simulation data.
+- **Scenario + script harnesses (`src/scenarios`, `src/scripts`)**: Determinism checks and regression-style simulation probes.
+- **Docs (`docs`)**: Simulation contract and validation expectations.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deterministic simulation rules
 
-## Learn More
+Deterministic behavior is non-negotiable for simulation code paths.
 
-To learn more about Next.js, take a look at the following resources:
+1. **No ambient entropy inside the tick path**: Do not use `Math.random()` or `Date.now()` in simulation logic.
+2. **Use seeded RNG wiring only**: Pass the provided seeded RNG through simulation functions.
+3. **Deterministic IDs**: Use project helpers that depend on the simulation RNG.
+4. **Immutable tick progression**: Treat prior state as read-only and return a new next state.
+5. **Stable replay expectation**: Same seed + same tick count must produce byte-for-byte equivalent state snapshots.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Key scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` — start the Next.js app locally.
+- `npm run build` — production build.
+- `npm run start` — run production server.
+- `npm run lint` — static lint checks.
+- `npm run test:sims` — run the current simulation scenario harness (`ExpansionTest.ts`).
+- `npx tsx src/scenarios/run.ts LogisticsValidation 3650 12345` — run a registered deterministic scenario.
+- `npx tsx src/scripts/verify_determinism.ts` — explicit determinism drift check.
 
-## Deploy on Vercel
+## Validation expectations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Validation is successful when:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Lint passes with no new warnings/errors.
+- Scenario runs finish with a pass signal and exit code `0`.
+- Determinism checks print success and produce no drift artifacts.
+
+See [`docs/validation.md`](docs/validation.md) for exact commands and pass/fail signals.
+
+## AI agent contribution checklist
+
+Before opening a PR, AI agents should confirm:
+
+- [ ] Read and followed applicable `AGENTS.md` instructions.
+- [ ] Updated documentation when behavior or workflows changed.
+- [ ] Kept simulation changes deterministic (seeded RNG only).
+- [ ] Ran lint + relevant deterministic/scenario checks.
+- [ ] Verified command outputs match documented pass/fail signals.
+- [ ] Included focused commit messages and PR summary.
