@@ -1,6 +1,11 @@
-'use client';
-import type { GameState, Empire, Colony, EmpireSnapshot } from '@/types';
+import type { GameState, Empire, Colony, EmpireSnapshot } from '../types';
 import { BALANCING } from './constants';
+import {
+    transferWithLedger,
+    createTreasuryAccount,
+    createColonyPrivateWealthAccount,
+    createExternalAccount,
+} from './economy_ledger';
 
 export interface BudgetBreakdown {
     taxes: number;
@@ -87,7 +92,7 @@ export function calculateEmpireBudget(game: GameState, empireId: string): Empire
     // Ship Maintenance
     const shipMaint = Object.values(game.ships)
         .filter(s => s.empireId === empireId)
-        .reduce((a, s) => a + (BALANCING.MAINTENANCE.SHIP_BASE), 0);
+        .reduce((a, _s) => a + (BALANCING.MAINTENANCE.SHIP_BASE), 0);
 
     // Office maintenance (Per company)
     const officeMaint = empire.companies.length * BALANCING.MAINTENANCE.OFFICE_BASE;
@@ -113,25 +118,63 @@ export function calculateEmpireBudget(game: GameState, empireId: string): Empire
     };
 }
 
+/**
+ * econ-001: Tick empire finances using explicit colony→treasury transfers.
+ *
+ * Taxes are now debited from colony.privateWealth and credited to empire.treasury
+ * via transferWithLedger. Maintenance costs are debited from the treasury and
+ * credited to an external sink. No silent money creation.
+ */
 export function tickEmpireFinances(next: GameState, empire: Empire, dt: number): void {
     const days = dt / 86400;
     const empireColonies = Object.values(next.colonies).filter(c => c.empireId === empire.id);
+    const treasuryAccount = createTreasuryAccount(empire);
+    const externalSink = createExternalAccount('maintenance_sink');
 
-    let totalTax = 0;
+    let totalSettledTax = 0;
     let totalMaint = 0;
 
     for (const colony of empireColonies) {
         const budget = calculateColonyBudget(colony, days);
-        totalTax += budget.taxes;
-        totalMaint += budget.maintenance.total;
+        const colonyAccount = createColonyPrivateWealthAccount(colony);
 
-        // Happiness impact of bankruptcy
+        // econ-001: Explicit debit from colony private wealth → empire treasury
+        const { settled, shortfall } = transferWithLedger(
+            next,
+            colonyAccount,
+            treasuryAccount,
+            budget.taxes,
+            'TAX_COLLECTION',
+            { colonyId: colony.id, empireId: empire.id, shortfall: 0 },
+        );
+        totalSettledTax += settled;
+
+        // Log partial settlement for audit awareness (non-blocking)
+        if (shortfall > 0.01) {
+            // Colony couldn't fully pay taxes — privateWealth clamped at 0
+            // Shortfall is recorded in the ledger entry itself (entry.shortfall)
+            colony.happiness = Math.max(0, colony.happiness - 1 * days);
+        }
+
+        // Happiness impact of empire bankruptcy (unchanged behavior)
         if (empire.treasury < 0) {
             colony.happiness = Math.max(0, colony.happiness - 5 * days);
         }
+
+        totalMaint += budget.maintenance.total;
     }
 
-    empire.treasury += totalTax - totalMaint;
+    // Maintenance: debit treasury → external sink (facilities consumed resources)
+    if (totalMaint > 0) {
+        transferWithLedger(
+            next,
+            treasuryAccount,
+            externalSink,
+            totalMaint,
+            'MAINTENANCE_PAYMENT',
+            { empireId: empire.id },
+        );
+    }
 }
 
 export function recordEmpireHistory(next: GameState, empire: Empire, isSnapshotTick: boolean): void {
@@ -147,7 +190,7 @@ export function recordEmpireHistory(next: GameState, empire: Empire, isSnapshotT
         turn: next.turn,
         date: new Date(next.date),
         treasury: empire.treasury,
-        revenue: 0, // Could be populated with more detail if needed
+        revenue: 0,
         expenses: 0,
         privateWealth: totalCivWealth,
         corporateWealth: corpWealth

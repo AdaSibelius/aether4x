@@ -1,6 +1,6 @@
-import type { Technology, TechCategory, Empire, GameEvent, EventType, TechBonuses } from '@/types';
-import { generateId } from '@/utils/id';
-import { RNG } from '@/utils/rng';
+import type { Technology, TechCategory, Empire, GameEvent, EventType, TechBonuses } from '../types';
+import { generateId } from '../utils/id';
+import { RNG } from '../utils/rng';
 
 export const TECH_TREE: Technology[] = [
     // ═══════════════════════════════════════════════════════════════════════════

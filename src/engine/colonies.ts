@@ -1,12 +1,17 @@
-import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent, Planet, GameStats } from '@/types';
+import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent, Planet, GameStats } from '../types';
 import { getGovernorBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
 import { BALANCING } from './constants';
-import SimLogger from '@/utils/logger';
-import { generateId } from '@/utils/id';
+import SimLogger from '../utils/logger';
+import { generateId } from '../utils/id';
 import { getPlanetPosition } from './fleets';
-import { RNG } from '@/utils/rng';
+import { RNG } from '../utils/rng';
 import { SPECIES, computeHabitability, getSpeciesGrowthMod, getAtmosphereHabitabilityMod } from './species';
+import {
+    transferWithLedger,
+    createColonyPrivateWealthAccount,
+    createExternalAccount,
+} from './economy_ledger';
 
 export const COLONY_TYPE_BONUS: Record<string, Record<string, number>> = {
     Core: { industry: 1.0, mining: 1.0, research: 1.0 },
@@ -509,7 +514,10 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
 
     if ((colony.privateWealth || 0) > BALANCING.CIVILIAN_EXPANSION_THRESHOLD && colony.population > (colony.factories + colony.mines + colony.civilianFactories + colony.civilianMines) * 10) {
         if (rng.next() > 0.5) { colony.civilianFactories += 1; } else { colony.civilianMines += 1; }
-        colony.privateWealth -= BALANCING.CIVILIAN_EXPANSION_COST;
+
+        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('civilian_expansion_sink'), BALANCING.CIVILIAN_EXPANSION_COST, 'CIVILIAN_EXPANSION',
+            { colonyId: colony.id, type: 'Investment' });
+
         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Civilian investment on ${colony.name} built a new facility.`, rng, { important: false }));
     }
 

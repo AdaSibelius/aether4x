@@ -1,54 +1,79 @@
-'use client';
-import type { GameState, Empire, Company, CompanyType, GameEvent, OfficerRole, Colony, Fleet } from '@/types';
-import { generateId } from '@/utils/id';
-import { RNG } from '@/utils/rng';
+import type { GameState, Empire, Company, CompanyType, GameEvent, OfficerRole, Colony, Fleet } from '../types';
+import { generateId } from '../utils/id';
+import { RNG } from '../utils/rng';
 import { generateCompanyName, createOfficer } from './officers';
 import { getEmpireTechBonuses } from './research';
 import { BALANCING } from './constants';
 import { COMPONENT_LIBRARY, createDesign } from './ships';
+import {
+    transferWithLedger,
+    createTreasuryAccount,
+    createColonyPrivateWealthAccount,
+    createCompanyAccount,
+    createExternalAccount,
+} from './economy_ledger';
 
 export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: number): GameEvent[] {
     const events: GameEvent[] = [];
     const empireColonies = Object.values(next.colonies).filter(c => c.empireId === empire.id);
+    const treasuryAccount = createTreasuryAccount(empire);
 
     // ── Corporate Operations (Every Tick) ──
     for (const company of empire.companies) {
         const homeColony = empireColonies.find(c => c.id === company.homeColonyId);
+        const companyAccount = createCompanyAccount(company);
+        const externalSink = createExternalAccount('corp_maintenance_sink');
 
-        // 1. Maintenance & Revenue
+        // 1. Maintenance
         const maintenance = calculateMaintenance(company, empire, homeColony?.staffingLevel);
-        company.wealth -= maintenance;
+        transferWithLedger(next, companyAccount, externalSink, maintenance, 'MAINTENANCE_PAYMENT',
+            { companyId: company.id, empireId: empire.id });
 
-
-
+        // 2. Revenue via opportunity pools (econ-003: replaces inverse-divisor formulas)
         let tickRevenue = 0;
         if (homeColony) {
             const staffingEff = homeColony.staffingLevel || 1.0;
+            const days = dt / 86400;
+
             if (company.type === 'Agricultural') {
-                tickRevenue = ((homeColony.population * 0.1) / (homeColony.farms || 1)) * BALANCING.TRADE_GOOD_VALUE * staffingEff;
+                // Pool: AGRICULTURAL per farm per day
+                const pool = (homeColony.farms || 0) * BALANCING.CORP_POOL.AGRICULTURAL * days;
+                const agriCos = empire.companies.filter(c => c.type === 'Agricultural' && c.homeColonyId === homeColony.id).length || 1;
+                tickRevenue = (pool / agriCos) * staffingEff;
             } else if (company.type === 'Commercial') {
-                tickRevenue = ((homeColony.privateWealthIncome ?? 0) / (homeColony.commercialCenters || 1)) * 0.5 * staffingEff;
+                const pool = (homeColony.commercialCenters || 0) * BALANCING.CORP_POOL.COMMERCIAL * days;
+                const comCos = empire.companies.filter(c => c.type === 'Commercial' && c.homeColonyId === homeColony.id).length || 1;
+                tickRevenue = (pool / comCos) * staffingEff;
             } else if (company.type === 'Manufacturing') {
-                tickRevenue = ((homeColony.privateWealthIncome ?? 0) / (homeColony.civilianFactories || 1)) * 0.3 * staffingEff;
+                const pool = (homeColony.civilianFactories || 0) * BALANCING.CORP_POOL.MANUFACTURING * days;
+                const mfgCos = empire.companies.filter(c => c.type === 'Manufacturing' && c.homeColonyId === homeColony.id).length || 1;
+                tickRevenue = (pool / mfgCos) * staffingEff;
             } else if (company.type === 'Extraction') {
-                tickRevenue = (1 + company.explorationLicenseIds.length * 0.2) * 20 * staffingEff;
+                tickRevenue = (1 + company.explorationLicenseIds.length * 0.2) * 20 * staffingEff * (dt / 86400);
             } else if (company.type === 'Transport') {
-                tickRevenue = (company.activeFreighters || 0) * 15 * staffingEff;
+                const pool = (homeColony.logisticsHubs ?? 0) * BALANCING.CORP_POOL.LOGISTICS * days;
+                const transCos = empire.companies.filter(c => c.type === 'Transport' && c.homeColonyId === homeColony.id).length || 1;
+                const baseRevenue = (company.activeFreighters || 0) * 15 * staffingEff * days;
+                tickRevenue = baseRevenue + (pool / transCos) * staffingEff;
             } else if (company.type === 'AethericSiphon') {
-                tickRevenue = (homeColony.aethericSiphons || 0) * 80 * staffingEff;
+                tickRevenue = (homeColony.aethericSiphons || 0) * 80 * staffingEff * (dt / 86400);
             } else if (company.type === 'DeepCoreMining') {
-                tickRevenue = (homeColony.deepCoreExtractors || 0) * 70 * staffingEff;
+                tickRevenue = (homeColony.deepCoreExtractors || 0) * 70 * staffingEff * (dt / 86400);
             } else if (company.type === 'Reclamation') {
-                tickRevenue = (homeColony.reclamationPlants || 0) * 40 * staffingEff;
+                tickRevenue = (homeColony.reclamationPlants || 0) * 40 * staffingEff * (dt / 86400);
             }
         }
-        company.wealth += tickRevenue;
+        // Credit revenue from external source (trade goods sold, services rendered)
+        if (tickRevenue > 0) {
+            transferWithLedger(next, createExternalAccount('corp_revenue'), companyAccount, tickRevenue, 'EXTERNAL_GRANT',
+                { companyId: company.id, type: company.type });
+        }
 
-        // 2. Valuation Update
+        // 3. Valuation Update
         const assetsValue = ((company.activeFreighters || 0) * 1000) + (company.explorationLicenseIds.length * 500);
         company.valuation = company.wealth + assetsValue;
 
-        // 3. History Logging
+        // 4. History Logging
         if (rng.chance(0.05)) {
             company.history.push({
                 date: next.date.toISOString().split('T')[0],
@@ -69,6 +94,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
         for (const company of empire.companies) {
             const homeColony = empireColonies.find(c => c.id === company.homeColonyId);
             const ceo = empire.officers.find(o => o.id === company.ceoId);
+            const companyAccount = createCompanyAccount(company);
             const revBonus = ceo?.bonuses?.corp_revenue ? (1 + ceo.bonuses.corp_revenue) : 1;
             const buildThreshold = 5000 / revBonus;
 
@@ -96,7 +122,8 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         if (bestColony) {
                             bestColony.civilianMines = (bestColony.civilianMines ?? 0) + 1;
                             const cost = buildThreshold * 0.5;
-                            company.wealth -= cost;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: 'CivilianMine' });
                             messageValue = `${company.name} expanded mining on ${bestColony.name}.`;
                         }
                     } else if (company.type === 'Manufacturing') {
@@ -105,7 +132,8 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         if (bestColony) {
                             bestColony.civilianFactories = (bestColony.civilianFactories ?? 0) + 1;
                             const cost = buildThreshold * 0.5;
-                            company.wealth -= cost;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: 'CivilianFactory' });
                             messageValue = `${company.name} built a new factory on ${bestColony.name}.`;
                         }
                     } else if (company.type === 'Agricultural') {
@@ -114,7 +142,8 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         if (bestColony) {
                             bestColony.farms = (bestColony.farms ?? 0) + 1;
                             const cost = buildThreshold * 0.5;
-                            company.wealth -= cost;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: 'Farm' });
                             messageValue = `${company.name} established a new farm complex on ${bestColony.name}.`;
                         }
                     } else if (company.type === 'Commercial') {
@@ -122,7 +151,8 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         if (bestColony) {
                             bestColony.commercialCenters = (bestColony.commercialCenters ?? 0) + 1;
                             const cost = buildThreshold * 0.5;
-                            company.wealth -= cost;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: 'CommercialCenter' });
                             messageValue = `${company.name} opened a new commercial center on ${bestColony.name}.`;
                         }
                     } else if (company.type === 'Transport') {
@@ -156,9 +186,11 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                             if (selectedDesign) {
                                 const wealthCost = selectedDesign.bpCost * 10;
                                 const govTax = wealthCost * 0.1;
-                                company.wealth -= (wealthCost + govTax);
-                                empire.treasury += govTax;
-
+                                // Ship purchase: company pays cost; tax portion goes to treasury
+                                transferWithLedger(next, createCompanyAccount(company), createExternalAccount('shipyard_build'), wealthCost, 'CORP_EXPANSION',
+                                    { companyId: company.id, designId: selectedDesign.id });
+                                transferWithLedger(next, createCompanyAccount(company), treasuryAccount, govTax, 'SHIP_PURCHASE_TAX',
+                                    { companyId: company.id, empireId: empire.id });
                                 sy.activeBuilds.push({
                                     id: generateId('item', rng),
                                     type: 'Ship',
@@ -178,7 +210,8 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                             if (bestColony) {
                                 bestColony.logisticsHubs = (bestColony.logisticsHubs ?? 0) + 1;
                                 const cost = buildThreshold * 0.5;
-                                company.wealth -= cost;
+                                transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                    { companyId: company.id, colonyId: bestColony.id, type: 'LogisticsHub' });
                                 messageValue = `${company.name} established a new logistics hub on ${bestColony.name}.`;
                             }
                         }
@@ -194,7 +227,9 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         })[0];
                         if (bestColony) {
                             bestColony.aethericSiphons = (bestColony.aethericSiphons ?? 0) + 1;
-                            company.wealth -= buildThreshold * 0.5;
+                            const cost = buildThreshold * 0.5;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: 'AethericSiphon' });
                             messageValue = `${company.name} installed a new Aetheric Siphon on ${bestColony.name}.`;
                         }
                     } else if (company.type === 'DeepCoreMining') {
@@ -202,7 +237,9 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         bestColony = empireColonies.sort((a, b) => b.population - a.population)[0]; // Placeholder logic
                         if (bestColony) {
                             bestColony.deepCoreExtractors = (bestColony.deepCoreExtractors ?? 0) + 1;
-                            company.wealth -= buildThreshold * 0.5;
+                            const cost = buildThreshold * 0.5;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: 'DeepCoreExtractor' });
                             messageValue = `${company.name} deployed a Deep Core Extractor on ${bestColony.name}.`;
                         }
                     } else if (company.type === 'Reclamation') {
@@ -210,7 +247,9 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         bestColony = empireColonies.sort((a, b) => (b.civilianFactories + b.factories) - (a.civilianFactories + a.factories))[0];
                         if (bestColony) {
                             bestColony.reclamationPlants = (bestColony.reclamationPlants ?? 0) + 1;
-                            company.wealth -= buildThreshold * 0.5;
+                            const cost = buildThreshold * 0.5;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: 'ReclamationPlant' });
                             messageValue = `${company.name} opened a Reclamation Plant on ${bestColony.name}.`;
                         }
                     }
@@ -228,12 +267,12 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                 }
             }
 
-            // Dividends
+            // Dividends: explicit company → treasury transfer
             if (company.wealth > 5000) {
                 const dividend = company.wealth * 0.02 * chancePerTick * 365;
                 if (dividend > 1) {
-                    company.wealth -= dividend;
-                    empire.treasury += dividend;
+                    transferWithLedger(next, createCompanyAccount(company), treasuryAccount, dividend, 'CORPORATE_DIVIDEND',
+                        { companyId: company.id, empireId: empire.id });
                 }
             }
 
@@ -298,7 +337,15 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                 history: [],
                 transactions: []
             };
-            colony.privateWealth -= 5000;
+            // econ-001/econ-005: Founding debit is an explicit colony→company transfer
+            const colAccount = createColonyPrivateWealthAccount(colony);
+            const newCorpAccount: { label: string; getBalance: () => number; applyDelta: (d: number) => void } = {
+                label: `company:${newCompany.id}`,
+                getBalance: () => newCompany.wealth,
+                applyDelta: (d) => { newCompany.wealth += d; },
+            };
+            transferWithLedger(next, colAccount, newCorpAccount, 5000, 'CORP_FOUNDING',
+                { colonyId: colony.id, empireId: empire.id, companyType: type });
             empire.companies.push(newCompany);
             events.push({
                 id: generateId('evt', rng),
@@ -454,6 +501,7 @@ export function tickOfficerLifecycle(next: GameState, empire: Empire, rng: RNG, 
 export function processTenders(next: GameState, empire: Empire, rng: RNG): GameEvent[] {
     const events: GameEvent[] = [];
     const nowStr = next.date.toISOString().split('T')[0];
+    const treasuryAccount = createTreasuryAccount(empire); // local ref for this function
 
     // 1. Process active bids for ongoing tenders
     for (const tender of next.tenders) {
@@ -502,7 +550,8 @@ export function processTenders(next: GameState, empire: Empire, rng: RNG): GameE
             if (tender.highestBidderId) {
                 const winner = empire.companies.find(c => c.id === tender.highestBidderId);
                 if (winner) {
-                    winner.wealth -= tender.highestBid;
+                    transferWithLedger(next, createCompanyAccount(winner), treasuryAccount, tender.highestBid, 'TENDER_PAYMENT',
+                        { companyId: winner.id, empireId: empire.id, systemId: tender.systemId });
                     if (!winner.transactions) winner.transactions = [];
                     winner.transactions.push({
                         date: nowStr,
@@ -512,7 +561,6 @@ export function processTenders(next: GameState, empire: Empire, rng: RNG): GameE
                     });
 
                     winner.explorationLicenseIds.push(tender.systemId);
-                    empire.treasury += tender.highestBid;
 
                     events.push({
                         id: generateId('evt', rng),

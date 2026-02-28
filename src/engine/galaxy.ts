@@ -1,5 +1,5 @@
-import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, BodyType, AtmosphereType, CelestialType, CelestialSubtype } from '@/types';
-import { RNG } from '@/utils/rng';
+import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, BodyType, AtmosphereType, CelestialType, CelestialSubtype } from '../types';
+import { RNG } from '../utils/rng';
 
 // ─── Name Generation ─────────────────────────────────────────────────────────
 const PREFIXES = ['Sol', 'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Tau', 'Sigma', 'Omicron', 'Psi', 'Kepler', 'Gliese', 'HD', 'Wolf', 'Lacaille', 'Ross', 'Vega', 'Sirius', 'Proxima', 'Rigel', 'Deneb', 'Altair', 'Spica', 'Antares', 'Polaris'];

@@ -1,12 +1,11 @@
-'use client';
-import type { GameState, Empire, GameEvent } from '@/types';
+import type { GameState, Empire, GameEvent } from '../types';
 import { tickResearch } from './research';
 import { tickColony } from './colonies';
 import { tickCivilianEconomy, tickCivilianMigration } from './economy';
 import { generateColonyResourceDemand } from './signals';
 import { tickCorporations, tickOfficerLifecycle } from './corporations';
 import { tickEmpireFinances, recordEmpireHistory } from './finances';
-import { RNG } from '@/utils/rng';
+import { RNG } from '../utils/rng';
 
 /**
  * Orchestrates the full economic and organizational tick for a single empire.

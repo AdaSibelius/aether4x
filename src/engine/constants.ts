@@ -31,8 +31,8 @@ export const BALANCING = {
     FARM_YIELD_BASE: 5.0,      // Food units produced per farm per day [NEW]
 
     // --- Wealth & Taxes ---
-    TRADE_GOOD_VALUE: 5,       // Wealth generated per 1 unit of Trade Goods consumed
-    TAX_INCOME_BASE: 0.5,      // Wealth tax per 1M population per day (scaled by happiness)
+    TRADE_GOOD_VALUE: 8,       // Wealth generated per 1 unit of Trade Goods consumed
+    TAX_INCOME_BASE: 0.1,      // Wealth tax per 1M population per day (scaled by happiness)
     TRADE_TAX_RATE: 0.2,       // Percentage of trade value taken as state tax
 
     // --- Maintenance (Wealth/Day) ---
@@ -87,4 +87,24 @@ export const BALANCING = {
     MINERAL_NAMES: ['Iron', 'Copper', 'Titanium', 'Uranium', 'Tungsten', 'Cobalt', 'Lithium', 'Platinum', 'Ambergris', 'Aether', 'Fuel', 'Food'],
     SHIPYARD_BP_ALLOCATION_FACTOR: 0.3, // 30% of industrial BP goes to shipyards by default
     SHIPYARD_BASE_MAX_TONNAGE: 5000,
+
+    // --- Ledger Retention ---
+    /** Maximum monetary ledger entries before pruning (keeps most recent). */
+    MAX_MONETARY_LEDGER_ENTRIES: 500,
+    /** Maximum cashflow ledger entries before pruning. */
+    MAX_CASHFLOW_LEDGER_ENTRIES: 200,
+
+    // --- Corporate Opportunity Pool (wealth/building/day) ---
+    // Each pool type represents how much revenue a building generates for
+    // all companies of that type on the colony COMBINED.
+    // This replaces the inverse-divisor formulas and makes revenue tick-length
+    // invariant for a fixed elapsed simulated time.
+    CORP_POOL: {
+        COMMERCIAL: 8.0,   // Per commercial center per day
+        MANUFACTURING: 6.0,   // Per civilian factory per day
+        EXTRACTION: 5.0,   // Per civilian mine per day
+        LOGISTICS: 4.0,   // Per logistics hub per day
+        AGRICULTURAL: 3.0,   // Per farm per day
+    },
 };
+

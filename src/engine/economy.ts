@@ -1,7 +1,6 @@
-'use client';
-import type { GameState, Empire, Colony, Fleet, GameEvent, SpeciesId } from '@/types';
-import { generateId } from '@/utils/id';
-import { RNG } from '@/utils/rng';
+import type { GameState, Empire, Colony, Fleet, GameEvent, SpeciesId } from '../types';
+import { generateId } from '../utils/id';
+import { RNG } from '../utils/rng';
 import { getPlanetPosition } from './fleets';
 
 /**

@@ -18,6 +18,10 @@ import ShipyardTab from './ShipyardTab';
 import InvestmentHistoryChart from './InvestmentHistoryChart';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend as RechartsLegend } from 'recharts';
 
+// Simple ID generator for UI items to avoid impurity in render
+const generateSimId = () => `item_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const COLONY_TYPES: ColonyType[] = ['Core', 'Mining', 'Research', 'Military', 'Agricultural'];
@@ -143,6 +147,33 @@ function HappinessMeter({ value }: { value: number }) {
         </div>
     );
 }
+
+// Recharts Tooltip extracted to avoid creation-during-render
+const LaborTooltip = ({ active, payload, total }: { active?: boolean; payload?: { name: string; value: number; payload: { color: string } }[]; total: number }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div style={{
+                backgroundColor: 'var(--bg-panel)',
+                border: '1px solid var(--border-color)',
+                padding: '8px',
+                fontSize: '11px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                borderRadius: '4px'
+            }}>
+                <div style={{ color: payload[0].payload.color, fontWeight: 600, marginBottom: 2 }}>
+                    {payload[0].name}
+                </div>
+                <div style={{ color: 'var(--text-primary)' }}>
+                    {payload[0].value.toFixed(1)}M workers
+                </div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+                    {((payload[0].value / total) * 100).toFixed(1)}% of population
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
 
 function InfraBar({ value }: { value: number }) {
     const color = value > 60 ? 'var(--accent-blue)' : value > 30 ? 'var(--accent-gold)' : 'var(--accent-red)';
@@ -400,7 +431,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                             <option value="Forced Labor">Forced Labor (-20% Growth, -30 Happiness, +Boost Output)</option>
                         </select>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                            Policies dictate the primary focus of this colony's administration, trading happiness for population growth or raw industrial output.
+                            Policies dictate the primary focus of this colony&apos;s administration, trading happiness for population growth or raw industrial output.
                         </div>
                     </div>
                 </div>
@@ -477,32 +508,6 @@ function LaborReport({ report, staffing, population }: {
         { name: 'Reserve', value: report.unemployed || 0, color: '#9b9b9b' },
     ].filter(s => s.value > 0);
 
-    const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div style={{
-                    backgroundColor: 'var(--bg-panel)',
-                    border: '1px solid var(--border-color)',
-                    padding: '8px',
-                    fontSize: '11px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                    borderRadius: '4px'
-                }}>
-                    <div style={{ color: payload[0].payload.color, fontWeight: 600, marginBottom: 2 }}>
-                        {payload[0].name}
-                    </div>
-                    <div style={{ color: 'var(--text-primary)' }}>
-                        {payload[0].value.toFixed(1)}M workers
-                    </div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
-                        {((payload[0].value / (report.totalReq + report.unemployed)) * 100).toFixed(1)}% of population
-                    </div>
-                </div>
-            );
-        }
-        return null;
-    };
-
     return (
         <div className={styles.sliderGroup}>
             <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 20 }}>
@@ -523,7 +528,7 @@ function LaborReport({ report, staffing, population }: {
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
-                            <RechartsTooltip content={<CustomTooltip />} />
+                            <RechartsTooltip content={<LaborTooltip total={report.totalReq + report.unemployed} />} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
@@ -592,7 +597,7 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
         const bpCost = STRUCTURE_BP_COST[type] ?? 1000;
         const mineralCost = STRUCTURE_MINERAL_COST[type] ?? {};
         const newItem = {
-            id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            id: `item_${generateSimId()}`,
             type,
             name: existing.label,
             quantity: qty || addQty,
@@ -1248,24 +1253,40 @@ type Tab = 'Overview' | 'Population' | 'Industry' | 'Shipyards' | 'Surface' | 'A
 
 export default function ColonyManager() {
     const game = useGameStore(s => s.game);
+
     const { selectedColonyId, selectColony } = useUIStore();
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
 
+    const allColonies = useMemo(() => {
+        if (!game) return [];
+        return Object.values(game.colonies).filter(c => c.empireId === game.playerEmpireId);
+    }, [game]);
+
+    const colonyId = selectedColonyId || allColonies[0]?.id;
+    const colony = game && colonyId ? game.colonies[colonyId] : null;
+
+    // Find planet data
+    const planet = (game && colony) ? (Object.values(game.galaxy.stars).flatMap(s => s.planets).find(p => p.id === colony.planetId) ?? null) : null;
+    const empire = game ? game.empires[game.playerEmpireId] : null;
+
+    // Hooks MUST be called before early returns
+    const rates = useMemo(() => {
+        if (!colony || !empire) return null;
+        return calcEffectiveRates(colony, empire.officers, planet, game!.empires);
+    }, [colony, empire, planet, game]);
+
     if (!game) return <div className={styles.empty}>No game in progress.</div>;
 
-    const allColonies = Object.values(game.colonies).filter(c => c.empireId === game.playerEmpireId);
-    if (allColonies.length === 0) return (
+    if (!colony || allColonies.length === 0) return (
         <RosterShell>
-            <MainArea isEmpty emptyMessage="No colonies yet. Explore and colonize a planet." children={null} />
+            <MainArea isEmpty emptyMessage="No colonies yet. Explore and colonize a planet.">
+                {null}
+            </MainArea>
         </RosterShell>
     );
 
-    const colony = (selectedColonyId ? game.colonies[selectedColonyId] : null) ?? allColonies[0];
+    if (!rates) return null; // Should not happen if colony exists
 
-    // Find planet data
-    const planet = Object.values(game.galaxy.stars).flatMap(s => s.planets).find(p => p.id === colony.planetId) ?? null;
-    const empire = game.empires[game.playerEmpireId];
-    const rates = useMemo(() => calcEffectiveRates(colony, empire.officers, planet, game.empires), [colony, empire.officers, planet, game.empires]);
 
     const updateColony = (patch: Partial<Colony>) => {
         useGameStore.setState(s => ({

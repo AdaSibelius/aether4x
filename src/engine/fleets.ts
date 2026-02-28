@@ -1,10 +1,16 @@
-import type { GameState, GameEvent, Fleet, Ship, Vec2, Empire, Star, Planet, Colony, ShipOrder, ShipComponent } from '@/types';
-import { RNG } from '@/utils/rng';
+import type { GameState, GameEvent, Fleet, Ship, Vec2, Empire, Star, Planet, Colony, ShipOrder, ShipComponent } from '../types';
+import { RNG } from '../utils/rng';
 import { makeEvent } from './events';
 import { getAdmiralBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
-import { generateId } from '@/utils/id';
+import { generateId } from '../utils/id';
 import { BALANCING } from './constants';
+import {
+    transferWithLedger,
+    createTreasuryAccount,
+    createColonyPrivateWealthAccount,
+    createCompanyAccount,
+} from './economy_ledger';
 
 // Helper to calculate distance
 function distance(p1: Vec2, p2: Vec2): number {
@@ -353,7 +359,8 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                         const company = empire.companies.find(c => c.id === firstShip?.sourceCompanyId);
                         if (company) {
                             const fee = totalUnloaded * 500; // 500 wealth per million colonists
-                            company.wealth += fee;
+                            transferWithLedger(state, createTreasuryAccount(empire), createCompanyAccount(company), fee, 'MIGRATION_FEE',
+                                { companyId: company.id, empireId: empire.id, colonyId: colony.id, amount: totalUnloaded });
                             company.transactions?.push({
                                 date: state.date.toISOString().split('T')[0],
                                 amount: fee,
@@ -480,7 +487,8 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                         const company = empire.companies.find(c => c.id === firstShip?.sourceCompanyId);
                         if (company) {
                             const fee = totalUnloaded * 0.5; // 0.5 wealth per ton
-                            company.wealth += fee;
+                            transferWithLedger(state, createColonyPrivateWealthAccount(colony), createCompanyAccount(company), fee, 'FREIGHT_FEE',
+                                { companyId: company.id, colonyId: colony.id, res, amount: totalUnloaded });
                             company.transactions?.push({
                                 date: state.date.toISOString().split('T')[0],
                                 amount: fee,

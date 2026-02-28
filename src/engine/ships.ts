@@ -1,4 +1,4 @@
-import type { ShipComponent, ShipDesign, HullClass } from '@/types';
+import type { ShipComponent, ShipDesign, HullClass } from '../types';
 
 // ─── Hull Classes ────────────────────────────────────────────────────────────
 

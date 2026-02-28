@@ -1,6 +1,6 @@
-import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, BodyType, AtmosphereType, CelestialType, CelestialSubtype } from '@/types';
+import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, BodyType, AtmosphereType, CelestialType, CelestialSubtype } from '../types';
 import { generateMinerals, generatePlanets } from './galaxy';
-import { RNG } from '@/utils/rng';
+import { RNG } from '../utils/rng';
 
 // ─── Real Star Catalog ───────────────────────────────────────────────────────
 interface StarEntry {
