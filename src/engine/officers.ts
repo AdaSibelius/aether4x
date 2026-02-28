@@ -168,7 +168,10 @@ export function generateCompanyName(rng: RNG, type: CompanyType): string {
         Extraction: ['Mining Syndicate', 'Extraction Corp', 'Mineral Co.', 'Excavations', 'Deep Core Miners', 'Resources'],
         Manufacturing: ['Manufacturing', 'Foundry', 'Heavy Industries', 'Workshops', 'Fabrication Co.', 'Enterprises'],
         Agricultural: ['Farms', 'AgriCorp', 'Harvests', 'Biosystems', 'Foodstuffs', 'Growers'],
-        Commercial: ['Goods', 'Consortium', 'Retail', 'Traders', 'Markets', 'Exchange']
+        Commercial: ['Goods', 'Consortium', 'Retail', 'Traders', 'Markets', 'Exchange'],
+        AethericSiphon: ['Siphon Corps', 'Aether Harvesters', 'Current Catchers', 'Resonance Sucking', 'Aetheric Siphons'],
+        DeepCoreMining: ['Core Extractors', 'Deep Miners', 'Mantle Drillers', 'Magma Miners', 'Subsurface Resources'],
+        Reclamation: ['Reclamation Corps', 'Waste Managers', 'Efficiency Experts', 'Recycling Group', 'Salvage Solutions']
     };
     const pre = rng.pick(prefixes);
     const sufList = suffixes[type];
@@ -240,6 +243,12 @@ export function createOfficer(role: OfficerRole, empireBonuses: Record<string, n
         specialization = rng.pick(ENGINEER_DOMAINS);
     }
 
+    // Lab Capacity (Base 10, Scientists scale with level)
+    let labCapacity = 10 + (empireBonuses['research_capacity'] || 0);
+    if (role === 'Scientist') {
+        labCapacity += (baseLevel * 5);
+    }
+
     return {
         id: `officer_${s.toString(36)}`,
         name,
@@ -251,6 +260,7 @@ export function createOfficer(role: OfficerRole, empireBonuses: Record<string, n
         bonuses,
         specialization,
         assignedTo: undefined,
+        labCapacity,
     };
 }
 

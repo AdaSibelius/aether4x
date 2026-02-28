@@ -43,6 +43,9 @@ export interface Colony {
     terraformProgress: number;
     aethericDistillery: number;
     logisticsHubs: number;
+    aethericSiphons: number;
+    deepCoreExtractors: number;
+    reclamationPlants: number;
     migrationMode: MigrationMode;
     migrantsWaiting?: number;
     minerals: Record<string, number>;
@@ -70,7 +73,9 @@ export interface ColonySnapshot {
 export type ProductionItemType =
     | 'Ship' | 'Factory' | 'Mine' | 'ResearchLab' | 'Shipyard'
     | 'Terraformer' | 'GroundDefense' | 'Spaceport' | 'Infrastructure' | 'ConstructionOffice'
-    | 'AethericDistillery' | 'ShipyardExpansion_Slipway' | 'ShipyardExpansion_Tonnage';
+    | 'AethericDistillery' | 'ShipyardExpansion_Slipway' | 'ShipyardExpansion_Tonnage'
+    | 'AethericSiphon' | 'DeepCoreExtractor' | 'ReclamationPlant'
+    | 'Farm' | 'CommercialCenter' | 'LogisticsHub';
 
 export interface ProductionItem {
     id: string;

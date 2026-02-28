@@ -191,6 +191,36 @@ export const TECH_TREE: Technology[] = [
         prerequisites: ['standardized_containers'],
         effects: [{ type: 'load_speed', value: 0.2 }],
     },
+    {
+        id: 'soil_enrichment',
+        name: 'Chemical Soil Enrichment',
+        description: 'Advanced fertilizers and soil treatment protocols for increased agricultural yield.',
+        category: 'Biology',
+        tier: 2,
+        cost: 4800,
+        prerequisites: ['sanitation_systems'],
+        effects: [{ type: 'farm_yield', value: 0.15 }],
+    },
+    {
+        id: 'precision_surveying',
+        name: 'Precision Seismic Surveying',
+        description: 'Using high-frequency vibrations to locate shallow mineral deposits.',
+        category: 'Geology',
+        tier: 2,
+        cost: 5500,
+        prerequisites: ['bessemer_process'],
+        effects: [{ type: 'mining_rate', value: 0.15 }],
+    },
+    {
+        id: 'steam_turbine_refinement',
+        name: 'Steam Turbine Refinement',
+        description: 'Optimizing the expansion curves of steam turbines for improved industrial power.',
+        category: 'Engineering',
+        tier: 2,
+        cost: 5900,
+        prerequisites: ['steam_refinement'],
+        effects: [{ type: 'factory_output', value: 0.15 }],
+    },
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ERA III: ATOMIC CLOCKWORK (Tier 3)
@@ -306,6 +336,46 @@ export const TECH_TREE: Technology[] = [
         prerequisites: ['automated_docking', 'difference_engine_mk2'],
         effects: [{ type: 'fuel_efficiency', value: 0.1 }],
     },
+    {
+        id: 'hydroponic_vats',
+        name: 'Hydroponic Vat Systems',
+        description: 'Soilless cultivation chambers that drastically increase food production in confined spaces.',
+        category: 'Biology',
+        tier: 3,
+        cost: 42000,
+        prerequisites: ['soil_enrichment'],
+        effects: [{ type: 'farm_yield', value: 0.25 }],
+    },
+    {
+        id: 'gravity_feed_forges',
+        name: 'Gravity-Feed Forges',
+        description: 'Using natural planetary gravity to automate the movement of heavy slag in foundries.',
+        category: 'Engineering',
+        tier: 3,
+        cost: 55000,
+        prerequisites: ['industrial_chemistry'],
+        effects: [{ type: 'shipyard_capacity', value: 0.25 }],
+    },
+    {
+        id: 'seismic_resonance_mapping',
+        name: 'Seismic Resonance Mapping',
+        description: 'Analyzing the echoes of deep tremors to find rich secondary ore veins.',
+        category: 'Geology',
+        tier: 3,
+        cost: 48000,
+        prerequisites: ['precision_surveying'],
+        effects: [{ type: 'mining_rate', value: 0.20 }],
+    },
+    {
+        id: 'lab_management_protocols',
+        name: 'Lab Management Protocols',
+        description: 'Standardized methods for organizing multi-disciplinary research teams.',
+        category: 'Computation',
+        tier: 3,
+        cost: 52000,
+        prerequisites: ['scientific_methodology'],
+        effects: [{ type: 'research_capacity', value: 10 }],
+    },
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ERA IV: THE AMBERGRIS AGE (Tier 4)
@@ -411,6 +481,36 @@ export const TECH_TREE: Technology[] = [
         prerequisites: ['standardized_containers', 'ambergris_theory'],
         effects: [{ type: 'cargo_capacity', value: 0.5 }],
     },
+    {
+        id: 'automated_assembly_logic',
+        name: 'Automated Assembly Logic',
+        description: 'Advanced logical sequences for mechanical workers that maximize factory floor efficiency.',
+        category: 'Engineering',
+        tier: 4,
+        cost: 550000,
+        prerequisites: ['industrial_robotics_tier1'],
+        effects: [{ type: 'factory_output', value: 0.25 }],
+    },
+    {
+        id: 'precision_deep_drilling',
+        name: 'Precision Deep Drilling',
+        description: 'Resonance-guided drill bits that maintain structural integrity at extreme depths.',
+        category: 'Geology',
+        tier: 4,
+        cost: 512000,
+        prerequisites: ['deep_core_mining'],
+        effects: [{ type: 'mining_rate', value: 0.35 }],
+    },
+    {
+        id: 'logistics_shunting_algorithms',
+        name: 'Logistics Shunting Algorithms',
+        description: 'Predictive computation for cargo movement within spaceports.',
+        category: 'Logistics',
+        tier: 4,
+        cost: 480000,
+        prerequisites: ['supply_chain_optimization'],
+        effects: [{ type: 'load_speed', value: 0.40 }],
+    },
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ERA V: BEYOND THE AETHER (Tier 5)
@@ -476,6 +576,56 @@ export const TECH_TREE: Technology[] = [
         prerequisites: ['high_capacity_bays', 'difference_engine_mk3'],
         effects: [{ type: 'load_speed', value: 0.5 }],
     },
+    {
+        id: 'aetheric_siphon_theory',
+        name: 'Aetheric Siphon Theory',
+        description: 'Advanced theory on harvesting aetheric currents for extreme energy. Unlocks Aetheric Siphon Corps.',
+        category: 'Power',
+        tier: 5,
+        cost: 3500000,
+        prerequisites: ['antimatter_forge'],
+        effects: [{ type: 'company_unlock', value: 1 }],
+    },
+    {
+        id: 'grand_scientist_mentorship',
+        name: 'Grand Scientist Mentorship',
+        description: 'Establishing elite mentorship programs to pass down complex lab management techniques.',
+        category: 'Computation',
+        tier: 5,
+        cost: 3200000,
+        prerequisites: ['lab_management_protocols'],
+        effects: [{ type: 'research_capacity', value: 15 }],
+    },
+    {
+        id: 'genetic_yield_optimization',
+        name: 'Genetic Food Yield Optimization',
+        description: 'Tailoring crop genetics to specific planetary aetheric signatures.',
+        category: 'Biology',
+        tier: 5,
+        cost: 2800000,
+        prerequisites: ['gene_alchemy'],
+        effects: [{ type: 'farm_yield', value: 0.40 }],
+    },
+    {
+        id: 'nano_seismic_imaging',
+        name: 'Nano-Seismic Imaging',
+        description: 'Deploying clouds of nanobots to map tectonic faults with sub-millimeter precision.',
+        category: 'Geology',
+        tier: 5,
+        cost: 3100000,
+        prerequisites: ['deep_core_mining', 'precision_deep_drilling'],
+        effects: [{ type: 'mining_rate', value: 0.45 }],
+    },
+    {
+        id: 'deep_core_mining_logic',
+        name: 'Deep Core Mining Logic',
+        description: 'Mastering the logistics of extreme-pressure environments. Unlocks Deep Core Mining Entities.',
+        category: 'Geology',
+        tier: 5,
+        cost: 3300000,
+        prerequisites: ['nano_seismic_imaging'],
+        effects: [{ type: 'company_unlock', value: 2 }],
+    },
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ERA VI: RESONATED SOCIETY (Tier 6)
@@ -510,6 +660,46 @@ export const TECH_TREE: Technology[] = [
         cost: 10000000,
         prerequisites: ['planetary_logistics_grid'],
         effects: [{ type: 'mineral_cost_reduction', value: 0.2 }],
+    },
+    {
+        id: 'automated_reclamation_consortium',
+        name: 'Automated Reclamation Consortium',
+        description: 'Unlocks specialized corporations focused on harvesting industrial waste and planetary debris.',
+        category: 'Engineering',
+        tier: 6,
+        cost: 15000000,
+        prerequisites: ['automated_assembly_logic'],
+        effects: [{ type: 'company_unlock', value: 3 }],
+    },
+    {
+        id: 'subspace_research_nodes',
+        name: 'Sub-Space Research Nodes',
+        description: 'Establishing computation nodes inside subspace pockets to bypass physical calculation limits.',
+        category: 'Computation',
+        tier: 6,
+        cost: 12000000,
+        prerequisites: ['aetheric_neural_links'],
+        effects: [{ type: 'research_rate', value: 0.5 }],
+    },
+    {
+        id: 'tectonic_stabilization',
+        name: 'Tectonic Harmonic Stabilization',
+        description: 'Active frequency dampeners that allow for massive mining operations without seismic risk.',
+        category: 'Geology',
+        tier: 6,
+        cost: 14000000,
+        prerequisites: ['nano_seismic_imaging'],
+        effects: [{ type: 'mining_rate', value: 0.60 }],
+    },
+    {
+        id: 'quantum_logistics_matrix',
+        name: 'Quantum Logistics Matrix',
+        description: 'Using quantum entanglement to synchronize supply chains across the stars.',
+        category: 'Logistics',
+        tier: 6,
+        cost: 11000000,
+        prerequisites: ['quantum_inventory_tracking'],
+        effects: [{ type: 'fuel_efficiency', value: 0.50 }],
     },
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -560,6 +750,26 @@ export const TECH_TREE: Technology[] = [
         cost: 380000000,
         prerequisites: ['trans_planetary_pipelines'],
         effects: [{ type: 'load_speed', value: 10.0 }],
+    },
+    {
+        id: 'stellar_nursery_agriculture',
+        name: 'Stellar Nursery Agriculture',
+        description: 'Farming in the actual coronas of stars using magnetic containment fields.',
+        category: 'Biology',
+        tier: 8,
+        cost: 450000000,
+        prerequisites: ['genetic_yield_optimization'],
+        effects: [{ type: 'farm_yield', value: 1.0 }],
+    },
+    {
+        id: 'infinite_computation_lattice',
+        name: 'Infinite Computation Lattice',
+        description: 'A stellar-scale computer that provides infinite research overhead.',
+        category: 'Computation',
+        tier: 8,
+        cost: 500000000,
+        prerequisites: ['subspace_research_nodes'],
+        effects: [{ type: 'research_capacity', value: 50 }],
     },
 ];
 
@@ -614,49 +824,63 @@ export function tickResearch(empire: Empire, dt: number): GameEvent[] {
     const events: GameEvent[] = [];
     const { research, officers } = empire;
 
-    // Base RP per lab (could be moved to constants)
+    // Base RP per lab
     const BASE_RP_PER_LAB = 20;
-
     const empireBonuses = getEmpireTechBonuses(research.completedTechs);
 
-    // We use a traditional for loop to avoid issues with splice while iterating
-    for (let i = research.activeProjects.length - 1; i >= 0; i--) {
+    // Filter to valid active projects
+    const completedIndices: number[] = [];
+
+    for (let i = 0; i < research.activeProjects.length; i++) {
         const project = research.activeProjects[i];
         const tech = TECH_BY_ID[project.techId];
         if (!tech) continue;
 
         const scientist = officers.find(o => o.id === project.scientistId);
 
-        // Calculate bonus: 5% per level + 10% per level if specialized in the category
+        // 1. Calculate Researcher Effectiveness
         let bonus = 1.0;
-        if (scientist) {
-            const levelBonus = scientist.level * 0.05;
+        let capacity = 10; // Default if no scientist
 
-            // Base specialization bonus is 10%, can be increased by research
+        if (scientist) {
+            const levelBonus = (scientist.level - 1) * 0.05;
             const specMultiplier = 0.10 + (empireBonuses['officer_specialization_bonus'] || 0);
             const specBonus = (scientist.specialization === tech.category) ? scientist.level * specMultiplier : 0;
-
-            bonus += levelBonus + specBonus;
-
-            // Apply trait bonuses (e.g., Visionary)
             const traitBonus = (scientist.bonuses['research_rate'] || 0);
-            bonus += traitBonus;
+
+            bonus += levelBonus + specBonus + traitBonus;
+            capacity = scientist.labCapacity + (empireBonuses['research_capacity'] || 0);
         }
 
         // Apply empire-wide research rate bonuses
         bonus += (empireBonuses['research_rate'] || 0);
 
-        const projectRate = (project.labs * BASE_RP_PER_LAB) * bonus;
+        // 2. Lab Efficiency & Bottleneck logic
+        // If labs > capacity, excess labs operate at 10% efficiency
+        const assignedLabs = project.labs;
+        const effectiveLabs = assignedLabs > capacity
+            ? capacity + (assignedLabs - capacity) * 0.1
+            : assignedLabs;
+
+        const projectRate = (effectiveLabs * BASE_RP_PER_LAB) * bonus;
         project.investedPoints += projectRate * (dt / 86400);
 
         if (project.investedPoints >= tech.cost) {
-            research.completedTechs.push(tech.id);
-            events.push(makeEvent('ResearchComplete',
-                `Research complete: ${tech.name}`, { important: tech.tier >= 2 }));
-
-            // Remove technical project from active list
-            research.activeProjects.splice(i, 1);
+            completedIndices.push(i);
         }
+    }
+
+    // Process completions (reverse order)
+    for (let i = completedIndices.length - 1; i >= 0; i--) {
+        const idx = completedIndices[i];
+        const project = research.activeProjects[idx];
+        const tech = TECH_BY_ID[project.techId];
+
+        research.completedTechs.push(tech.id);
+        events.push(makeEvent('ResearchComplete',
+            `Research complete: ${tech.name}`, { important: tech.tier >= 2 }));
+
+        research.activeProjects.splice(idx, 1);
     }
 
     return events;

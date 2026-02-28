@@ -34,6 +34,12 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                 tickRevenue = (1 + company.explorationLicenseIds.length * 0.2) * 20 * staffingEff;
             } else if (company.type === 'Transport') {
                 tickRevenue = (company.activeFreighters || 0) * 15 * staffingEff;
+            } else if (company.type === 'AethericSiphon') {
+                tickRevenue = (homeColony.aethericSiphons || 0) * 80 * staffingEff;
+            } else if (company.type === 'DeepCoreMining') {
+                tickRevenue = (homeColony.deepCoreExtractors || 0) * 70 * staffingEff;
+            } else if (company.type === 'Reclamation') {
+                tickRevenue = (homeColony.reclamationPlants || 0) * 40 * staffingEff;
             }
         }
         company.wealth += tickRevenue;
@@ -176,6 +182,37 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                                 messageValue = `${company.name} established a new logistics hub on ${bestColony.name}.`;
                             }
                         }
+                    } else if (company.type === 'AethericSiphon') {
+                        // Siphons like planets with high Aether accessibility
+                        const planets = Object.values(next.galaxy.stars).flatMap(s => s.planets);
+                        bestColony = empireColonies.sort((a, b) => {
+                            const bPlanet = planets.find(p => p.id === b.planetId);
+                            const aPlanet = planets.find(p => p.id === a.planetId);
+                            const bAether = bPlanet?.minerals.find(m => m.name === 'Aether')?.accessibility || 0;
+                            const aAether = aPlanet?.minerals.find(m => m.name === 'Aether')?.accessibility || 0;
+                            return bAether - aAether;
+                        })[0];
+                        if (bestColony) {
+                            bestColony.aethericSiphons = (bestColony.aethericSiphons ?? 0) + 1;
+                            company.wealth -= buildThreshold * 0.5;
+                            messageValue = `${company.name} installed a new Aetheric Siphon on ${bestColony.name}.`;
+                        }
+                    } else if (company.type === 'DeepCoreMining') {
+                        // Deep core mining finds rich minerals
+                        bestColony = empireColonies.sort((a, b) => b.population - a.population)[0]; // Placeholder logic
+                        if (bestColony) {
+                            bestColony.deepCoreExtractors = (bestColony.deepCoreExtractors ?? 0) + 1;
+                            company.wealth -= buildThreshold * 0.5;
+                            messageValue = `${company.name} deployed a Deep Core Extractor on ${bestColony.name}.`;
+                        }
+                    } else if (company.type === 'Reclamation') {
+                        // Reclamation works best on large industrial hubs
+                        bestColony = empireColonies.sort((a, b) => (b.civilianFactories + b.factories) - (a.civilianFactories + a.factories))[0];
+                        if (bestColony) {
+                            bestColony.reclamationPlants = (bestColony.reclamationPlants ?? 0) + 1;
+                            company.wealth -= buildThreshold * 0.5;
+                            messageValue = `${company.name} opened a Reclamation Plant on ${bestColony.name}.`;
+                        }
                     }
                 }
 
@@ -220,6 +257,14 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
 
         if ((colony.privateWealth || 0) > BALANCING.CORP_FOUND_WEALTH_THRESHOLD && colony.population > (existingOnColony + 1) * 20 && rng.chance(adjustedFoundationChance)) {
             const types: CompanyType[] = ['Transport', 'Extraction', 'Manufacturing', 'Agricultural', 'Commercial'];
+
+            // Specialized Tech Unlocks
+            const techBonuses = getEmpireTechBonuses(empire.research.completedTechs);
+            // We check the specific tech IDs for simplicity, or we could look up company_unlock values
+            if (empire.research.completedTechs.includes('aetheric_siphon_theory')) types.push('AethericSiphon');
+            if (empire.research.completedTechs.includes('deep_core_mining')) types.push('DeepCoreMining');
+            if (empire.research.completedTechs.includes('automated_reclamation_consortium')) types.push('Reclamation');
+
             const type = rng.pick(types);
             const name = generateCompanyName(rng, type);
 

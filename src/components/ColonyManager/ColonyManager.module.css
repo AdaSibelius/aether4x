@@ -113,15 +113,34 @@
 }
 
 /* ── Overview ─────────────────────────────────────────────────────── */
+.panel {
+    background: rgba(13, 22, 38, 0.7);
+    /* Deep themed background */
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel:hover {
+    border-color: rgba(79, 195, 247, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 10px rgba(79, 195, 247, 0.1);
+}
+
 .planetBanner {
     display: flex;
     align-items: center;
     gap: 14px;
     padding: 14px 16px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border-dim);
+    background: rgba(13, 22, 38, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(79, 195, 247, 0.2);
     border-radius: var(--radius-md);
     margin-bottom: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .planetIcon {
@@ -295,6 +314,13 @@
     overflow-y: auto;
 }
 
+.fullWidthLayout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
 .industryRight {
     width: 300px;
     flex-shrink: 0;
@@ -335,6 +361,40 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
+}
+
+/* ── Build Actions ────────────────────────────────────────────────── */
+.ledgerBuildActions {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.tinyBuildBtn {
+    background: rgba(79, 195, 247, 0.1);
+    border: 1px solid rgba(79, 195, 247, 0.3);
+    color: var(--accent-blue);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    text-align: center;
+}
+
+.tinyBuildBtn:hover {
+    background: rgba(79, 195, 247, 0.25);
+    border-color: var(--accent-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(79, 195, 247, 0.2);
+}
+
+.tinyBuildBtn:active {
+    transform: translateY(0);
+    background: rgba(79, 195, 247, 0.4);
 }
 
 /* ── Ledger Table ─────────────────────────────────────────────────── */

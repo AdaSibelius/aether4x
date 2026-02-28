@@ -76,6 +76,9 @@ export const BALANCING = {
         WORKER_REQUIREMENT_FARM: 10,           // Millions per farm
         WORKER_REQUIREMENT_COMMERCIAL_CENTER: 10, // Millions per commercial center
         WORKER_REQUIREMENT_LOGISTICS_HUB: 5,   // Millions per hub [NEW]
+        WORKER_REQUIREMENT_SIPHON: 15,        // Millions per Aetheric Siphon [NEW]
+        WORKER_REQUIREMENT_EXTRACTOR: 12,      // Millions per Deep Core Extractor [NEW]
+        WORKER_REQUIREMENT_RECLAMATION: 10,    // Millions per Reclamation Plant [NEW]
         OFFICE_WORKERS_PER_CORP: 5,             // Millions per established company
         WORKER_REQUIREMENT_DISTILLERY: 15,    // Millions per Aetheric Distillery
         PUBLIC_SERVICE_FRACTION: 0.05,         // 5% baseline government/admin requirement (Optional - baseline overhead)

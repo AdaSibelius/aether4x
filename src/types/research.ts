@@ -34,6 +34,7 @@ export interface ResearchProject {
     scientistId: string;
     labs: number;
     investedPoints: number;
+    priority: number; // For RP distribution
 }
 
 export interface EmpireResearch {

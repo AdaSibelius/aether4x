@@ -27,6 +27,9 @@ export const STRUCTURE_BP_COST: Record<string, number> = {
     ConstructionOffice: 1000,
     ShipyardExpansion_Slipway: 8000,
     ShipyardExpansion_Tonnage: 4000,
+    AethericSiphon: 12000,
+    DeepCoreExtractor: 18000,
+    ReclamationPlant: 15000,
 };
 
 export const STRUCTURE_MINERAL_COST: Record<string, Record<string, number>> = {
@@ -42,6 +45,9 @@ export const STRUCTURE_MINERAL_COST: Record<string, Record<string, number>> = {
     ConstructionOffice: { Iron: 150, Platinum: 50 },
     ShipyardExpansion_Slipway: { Iron: 1200, Titanium: 600 },
     ShipyardExpansion_Tonnage: { Iron: 800, Titanium: 400 },
+    AethericSiphon: { Iron: 1000, Titanium: 600, Ambergris: 300 },
+    DeepCoreExtractor: { Iron: 2500, Copper: 1200, Platinum: 600 },
+    ReclamationPlant: { Iron: 1500, Titanium: 800, Copper: 400 },
 };
 
 import { makeEvent } from './events';
@@ -192,7 +198,7 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
 
     const baselineStaffing = totalRequiredLabor > 0 ? Math.min(1.0, colony.population / totalRequiredLabor) : 1.0;
     const hubBonus = (colony.logisticsHubs ?? 0) * 0.02; // 2% efficiency per hub
-    const staffingLevel = (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + hubBonus)) || 0.001;
+    const staffingLevel = (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + hubBonus) * (1 + (techBonuses.load_speed ?? 0))) || 0.001;
     colony.staffingLevel = staffingLevel;
     const unemploymentPct = colony.population > 0 ? Math.max(0, (colony.population - totalRequiredLabor) / colony.population) : 0;
 
@@ -217,7 +223,8 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
     updateColonyPopulation(colony, policyGrowthMod, agricultureGrowthMod, happinessMod, days, avgHabitability);
 
     // --- Food Production & Consumption ---
-    const foodProduced = (colony.farms ?? 0) * BALANCING.FARM_YIELD_BASE * staffingLevel * days;
+    const agriBonus = (1 + (govBonuses.agriculture ?? 0)) * (1 + (techBonuses.farm_yield ?? 0));
+    const foodProduced = (colony.farms ?? 0) * BALANCING.FARM_YIELD_BASE * staffingLevel * days * agriBonus * prodBonus;
     colony.minerals.Food = (colony.minerals.Food || 0) + foodProduced;
     state.stats.totalProduced['Food'] = (state.stats.totalProduced['Food'] || 0) + foodProduced;
 
@@ -328,6 +335,15 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
                     break;
                 case 'AethericDistillery':
                     colony.aethericDistillery += item.quantity;
+                    break;
+                case 'AethericSiphon':
+                    colony.aethericSiphons = (colony.aethericSiphons ?? 0) + item.quantity;
+                    break;
+                case 'DeepCoreExtractor':
+                    colony.deepCoreExtractors = (colony.deepCoreExtractors ?? 0) + item.quantity;
+                    break;
+                case 'ReclamationPlant':
+                    colony.reclamationPlants = (colony.reclamationPlants ?? 0) + item.quantity;
                     break;
             }
             events.push(makeEvent(state.turn, state.date, 'ProductionComplete', `${colony.name}: Completed ${item.quantity}x ${item.name}`, { important: false }));
@@ -454,9 +470,18 @@ export function tickColony(colony: Colony, state: GameState, dt: number): GameEv
     }
 
     if (planet && empire) {
+        const reclamationBonus = (1 + (colony.reclamationPlants ?? 0) * 0.05);
         for (const mineral of planet.minerals) {
             const mineBonus = (1 + (govBonuses.mining_rate ?? 0)) * (1 + (techBonuses.mining_rate ?? 0));
-            let extraction = (colony.mines + colony.civilianMines) * BALANCING.MINING_RATE_BASE * mineral.accessibility * staffingLevel * bonus.mining * infraEff * days * mineBonus * prodBonus;
+            const extractorBonus = (colony.deepCoreExtractors ?? 0) * 0.2;
+            let extraction = (colony.mines + colony.civilianMines) * BALANCING.MINING_RATE_BASE * mineral.accessibility * staffingLevel * bonus.mining * infraEff * days * mineBonus * prodBonus * reclamationBonus * (1 + extractorBonus);
+
+            // Aetheric Siphons
+            if (mineral.name === 'Aether') {
+                const siphonRate = (colony.aethericSiphons ?? 0) * 50 * days * staffingLevel;
+                extraction += siphonRate;
+            }
+
             extraction = Math.min(extraction, mineral.amount);
             if (extraction > 0) {
                 colony.minerals[mineral.name] = (colony.minerals[mineral.name] ?? 0) + extraction;

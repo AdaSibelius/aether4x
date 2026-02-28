@@ -16,6 +16,7 @@ import { calculateColonyBudget } from '@/engine/finances';
 import styles from './ColonyManager.module.css';
 import ShipyardTab from './ShipyardTab';
 import InvestmentHistoryChart from './InvestmentHistoryChart';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend as RechartsLegend } from 'recharts';
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,9 @@ const BUILDABLE_STRUCTURES: { type: ProductionItemType; label: string; icon: str
     { type: 'GroundDefense', label: 'PDC Battery', icon: '🛡️', desc: 'Planetary defense cannon' },
     { type: 'Spaceport', label: 'Spaceport', icon: '🚀', desc: '+5 happiness, enables trade' },
     { type: 'AethericDistillery', label: 'Aetheric Distillery', icon: '⚗️', desc: 'Refines Raw Aether into Fuel' },
+    { type: 'AethericSiphon', label: 'Aetheric Siphon', icon: '🌀', desc: 'Directly harvests Aether from planetary currents' },
+    { type: 'DeepCoreExtractor', label: 'Deep Core Extractor', icon: '🌋', desc: 'Advanced extraction of deep-seated minerals' },
+    { type: 'ReclamationPlant', label: 'Reclamation Plant', icon: '♻️', desc: '+5% global production via waste recycling' },
 ];
 
 export const COLONY_TYPE_BONUSES: Record<ColonyType, Record<string, number>> = {
@@ -190,7 +194,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
 
             <div className={styles.overviewGrid}>
                 {/* Population panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>Population</h3></div>
                     <div className="panel-body">
                         <div className={styles.meterRow} style={{ marginBottom: 6 }}>
@@ -216,7 +220,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 </div>
 
                 {/* Morale panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>Welfare</h3></div>
                     <div className="panel-body">
                         <HappinessMeter value={colony.happiness ?? 70} />
@@ -234,7 +238,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 </div>
 
                 {/* Daily output panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>Daily Output</h3></div>
                     <div className="panel-body">
                         <div className="stat-row">
@@ -261,7 +265,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 </div>
 
                 {/* Governor Panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>🏛️ Governor</h3></div>
                     <div className="panel-body">
                         {!governor ? (
@@ -288,7 +292,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 </div>
 
                 {/* Mineral stockpile panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>⛏️ Mineral Stockpile</h3></div>
                     <div className="panel-body">
                         {(() => {
@@ -320,7 +324,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 </div>
 
                 {/* Economy & Trade panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>⚖️ Economy & Trade</h3></div>
                     <div className="panel-body">
                         <div className="stat-row">
@@ -381,7 +385,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
             {/* Row 2: Type and Policy */}
             <div className={styles.topGrid}>
                 {/* Colony Policy selector */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>📜 Colony Policy</h3></div>
                     <div className="panel-body">
                         <select
@@ -402,7 +406,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 </div>
 
                 {/* Migration Mode selector */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>🚀 Migration Controls</h3></div>
                     <div className="panel-body">
                         <div className={styles.migrationGrid}>
@@ -426,7 +430,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 </div>
 
                 {/* Colony type selector */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>Colony Specialization</h3></div>
                     <div className="panel-body">
                         <div className={styles.typeGrid}>
@@ -457,52 +461,68 @@ function LaborReport({ report, staffing, population }: { report: any; staffing: 
 
     const staffingColor = staffing >= 1.0 ? 'var(--accent-green)' : staffing > 0.7 ? 'var(--accent-gold)' : 'var(--accent-red)';
 
-    // Pie Chart Data
     const sectors = [
-        { label: 'Industry', value: report.industry || 0, color: '#4a90e2' },
-        { label: 'Mining', value: report.mining || 0, color: '#f5a623' },
-        { label: 'Research', value: report.research || 0, color: '#bd10e0' },
-        { label: 'Construction', value: report.construction || 0, color: '#50e3c2' },
-        { label: 'Logistics', value: report.logistics || 0, color: '#ff7eb3' },
-        { label: 'Corporate', value: report.office || 0, color: '#aa1111' }, // Added missing office sector
-        { label: 'Agriculture', value: report.agri || 0, color: '#7ed321' },
-        { label: 'Services', value: report.services || 0, color: '#f8e71c' },
-        { label: 'Reserve', value: report.unemployed || 0, color: '#9b9b9b' },
-    ];
+        { name: 'Industry', value: report.industry || 0, color: '#4a90e2' },
+        { name: 'Mining', value: report.mining || 0, color: '#f5a623' },
+        { name: 'Research', value: report.research || 0, color: '#bd10e0' },
+        { name: 'Construction', value: report.construction || 0, color: '#50e3c2' },
+        { name: 'Logistics', value: report.logistics || 0, color: '#ff7eb3' },
+        { name: 'Corporate', value: report.office || 0, color: '#aa1111' },
+        { name: 'Agriculture', value: report.agri || 0, color: '#7ed321' },
+        { name: 'Services', value: report.services || 0, color: '#f8e71c' },
+        { name: 'Reserve', value: report.unemployed || 0, color: '#9b9b9b' },
+    ].filter(s => s.value > 0);
 
-    const total = Math.max(0.1, (report.totalReq || 0) + (report.unemployed || 0));
-    let currentAngle = -90; // Start at top
+    const CustomTooltip = ({ active, payload }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div style={{
+                    backgroundColor: 'var(--bg-panel)',
+                    border: '1px solid var(--border-color)',
+                    padding: '8px',
+                    fontSize: '11px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    borderRadius: '4px'
+                }}>
+                    <div style={{ color: payload[0].payload.color, fontWeight: 600, marginBottom: 2 }}>
+                        {payload[0].name}
+                    </div>
+                    <div style={{ color: 'var(--text-primary)' }}>
+                        {payload[0].value.toFixed(1)}M workers
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+                        {((payload[0].value / (report.totalReq + report.unemployed)) * 100).toFixed(1)}% of population
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className={styles.sliderGroup}>
             <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 20 }}>
-                <svg width="120" height="120" viewBox="0 0 100 100">
-                    {sectors.map((s, i) => {
-                        const val = s.value;
-                        if (isNaN(val) || val <= 0) return null;
-                        const angle = (val / total) * 360;
-                        if (isNaN(angle) || angle <= 0.1) return null; // Avoid tiny slices
-
-                        const x1 = 50 + 40 * Math.cos(currentAngle * Math.PI / 180);
-                        const y1 = 50 + 40 * Math.sin(currentAngle * Math.PI / 180);
-                        currentAngle += angle;
-                        const x2 = 50 + 40 * Math.cos(currentAngle * Math.PI / 180);
-                        const y2 = 50 + 40 * Math.sin(currentAngle * Math.PI / 180);
-                        const largeArc = angle > 180 ? 1 : 0;
-                        return (
-                            <path
-                                key={i}
-                                d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                                fill={s.color}
-                                stroke="var(--bg-dark)"
-                                strokeWidth="0.5"
+                <div style={{ width: 140, height: 140, flexShrink: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={sectors}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={35}
+                                outerRadius={55}
+                                paddingAngle={2}
+                                dataKey="value"
+                                stroke="none"
                             >
-                                <title>{`${s.label}: ${s.value.toFixed(1)}M`}</title>
-                            </path>
-                        );
-                    })}
-                    <circle cx="50" cy="50" r="25" fill="var(--bg-panel)" />
-                </svg>
+                                {sectors.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip content={<CustomTooltip />} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
                 <div style={{ flex: 1 }}>
                     <div className={styles.staffingHeader}>
                         <span className={styles.staffingLabel}>Global Staffing</span>
@@ -511,23 +531,42 @@ function LaborReport({ report, staffing, population }: { report: any; staffing: 
                     <div className="progress-bar" style={{ height: 6, marginTop: 4 }}>
                         <div className="progress-fill" style={{ width: `${staffing * 100}%`, background: staffingColor }} />
                     </div>
+                    <div style={{ marginTop: 12, fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {report.unemployed > 0
+                            ? `${report.unemployed.toFixed(1)}M citizens available for new facilities.`
+                            : `Personnel shortage of ${Math.abs(population - report.totalReq).toFixed(1)}M affecting output.`}
+                    </div>
                 </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px' }}>
-                {sectors.filter(s => s.value > 0 || s.label === 'Reserve').map((s, i) => (
+                {sectors.map((s, i) => (
                     <div key={i} className={styles.laborRow} style={{ margin: 0, padding: '2px 0' }}>
-                        <span className={styles.laborLabel} style={{ fontSize: '0.85em' }}>
-                            <span style={{ color: s.color, marginRight: 6 }}>●</span>{s.label}
+                        <span className={styles.laborLabel} style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center' }}>
+                            <span style={{
+                                display: 'inline-block',
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                backgroundColor: s.color,
+                                marginRight: 6
+                            }} />
+                            {s.name}
                         </span>
-                        <span className={styles.laborVal} style={{ fontSize: '0.85em' }}>{s.value.toFixed(0)}M</span>
+                        <span className={styles.laborVal} style={{ fontSize: '0.85em' }}>{s.value.toFixed(1)}M</span>
                     </div>
                 ))}
             </div>
-            <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '8px 0' }} />
-            <div className={styles.laborRow} style={{ color: report.unemployed > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                <span className={styles.laborLabel}><span style={{ color: '#50e3c2', marginRight: 8 }}>●</span>{report.unemployed > 0 ? '👷 Construction Reserve' : '⚠️ Labor Shortage'}</span>
-                <span className={styles.laborVal}>{report.unemployed.toFixed(1)}M</span>
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '12px 0' }} />
+            <div className={styles.laborRow} style={{ color: report.unemployed > 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                <span className={styles.laborLabel} style={{ fontWeight: 600 }}>
+                    {report.unemployed > 0 ? '👷 Labor Reserve' : '⚠️ Labor Deficit'}
+                </span>
+                <span className={styles.laborVal} style={{ fontWeight: 600 }}>
+                    {report.unemployed > 0
+                        ? report.unemployed.toFixed(1)
+                        : Math.abs(population - report.totalReq).toFixed(1)}M
+                </span>
             </div>
         </div>
     );
@@ -540,19 +579,19 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
     rates: ReturnType<typeof calcEffectiveRates>;
     planet: Planet | null;
     updateColony: (patch: Partial<Colony>) => void;
-    empire: { minerals: Record<string, number> };
+    empire: Empire;
 }) {
     const [addQty, setAddQty] = useState(1);
 
-    const addToQueue = (type: ProductionItemType) => {
+    const addToQueue = (type: ProductionItemType, qty?: number) => {
         const existing = BUILDABLE_STRUCTURES.find(b => b.type === type)!;
         const bpCost = STRUCTURE_BP_COST[type] ?? 1000;
         const mineralCost = STRUCTURE_MINERAL_COST[type] ?? {};
         const newItem = {
-            id: `item_${Date.now()}`,
+            id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             type,
             name: existing.label,
-            quantity: addQty,
+            quantity: qty || addQty,
             progress: 0,
             costPerUnit: mineralCost,
             bpCostPerUnit: bpCost,
@@ -574,305 +613,357 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
         return `~${(days / 365).toFixed(1)}yr`;
     };
 
+    const buildAction = (type: ProductionItemType) => {
+        const isAllowed = planet ? canHostBuildings(planet as any) : true;
+        const isDistillery = type === 'AethericDistillery';
+        if (!isAllowed && !isDistillery) return null;
+
+        return (
+            <div className={styles.ledgerBuildActions}>
+                <button className={styles.tinyBuildBtn} onClick={() => addToQueue(type, 1)}>+1</button>
+                <button className={styles.tinyBuildBtn} onClick={() => addToQueue(type, 5)}>+5</button>
+                <button className={styles.tinyBuildBtn} onClick={() => addToQueue(type, 10)}>+10</button>
+            </div>
+        );
+    };
+
     return (
         <div className={styles.tabContent}>
-            <div className={styles.industryLayout}>
-                {/* Left: Buildings & Queue */}
-                <div className={styles.industryLeft}>
-                    {/* Ledger */}
-                    <div className="panel" style={{ marginBottom: 10 }}>
-                        <div className="panel-header"><h3>Industrial Ledger</h3></div>
-                        <div className="panel-body" style={{ padding: 0 }}>
-                            <table className={styles.ledgerTable}>
-                                <thead>
-                                    <tr>
-                                        <th>Facility</th>
-                                        <th style={{ textAlign: 'right' }}>Count</th>
-                                        <th style={{ textAlign: 'right' }}>Labor Req</th>
-                                        <th style={{ textAlign: 'center' }}>Staffing</th>
-                                        <th style={{ textAlign: 'right' }}>Daily Output</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr className={styles.ledgerCategory}>
-                                        <td colSpan={5}>Primary Production</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏭</span><span className={styles.ledgerName}>Factories</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.factories}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(colony.factories * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FACTORY).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-blue)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>{rates.bpPerDay.toFixed(1)} BP</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>⛏️</span><span className={styles.ledgerName}>Mines</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.mines + (colony.civilianMines || 0)}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.mines + (colony.civilianMines || 0)) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_MINE).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-green)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{rates.mineralsPerDay.toFixed(1)}t</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🔬</span><span className={styles.ledgerName}>Research Labs</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.researchLabs}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(colony.researchLabs * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_RESEARCH_LAB).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-purple, #a855f7)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-purple, #a855f7)' }}>{rates.rpPerDay.toFixed(0)} RP</td>
-                                    </tr>
-
-                                    <tr className={styles.ledgerCategory}>
-                                        <td colSpan={5}>Orbital Infrastructure</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🚀</span><span className={styles.ledgerName}>Spaceport</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.spaceport ?? 0}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.spaceport ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_SPACEPORT).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-blue)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.spaceport > 0 ? "Operational" : "Offline"}</td>
-                                    </tr>
-
-                                    <tr className={styles.ledgerCategory}>
-                                        <td colSpan={5}>Planetary Logistics & Defense</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏢</span><span className={styles.ledgerName}>Construction Offices</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.constructionOffices ?? 0}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.constructionOffices ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_CONSTRUCTION_OFFICE).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-gold)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-gold)' }}>{rates.constructionBP.toFixed(0)} BP</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🛡️</span><span className={styles.ledgerName}>Planetary Defense</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.groundDefenses ?? 0}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.groundDefenses ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_GROUND_DEFENSE).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-red)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>Ready</td>
-                                    </tr>
-                                    {colony.aethericDistillery > 0 && (
-                                        <tr>
-                                            <td>
-                                                <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>⚗️</span><span className={styles.ledgerName}>Aetheric Distillery</span></div>
-                                            </td>
-                                            <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.aethericDistillery}</td>
-                                            <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(colony.aethericDistillery * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_DISTILLERY).toFixed(1)}M</td>
-                                            <td>
-                                                <div className={styles.ledgerStaffing}>
-                                                    <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: '#50e3c2' }} /></div>
-                                                    <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                                </div>
-                                            </td>
-                                            <td className={styles.ledgerValue} style={{ textAlign: 'right', color: '#50e3c2' }}>Active</td>
-                                        </tr>
-                                    )}
-                                    <tr className={styles.ledgerCategory}>
-                                        <td colSpan={5}>Civilian & Economic Infrastructure</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🚜</span><span className={styles.ledgerName}>Agricultural Farms</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.farms ?? 0}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-green)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{(colony.farms * BALANCING.FARM_YIELD_BASE * rates.staffingLevel).toFixed(0)} Food/day</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏢</span><span className={styles.ledgerName}>Commercial Centers</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.commercialCenters ?? 0}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-gold)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-gold)' }}>Active</td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>📦</span><span className={styles.ledgerName}>Logistics Hubs</span></div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.logisticsHubs ?? 0}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.logisticsHubs ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_LOGISTICS_HUB).toFixed(1)}M</td>
-                                        <td>
-                                            <div className={styles.ledgerStaffing}>
-                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-blue)' }} /></div>
-                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>+{(colony.logisticsHubs * 2).toFixed(0)}% Efficiency</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+            <div className={styles.fullWidthLayout}>
+                {/* Employment Overview */}
+                <div className={styles.panel} style={{ marginBottom: 20 }}>
+                    <div className="panel-header"><h3>Employment Report</h3></div>
+                    <div className="panel-body">
+                        <LaborReport
+                            report={rates.laborReport}
+                            staffing={rates.staffingLevel}
+                            population={colony.population}
+                        />
                     </div>
-
-                    {/* Production queue */}
-                    <div className="panel">
-                        <div className="panel-header">
-                            <h3>Production Queue</h3>
-                            {colony.productionQueue.length > 0 && (
-                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{colony.productionQueue.length} item{colony.productionQueue.length > 1 ? 's' : ''}</span>
-                            )}
-                        </div>
-                        <div className="panel-body">
-                            {colony.productionQueue.length === 0 ? (
-                                <div style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>Queue empty. Add structures from the panel →</div>
-                            ) : colony.productionQueue.map((item, i) => (
-                                <div key={item.id} className={styles.queueItem}>
-                                    <div className={styles.queueItemHeader}>
-                                        <span className={styles.queuePos}>{i + 1}</span>
-                                        <div className={styles.queueName}>
-                                            <span>{item.quantity}× {item.name}</span>
-                                            {i === 0 && <span className={`badge badge-blue`} style={{ fontSize: 9 }}>ACTIVE</span>}
-                                        </div>
-                                        <span className={styles.queueEta}>{getEta(item)}</span>
-                                        <button className="btn btn-danger btn-sm btn-icon" onClick={() => removeItem(item.id)} title="Remove">×</button>
-                                    </div>
-                                    {i === 0 && (() => {
-                                        // Calculate missing materials for active item
-                                        let missingResources: string[] = [];
-                                        if (item.costPerUnit) {
-                                            const remainingFrac = 1 - (item.progress / 100);
-                                            for (const [res, cost] of Object.entries(item.costPerUnit)) {
-                                                const totalNeeded = cost * item.quantity;
-                                                const remainingNeeded = totalNeeded * remainingFrac;
-                                                const available = colony.minerals[res] || 0;
-
-                                                // Only flag as missing if we don't even have enough for 1% of the job
-                                                // which is roughly what is consumed in a single 1-day tick at start
-                                                // A simpler visual check: is available < remainingNeeded AND progress is stalling?
-                                                if (available < remainingNeeded * 0.05 && available < cost) {
-                                                    missingResources.push(res);
-                                                }
-                                            }
-                                        }
-
-                                        return (
-                                            <div style={{ marginTop: 6 }}>
-                                                <div className="progress-bar">
-                                                    <div className="progress-fill" style={{ width: `${item.progress}%`, background: missingResources.length > 0 ? 'var(--accent-red)' : 'var(--accent-blue)' }} />
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-                                                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.progress.toFixed(1)}% complete</span>
-                                                    {missingResources.length > 0 && (
-                                                        <span style={{ fontSize: 10, color: 'var(--accent-red)', fontWeight: 600 }}>
-                                                            Shortage: {missingResources.join(', ')}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
                 </div>
 
-                {/* Right: Add structure + labor sliders */}
-                <div className={styles.industryRight}>
-                    {/* Labor allocation */}
-                    <div className="panel" style={{ marginBottom: 10 }}>
-                        <div className="panel-header"><h3>Employment Report</h3></div>
-                        <div className="panel-body">
-                            <LaborReport
-                                report={rates.laborReport}
-                                staffing={rates.staffingLevel}
-                                population={colony.population}
-                            />
-                        </div>
+                {/* Industrial Ledger */}
+                <div className="panel" style={{ marginBottom: 20 }}>
+                    <div className="panel-header"><h3>Industrial Ledger</h3></div>
+                    <div className="panel-body" style={{ padding: 0 }}>
+                        <table className={styles.ledgerTable}>
+                            <thead>
+                                <tr>
+                                    <th>Facility</th>
+                                    <th style={{ textAlign: 'right' }}>Count</th>
+                                    <th style={{ textAlign: 'right' }}>Labor Req</th>
+                                    <th style={{ textAlign: 'center' }}>Staffing</th>
+                                    <th style={{ textAlign: 'right' }}>Daily Output</th>
+                                    <th style={{ textAlign: 'center' }}>Build Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr className={styles.ledgerCategory}>
+                                    <td colSpan={6}>Primary Production</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏭</span><span className={styles.ledgerName}>Factories</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.factories}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(colony.factories * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FACTORY).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-blue)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>{rates.bpPerDay.toFixed(1)} BP</td>
+                                    <td>{buildAction('Factory')}</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>⛏️</span><span className={styles.ledgerName}>Mines</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.mines + (colony.civilianMines || 0)}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.mines + (colony.civilianMines || 0)) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_MINE).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-green)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{rates.mineralsPerDay.toFixed(1)}t</td>
+                                    <td>{buildAction('Mine')}</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🔬</span><span className={styles.ledgerName}>Research Labs</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.researchLabs}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(colony.researchLabs * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_RESEARCH_LAB).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-purple, #a855f7)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-purple, #a855f7)' }}>{rates.rpPerDay.toFixed(0)} RP</td>
+                                    <td>{buildAction('ResearchLab')}</td>
+                                </tr>
+
+                                <tr className={styles.ledgerCategory}>
+                                    <td colSpan={6}>Orbital Infrastructure</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🚀</span><span className={styles.ledgerName}>Spaceport</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.spaceport ?? 0}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.spaceport ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_SPACEPORT).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-blue)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.spaceport > 0 ? "Operational" : "Offline"}</td>
+                                    <td>{buildAction('Spaceport')}</td>
+                                </tr>
+
+                                <tr className={styles.ledgerCategory}>
+                                    <td colSpan={6}>Planetary Logistics & Defense</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏢</span><span className={styles.ledgerName}>Construction Offices</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.constructionOffices ?? 0}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.constructionOffices ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_CONSTRUCTION_OFFICE).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-gold)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-gold)' }}>{rates.constructionBP.toFixed(0)} BP</td>
+                                    <td>{buildAction('ConstructionOffice')}</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🛡️</span><span className={styles.ledgerName}>Planetary Defense</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.groundDefenses ?? 0}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.groundDefenses ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_GROUND_DEFENSE).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-red)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>Ready</td>
+                                    <td>{buildAction('GroundDefense')}</td>
+                                </tr>
+                                {colony.aethericDistillery > 0 && (
+                                    <tr>
+                                        <td>
+                                            <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>⚗️</span><span className={styles.ledgerName}>Aetheric Distillery</span></div>
+                                        </td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.aethericDistillery}</td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(colony.aethericDistillery * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_DISTILLERY).toFixed(1)}M</td>
+                                        <td>
+                                            <div className={styles.ledgerStaffing}>
+                                                <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: '#50e3c2' }} /></div>
+                                                <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                            </div>
+                                        </td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: '#50e3c2' }}>Active</td>
+                                        <td>{buildAction('AethericDistillery')}</td>
+                                    </tr>
+                                )}
+                                <tr className={styles.ledgerCategory}>
+                                    <td colSpan={6}>Civilian & Economic Infrastructure</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🚜</span><span className={styles.ledgerName}>Agricultural Farms</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.farms ?? 0}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-green)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{(colony.farms * BALANCING.FARM_YIELD_BASE * rates.staffingLevel).toFixed(0)} Food/day</td>
+                                    <td>{buildAction('Farm')}</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏢</span><span className={styles.ledgerName}>Commercial Centers</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.commercialCenters ?? 0}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-gold)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-gold)' }}>Active</td>
+                                    <td>{buildAction('CommercialCenter')}</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>📦</span><span className={styles.ledgerName}>Logistics Hubs</span></div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.logisticsHubs ?? 0}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.logisticsHubs ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_LOGISTICS_HUB).toFixed(1)}M</td>
+                                    <td>
+                                        <div className={styles.ledgerStaffing}>
+                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-blue)' }} /></div>
+                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>+{(colony.logisticsHubs * 2).toFixed(0)}% Efficiency</td>
+                                    <td>{buildAction('LogisticsHub')}</td>
+                                </tr>
+
+                                {(() => {
+                                    const completedTechs = empire.research?.completedTechs || [];
+                                    const specialtyRows = [];
+
+                                    if (completedTechs.includes('aetheric_siphon_theory')) {
+                                        specialtyRows.push(
+                                            <tr key="siphon">
+                                                <td>
+                                                    <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🌀</span><span className={styles.ledgerName}>Aetheric Siphons</span></div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.aethericSiphons ?? 0}</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.aethericSiphons ?? 0) * (BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_SIPHON || 5)).toFixed(1)}M</td>
+                                                <td>
+                                                    <div className={styles.ledgerStaffing}>
+                                                        <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-cyan, #06b6d4)' }} /></div>
+                                                        <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-cyan, #06b6d4)' }}>{((colony.aethericSiphons ?? 0) * 50 * rates.staffingLevel).toFixed(0)} Aether/day</td>
+                                                <td>{buildAction('AethericSiphon')}</td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    if (completedTechs.includes('deep_core_mining')) {
+                                        specialtyRows.push(
+                                            <tr key="extractor">
+                                                <td>
+                                                    <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🌋</span><span className={styles.ledgerName}>Deep Core Extractors</span></div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.deepCoreExtractors ?? 0}</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.deepCoreExtractors ?? 0) * (BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_EXTRACTOR || 8)).toFixed(1)}M</td>
+                                                <td>
+                                                    <div className={styles.ledgerStaffing}>
+                                                        <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-orange, #f97316)' }} /></div>
+                                                        <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-orange, #f97316)' }}>+{((colony.deepCoreExtractors ?? 0) * 20).toFixed(0)}% Extraction</td>
+                                                <td>{buildAction('DeepCoreExtractor')}</td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    if (completedTechs.includes('automated_reclamation_consortium')) {
+                                        specialtyRows.push(
+                                            <tr key="reclamation">
+                                                <td>
+                                                    <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>♻️</span><span className={styles.ledgerName}>Reclamation Plants</span></div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.reclamationPlants ?? 0}</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.reclamationPlants ?? 0) * (BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_RECLAMATION || 3)).toFixed(1)}M</td>
+                                                <td>
+                                                    <div className={styles.ledgerStaffing}>
+                                                        <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-emerald, #10b981)' }} /></div>
+                                                        <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-emerald, #10b981)' }}>+{((colony.reclamationPlants ?? 0) * 5).toFixed(0)}% Output</td>
+                                                <td>{buildAction('ReclamationPlant')}</td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    if (specialtyRows.length > 0) {
+                                        return (
+                                            <>
+                                                <tr className={styles.ledgerCategory}>
+                                                    <td colSpan={6}>Advanced Technology Structures</td>
+                                                </tr>
+                                                {specialtyRows}
+                                            </>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </tbody>
+                        </table>
                     </div>
+                </div>
 
-                    {/* Add to queue */}
-                    <div className="panel">
-                        <div className="panel-header">
-                            <h3>Build</h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Qty:</span>
-                                <input type="number" min={1} max={100} value={addQty} onChange={e => setAddQty(Math.max(1, Number(e.target.value)))} style={{ width: 50 }} />
-                            </div>
-                        </div>
-                        <div className="panel-body">
-                            {BUILDABLE_STRUCTURES.map(s => {
-                                const bpCost = (STRUCTURE_BP_COST[s.type] ?? 0) * addQty;
-                                const isAllowed = planet ? canHostBuildings(planet as any) : true;
-                                const isDistillery = s.type === 'AethericDistillery';
-                                const disabled = !isAllowed && !isDistillery;
+                {/* Production queue */}
+                <div className={styles.panel}>
+                    <div className="panel-header">
+                        <h3>Production Queue</h3>
+                        {colony.productionQueue.length > 0 && (
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{colony.productionQueue.length} item{colony.productionQueue.length > 1 ? 's' : ''}</span>
+                        )}
+                    </div>
+                    <div className="panel-body">
+                        {colony.productionQueue.length === 0 ? (
+                            <div style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>Queue empty. Use Build Actions in the Ledger →</div>
+                        ) : (
+                            <div className={styles.horizontalQueue}>
+                                {colony.productionQueue.map((item, i) => (
+                                    <div key={item.id} className={styles.queueItemHorizontal}>
+                                        <div className={styles.queueItemHeader}>
+                                            <span className={styles.queuePos}>{i + 1}</span>
+                                            <div className={styles.queueName}>
+                                                <span>{item.quantity}× {item.name}</span>
+                                                {i === 0 && <span className={`badge badge-blue`} style={{ fontSize: 9 }}>ACTIVE</span>}
+                                            </div>
+                                            <span className={styles.queueEta}>{getEta(item)}</span>
+                                            <button className="btn btn-danger btn-sm btn-icon" onClick={() => removeItem(item.id)} title="Remove">×</button>
+                                        </div>
+                                        {i === 0 && (() => {
+                                            let missingResources: string[] = [];
+                                            if (item.costPerUnit) {
+                                                const remainingFrac = 1 - (item.progress / 100);
+                                                for (const [res, cost] of Object.entries(item.costPerUnit)) {
+                                                    const totalNeeded = cost * item.quantity;
+                                                    const remainingNeeded = totalNeeded * remainingFrac;
+                                                    const available = colony.minerals[res] || 0;
+                                                    if (available < remainingNeeded * 0.05 && available < cost) {
+                                                        missingResources.push(res);
+                                                    }
+                                                }
+                                            }
 
-                                return (
-                                    <div
-                                        key={s.type}
-                                        className={`${styles.buildItem} ${disabled ? styles.buildItemDisabled : ''}`}
-                                        onClick={() => !disabled && addToQueue(s.type)}
-                                        title={disabled ? "Surface building not possible on this body type" : s.desc}
-                                    >
-                                        <span className={styles.buildIcon} style={{ opacity: disabled ? 0.4 : 1 }}>{s.icon}</span>
-                                        <div className={styles.buildInfo} style={{ opacity: disabled ? 0.5 : 1 }}>
-                                            <span className={styles.buildName}>{s.label}</span>
-                                            <span className={styles.buildDesc}>{disabled ? "Restricted Body Type" : s.desc}</span>
-                                        </div>
-                                        <div className={styles.buildCost}>
-                                            <span style={{ color: disabled ? 'var(--text-muted)' : 'var(--accent-gold)' }}>{bpCost.toLocaleString()} BP</span>
-                                            {STRUCTURE_MINERAL_COST[s.type] && (
-                                                <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
-                                                    {Object.entries(STRUCTURE_MINERAL_COST[s.type]).map(([m, v]) => `${v * addQty} ${m}`).join(', ')}
-                                                </span>
-                                            )}
-                                        </div>
+                                            return (
+                                                <div style={{ marginTop: 6 }}>
+                                                    <div className="progress-bar" style={{ height: 4 }}>
+                                                        <div className="progress-fill" style={{ width: `${item.progress}%`, background: missingResources.length > 0 ? 'var(--accent-red)' : 'var(--accent-blue)' }} />
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
+                                                        <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{item.progress.toFixed(1)}%</span>
+                                                        {missingResources.length > 0 && (
+                                                            <span style={{ fontSize: 9, color: 'var(--accent-red)', fontWeight: 600 }}>
+                                                                Shortage: {missingResources.join(', ')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
-                                );
-                            })}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -929,7 +1020,7 @@ function PopulationTab({ colony, rates, planet }: {
         <div className={styles.tabContent}>
             <div className={styles.popGrid}>
                 {/* Demographics Panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header">
                         <h3>👥 Demographics</h3>
                         <span style={{ fontSize: 11, color: isOvercrowded ? 'var(--accent-red)' : 'var(--text-muted)' }}>
@@ -1014,7 +1105,7 @@ function PopulationTab({ colony, rates, planet }: {
                 </div>
 
                 {/* Employment Panel */}
-                <div className="panel" style={{ flex: 1 }}>
+                <div className={styles.panel} style={{ flex: 1 }}>
                     <div className="panel-header"><h3>👷 Labor Breakdown</h3></div>
                     <div className="panel-body">
                         <table className="data-table" style={{ tableLayout: 'auto' }}>
@@ -1083,7 +1174,7 @@ function PopulationTab({ colony, rates, planet }: {
                 </div>
 
                 {/* Welfare Summary Panel */}
-                <div className="panel">
+                <div className={styles.panel}>
                     <div className="panel-header"><h3>🏥 Welfare Breakdown</h3></div>
                     <div className="panel-body">
                         <table className={`data-table ${styles.welfareTable}`}>
@@ -1257,7 +1348,7 @@ export default function ColonyManager() {
                     {activeTab === 'Industry' && <IndustryTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} empire={empire} />}
                     {activeTab === 'Shipyards' && <ShipyardTab colony={colony} rates={rates} updateColony={updateColony} empire={empire} />}
                     {activeTab === 'History' && (
-                        <div className="panel" style={{ marginTop: 10 }}>
+                        <div className={styles.panel} style={{ marginTop: 10 }}>
                             <div className="panel-header"><h3>📈 Development History</h3></div>
                             <div className="panel-body">
                                 <InvestmentHistoryChart history={colony.history || []} height={400} />

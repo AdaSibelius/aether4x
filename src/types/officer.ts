@@ -11,4 +11,5 @@ export interface Officer {
     bonuses: Record<string, number>;
     specialization?: string;
     assignedTo?: string;
+    labCapacity: number; // Max labs managed at 100% efficiency
 }
