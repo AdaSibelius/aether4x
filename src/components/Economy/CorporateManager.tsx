@@ -48,7 +48,7 @@ export default function CorporateManager() {
             <SidebarSection
                 header={
                     <div style={{
-                        fontFamily: 'Orbitron',
+                        fontFamily: 'Outfit',
                         fontSize: 11,
                         color: 'var(--accent-blue)',
                         textTransform: 'uppercase',

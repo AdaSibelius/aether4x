@@ -1,4 +1,4 @@
-import type { GameState, Empire, Colony, EmpireSnapshot } from '../types';
+import type { GameState, Empire, Colony, EmpireSnapshot, ColonySnapshot } from '../types';
 import { RNG } from '../utils/rng';
 import { BALANCING } from './constants';
 import {
@@ -208,4 +208,25 @@ export function recordEmpireHistory(next: GameState, empire: Empire, isSnapshotT
     };
 
     empire.history = [...(empire.history || []), snapshot].slice(-MAX_SNAPSHOTS);
+}
+
+export function recordColonyHistory(next: GameState, colony: Colony, isSnapshotTick: boolean): void {
+    if (!isSnapshotTick) return;
+
+    const MAX_SNAPSHOTS = 24;
+    const snapshot: ColonySnapshot = {
+        turn: next.turn,
+        date: new Date(next.date),
+        population: colony.population,
+        minerals: { ...colony.minerals },
+        privateWealth: colony.privateWealth || 0,
+        civilianFactories: colony.civilianFactories || 0,
+        civilianMines: colony.civilianMines || 0,
+        migrationMode: colony.migrationMode,
+        averageWage: colony.privateWages ? (colony.privateWages / Math.max(1, colony.population)) : 0,
+        educationIndex: colony.educationIndex || 0,
+        consumerGoodsPrice: colony.resourcePrices?.ConsumerGoods || BALANCING.CONSUMER_GOOD_VALUE,
+    };
+
+    colony.history = [...(colony.history || []), snapshot].slice(-MAX_SNAPSHOTS);
 }

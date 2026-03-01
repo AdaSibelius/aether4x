@@ -4,7 +4,7 @@ import { tickColony } from './colonies';
 import { tickCivilianEconomy, tickCivilianMigration } from './economy';
 import { generateColonyResourceDemand } from './signals';
 import { tickCorporations, tickOfficerLifecycle } from './corporations';
-import { tickEmpireFinances, recordEmpireHistory } from './finances';
+import { tickEmpireFinances, recordEmpireHistory, recordColonyHistory } from './finances';
 import { RNG } from '../utils/rng';
 
 /**
@@ -23,6 +23,7 @@ export function tickEmpire(state: GameState, empire: Empire, rng: RNG, dt: numbe
     // 3. Planetary Operations (Colonies)
     const empireColonies = Object.values(state.colonies).filter(c => c.empireId === empire.id);
     for (const colony of empireColonies) {
+        recordColonyHistory(state, colony, isSnapshotTick);
         events.push(...tickColony(colony, state, dt, rng));
     }
 

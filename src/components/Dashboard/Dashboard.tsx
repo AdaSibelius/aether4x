@@ -114,22 +114,31 @@ export default function Dashboard() {
                         <thead>
                             <tr>
                                 <th onClick={() => handleSort('name')}>Colony {sortKey === 'name' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
-                                <th onClick={() => handleSort('population')}>Pop {sortKey === 'population' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
-                                <th onClick={() => handleSort('bp')}>BP/d {sortKey === 'bp' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
-                                <th onClick={() => handleSort('rp')}>RP/d {sortKey === 'rp' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
-                                <th onClick={() => handleSort('profit')}>Profit {sortKey === 'profit' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
-                                <th onClick={() => handleSort('happiness')}>Mood {sortKey === 'happiness' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
+                                <th style={{ textAlign: 'right' }} onClick={() => handleSort('population')}>Pop {sortKey === 'population' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
+                                <th style={{ textAlign: 'right' }} onClick={() => handleSort('bp')}>BP/d {sortKey === 'bp' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
+                                <th style={{ textAlign: 'right' }} onClick={() => handleSort('rp')}>RP/d {sortKey === 'rp' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
+                                <th style={{ textAlign: 'right' }} onClick={() => handleSort('profit')}>Profit {sortKey === 'profit' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
+                                <th style={{ textAlign: 'right' }} onClick={() => handleSort('happiness')}>Mood {sortKey === 'happiness' && <span className={styles.sortIcon}>{sortDesc ? '▼' : '▲'}</span>}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sortedColonies.map(c => (
                                 <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => { selectColony(c.id); setView('Colonies'); }}>
-                                    <td className={styles.colonyName}>{c.name}</td>
-                                    <td>{c.population.toFixed(1)}M</td>
-                                    <td>{c.bp.toFixed(0)}</td>
-                                    <td>{c.rp.toFixed(0)}</td>
-                                    <td className={c.profit >= 0 ? styles.ready : styles.danger}>{c.profit > 0 ? '+' : ''}{Math.floor(c.profit)}</td>
-                                    <td className={c.happiness > 70 ? styles.ready : c.happiness < 40 ? styles.danger : styles.warning}>{Math.floor(c.happiness)}%</td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span style={{ fontSize: 16 }}>🪐</span>
+                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'right', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' }}>{c.population.toFixed(1)}M</td>
+                                    <td style={{ textAlign: 'right', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' }}>{c.bp.toFixed(0)}</td>
+                                    <td style={{ textAlign: 'right', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' }}>{c.rp.toFixed(0)}</td>
+                                    <td style={{ textAlign: 'right', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' }} className={c.profit >= 0 ? styles.ready : styles.danger}>
+                                        {c.profit > 0 ? '+' : ''}{Math.floor(c.profit).toLocaleString()}
+                                    </td>
+                                    <td style={{ textAlign: 'right', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' }} className={c.happiness > 70 ? styles.ready : c.happiness < 40 ? styles.danger : styles.warning}>
+                                        {Math.floor(c.happiness)}%
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

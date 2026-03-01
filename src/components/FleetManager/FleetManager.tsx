@@ -48,7 +48,7 @@ export default function FleetManager() {
                         borderBottom: '1px solid rgba(255,255,255,0.1)'
                     }}>
                         <div style={{
-                            fontFamily: 'Orbitron',
+                            fontFamily: 'Outfit',
                             fontSize: 11,
                             color: 'var(--accent-blue)',
                             textTransform: 'uppercase',

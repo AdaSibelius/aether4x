@@ -102,7 +102,7 @@ export default function OfficerManager() {
             <SidebarSection
                 header={
                     <div style={{
-                        fontFamily: 'Orbitron',
+                        fontFamily: 'Outfit',
                         fontSize: 11,
                         color: 'var(--accent-blue)',
                         textTransform: 'uppercase',

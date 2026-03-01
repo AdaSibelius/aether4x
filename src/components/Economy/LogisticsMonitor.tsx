@@ -52,7 +52,7 @@ export default function LogisticsMonitor() {
                             No critical shortages detected. Supply lines are stable.
                         </div>
                     ) : (
-                        <table className={styles.auditTable}>
+                        <table className={styles.ledgerTable}>
                             <thead>
                                 <tr>
                                     <th>Colony</th>
@@ -63,10 +63,20 @@ export default function LogisticsMonitor() {
                             <tbody>
                                 {shortages.slice(0, 8).map((s, i) => (
                                     <tr key={i}>
-                                        <td>{s.colonyName}</td>
-                                        <td style={{ color: 'var(--accent-red)' }}>{s.res}</td>
-                                        <td style={{ textAlign: 'right' }} className={styles.decrease}>
-                                            -{Math.floor(s.amount).toLocaleString()}
+                                        <td>
+                                            <div className={styles.ledgerLabel}>
+                                                <span className={styles.ledgerIcon}>🪐</span>
+                                                <span className={styles.ledgerName}>{s.colonyName}</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ color: 'var(--accent-red)' }}>
+                                            <div className={styles.ledgerLabel}>
+                                                <span className={styles.ledgerIcon}><img src={`/minerals/${s.res.toLowerCase()}.png`} alt={s.res} width={16} height={16} style={{ imageRendering: 'pixelated' as const, borderRadius: 2 }} /></span>
+                                                <span className={styles.ledgerName}>{s.res}</span>
+                                            </div>
+                                        </td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>
+                                            <span className={styles.decrease}>-{Math.floor(s.amount).toLocaleString()}</span>
                                         </td>
                                     </tr>
                                 ))}

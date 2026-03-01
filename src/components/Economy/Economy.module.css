@@ -12,7 +12,7 @@
 .header h2 {
     margin: 0 0 8px 0;
     font-size: 24px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
 }
 
 .rosterHeader h3 {
@@ -154,7 +154,7 @@
 .statValue {
     font-size: 24px;
     font-weight: 600;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
 }
 
 .register {
@@ -166,7 +166,7 @@
 
 .register h3 {
     margin: 0 0 4px 0;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
     font-size: 18px;
 }
 
@@ -270,7 +270,7 @@
     border-bottom: 1px solid var(--border-subtle);
     font-weight: 600;
     font-size: 14px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
 }
 
 .panelBody {
