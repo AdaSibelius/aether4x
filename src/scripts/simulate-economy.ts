@@ -103,10 +103,10 @@ function runSim() {
                     const earthColony = Object.values(state.colonies).find(c => c.name === 'Earth' || c.name === 'New Terra');
                     if (fleet && earthColony) {
                         fleet.orders = [
-                            { type: 'Move', targetId: empire.id, targetStarId: 'star_0', targetPlanetId: earthColony.planetId },
-                            { type: 'Load', resources: { Food: 500 } },
-                            { type: 'Move', targetId: empire.id, targetStarId: 'star_0', targetPlanetId: mars.id },
-                            { type: 'Unload', resources: { Food: 500 } }
+                            { type: 'Transit', targetId: empire.id, targetStarId: 'star_0', targetPlanetId: earthColony.planetId } as any,
+                            { type: 'Load', resources: { Food: 500 } } as any,
+                            { type: 'Transit', targetId: empire.id, targetStarId: 'star_0', targetPlanetId: mars.id } as any,
+                            { type: 'Unload', resources: { Food: 500 } } as any
                         ];
                         console.log(`[LOGISTICS] Day ${day}: Assigned transport orders to ${blackwood.name} fleet.`);
                     }

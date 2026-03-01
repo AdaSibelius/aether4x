@@ -42,7 +42,10 @@ export default function InvestmentHistoryChart({ history, height = 200 }: Props)
         wealth: Math.floor(snap.privateWealth || 0),
         factories: snap.civilianFactories || 0,
         mines: snap.civilianMines || 0,
-        totalFacilities: (snap.civilianFactories || 0) + (snap.civilianMines || 0)
+        totalFacilities: (snap.civilianFactories || 0) + (snap.civilianMines || 0),
+        cgPrice: snap.consumerGoodsPrice || 0,
+        wage: snap.averageWage || 0,
+        education: snap.educationIndex || 0
     }));
 
     const CustomTooltip = ({ active, payload, label }: any) => {
@@ -69,65 +72,127 @@ export default function InvestmentHistoryChart({ history, height = 200 }: Props)
     };
 
     return (
-        <div style={{ width: '100%', height }}>
-            <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <defs>
-                        <linearGradient id="colorWealth" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--accent-green)" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="var(--accent-green)" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="colorFacilities" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--accent-blue)" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="var(--accent-blue)" stopOpacity={0} />
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.2} />
-                    <XAxis
-                        dataKey="name"
-                        hide
-                    />
-                    <YAxis
-                        yAxisId="left"
-                        orientation="left"
-                        stroke="var(--accent-green)"
-                        fontSize={10}
-                        tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
-                        axisLine={false}
-                        tickLine={false}
-                    />
-                    <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        stroke="var(--accent-blue)"
-                        fontSize={10}
-                        axisLine={false}
-                        tickLine={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend iconType="rect" wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
-                    <Area
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey="wealth"
-                        name="Private Wealth (W)"
-                        stroke="var(--accent-green)"
-                        fillOpacity={1}
-                        fill="url(#colorWealth)"
-                        strokeWidth={2}
-                    />
-                    <Area
-                        yAxisId="right"
-                        type="stepAfter"
-                        dataKey="totalFacilities"
-                        name="Civilian Facilities"
-                        stroke="var(--accent-blue)"
-                        fillOpacity={1}
-                        fill="url(#colorFacilities)"
-                        strokeWidth={2}
-                    />
-                </AreaChart>
-            </ResponsiveContainer>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ width: '100%', height }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="colorWealth" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--accent-green)" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="var(--accent-green)" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="colorFacilities" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--accent-blue)" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="var(--accent-blue)" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.2} />
+                        <XAxis
+                            dataKey="name"
+                            hide
+                        />
+                        <YAxis
+                            yAxisId="left"
+                            orientation="left"
+                            stroke="var(--accent-green)"
+                            fontSize={10}
+                            tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+                            axisLine={false}
+                            tickLine={false}
+                        />
+                        <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            stroke="var(--accent-blue)"
+                            fontSize={10}
+                            axisLine={false}
+                            tickLine={false}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend iconType="rect" wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
+                        <Area
+                            yAxisId="left"
+                            type="monotone"
+                            dataKey="wealth"
+                            name="Private Wealth (W)"
+                            stroke="var(--accent-green)"
+                            fillOpacity={1}
+                            fill="url(#colorWealth)"
+                            strokeWidth={2}
+                        />
+                        <Area
+                            yAxisId="right"
+                            type="stepAfter"
+                            dataKey="totalFacilities"
+                            name="Civilian Facilities"
+                            stroke="var(--accent-blue)"
+                            fillOpacity={1}
+                            fill="url(#colorFacilities)"
+                            strokeWidth={2}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+
+            <div style={{ width: '100%', height }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="colorWage" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#f1c40f" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#f1c40f" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--accent-red)" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="var(--accent-red)" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.2} />
+                        <XAxis
+                            dataKey="name"
+                            hide
+                        />
+                        <YAxis
+                            yAxisId="left"
+                            orientation="left"
+                            stroke="#f1c40f"
+                            fontSize={10}
+                            axisLine={false}
+                            tickLine={false}
+                        />
+                        <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            stroke="var(--accent-red)"
+                            fontSize={10}
+                            axisLine={false}
+                            tickLine={false}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend iconType="rect" wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
+                        <Area
+                            yAxisId="left"
+                            type="monotone"
+                            dataKey="wage"
+                            name="Avg Daily Wage (W)"
+                            stroke="#f1c40f"
+                            fillOpacity={1}
+                            fill="url(#colorWage)"
+                            strokeWidth={2}
+                        />
+                        <Area
+                            yAxisId="right"
+                            type="stepAfter"
+                            dataKey="cgPrice"
+                            name="Consumer Goods Price (W)"
+                            stroke="var(--accent-red)"
+                            fillOpacity={1}
+                            fill="url(#colorCost)"
+                            strokeWidth={2}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 }

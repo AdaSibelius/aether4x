@@ -75,7 +75,7 @@ function settleFreightFee(params: {
         const contribution = Math.min(available, remaining);
         if (contribution <= 0) continue;
 
-        const settled = transferWithLedger(
+        const { settled } = transferWithLedger(
             state,
             payer,
             companyAccount,

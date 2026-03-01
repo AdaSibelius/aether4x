@@ -20,7 +20,11 @@ export type MonetaryReasonCode =
     | 'SHIP_PURCHASE_TAX'    // Company → treasury (on ship commission)
     | 'CORP_EXPANSION'       // Company → external (facility build cost)
     | 'CIVILIAN_EXPANSION'   // Colony private wealth → external (housing/shops)
-    | 'EXTERNAL_GRANT';      // External → any account (startup/event grants)
+    | 'EXTERNAL_GRANT'       // External → any account (startup/event grants)
+    | 'EDUCATION_FUNDING'    // Treasury → external (education upkeep)
+    | 'WAGES_PAID'           // Employer → pops (sectoral wages)
+    | 'MARKET_PURCHASE'      // Pops → Producers (buying goods on local market)
+    | 'COST_OF_LIVING';      // Colony private wealth → external (living expenses sink)
 
 /** One entry in the bounded monetary ledger. */
 export interface MonetaryLedgerEntry {

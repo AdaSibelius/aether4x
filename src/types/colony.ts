@@ -33,6 +33,10 @@ export interface Colony {
     mines: number;
     civilianFactories: number;
     civilianMines: number;
+    electronicsPlants?: number;
+    civilianElectronicsPlants?: number;
+    machineryPlants?: number;
+    civilianMachineryPlants?: number;
     researchLabs: number;
     spaceport: number;
     groundDefenses: number;
@@ -46,12 +50,18 @@ export interface Colony {
     aethericSiphons: number;
     deepCoreExtractors: number;
     reclamationPlants: number;
+    buildingOwners?: Record<string, Record<string, number>>; // e.g. { 'Factory': { 'empire_player': 2, 'corp_123': 3 } }
+    educationIndex?: number;
+    educationBudget?: number;
+    resourcePrices?: Record<string, number>;
     migrationMode: MigrationMode;
     migrantsWaiting?: number;
     minerals: Record<string, number>;
     demand: Record<string, number>;
     privateWealth: number;
     privateWealthIncome?: number;
+    publicWages?: number;
+    privateWages?: number;
     staffingLevel?: number;
     laborEfficiency?: number;
     lastMineralRates?: Record<string, number>;
@@ -68,6 +78,9 @@ export interface ColonySnapshot {
     civilianMines: number;
     logisticsHubs: number;
     migrationMode: MigrationMode;
+    averageWage?: number;
+    educationIndex?: number;
+    consumerGoodsPrice?: number;
 }
 
 export type ProductionItemType =
@@ -75,7 +88,8 @@ export type ProductionItemType =
     | 'Terraformer' | 'GroundDefense' | 'Spaceport' | 'Infrastructure' | 'ConstructionOffice'
     | 'AethericDistillery' | 'ShipyardExpansion_Slipway' | 'ShipyardExpansion_Tonnage'
     | 'AethericSiphon' | 'DeepCoreExtractor' | 'ReclamationPlant'
-    | 'Farm' | 'CommercialCenter' | 'LogisticsHub';
+    | 'Farm' | 'CommercialCenter' | 'LogisticsHub' | 'CivilianFactory' | 'CivilianMine'
+    | 'ElectronicsPlant' | 'CivilianElectronicsPlant' | 'MachineryPlant' | 'CivilianMachineryPlant';
 
 export interface ProductionItem {
     id: string;

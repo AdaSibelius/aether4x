@@ -285,7 +285,7 @@ export default function CelestialBodiesView() {
                                         <th className={styles.sortableHeader} onClick={() => handleSort('atmosphere')} style={{ minWidth: 120 }}>
                                             Atmosphere {getSortIcon('atmosphere')}
                                         </th>
-                                        {BALANCING.MINERAL_NAMES.map(m => (
+                                        {BALANCING.RAW_MINERALS.map(m => (
                                             <th key={m} className={styles.sortableHeader} onClick={() => handleSort(m)} style={{ minWidth: 100 }}>
                                                 {m} {getSortIcon(m)}
                                             </th>
@@ -298,7 +298,7 @@ export default function CelestialBodiesView() {
                                             <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{planet.name}</td>
                                             <td>{planet.bodyType}</td>
                                             <td>{planet.atmosphere}</td>
-                                            {BALANCING.MINERAL_NAMES.map(mName => {
+                                            {BALANCING.RAW_MINERALS.map(mName => {
                                                 const mins = planet.minerals.find(m => m.name === mName);
                                                 if (!mins) return <td key={mName} className={styles.mineralEmpty}>-</td>;
 

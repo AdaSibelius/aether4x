@@ -11,7 +11,7 @@ import { AuditService } from './debug/AuditService';
 import SimLogger from '../utils/logger';
 
 export function advanceTick(state: GameState): GameState {
-    SimLogger.info('SYSTEM', `Advancing tick: ${state.tickLength}s`);
+    SimLogger.info('SYSTEM', `Advancing tick: ${state.tickLength}s (dt: ${state.tickLength})`);
 
     // 1. Initial State Preparation
     const next = {

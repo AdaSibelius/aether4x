@@ -11,6 +11,8 @@ import {
     transferWithLedger,
     createColonyPrivateWealthAccount,
     createExternalAccount,
+    createTreasuryAccount,
+    createCompanyAccount
 } from './economy_ledger';
 
 export const COLONY_TYPE_BONUS: Record<string, Record<string, number>> = {
@@ -26,75 +28,76 @@ export const STRUCTURE_BP_COST: Record<string, number> = {
     Mine: 800,
     ResearchLab: 1500,
     Shipyard: 5000,
-    GroundDefense: 600,
-    Spaceport: 3000,
-    Infrastructure: 400,
-    Terraformer: 2500,
-    ConstructionOffice: 1000,
-    ShipyardExpansion_Slipway: 8000,
-    ShipyardExpansion_Tonnage: 4000,
-    AethericSiphon: 12000,
-    DeepCoreExtractor: 18000,
-    ReclamationPlant: 15000,
+    Terraformer: 2000,
+    GroundDefense: 1000,
+    Spaceport: 2500,
+    Infrastructure: 100,
+    ConstructionOffice: 1500,
+    AethericDistillery: 1200,
+    AethericSiphon: 3000,
+    DeepCoreExtractor: 4000,
+    ReclamationPlant: 2500,
+    Farm: 500,
+    CommercialCenter: 1000,
+    LogisticsHub: 1200,
+    CivilianFactory: 1500,
+    CivilianMine: 1000,
+    ElectronicsPlant: 2500,
+    CivilianElectronicsPlant: 2500,
+    MachineryPlant: 2500,
+    CivilianMachineryPlant: 2500,
+    ShipyardExpansion_Slipway: 2000,
+    ShipyardExpansion_Tonnage: 1500,
 };
 
 export const STRUCTURE_MINERAL_COST: Record<string, Record<string, number>> = {
-    Factory: { Iron: 200 },
-    Mine: { Iron: 100, Copper: 50 },
-    ResearchLab: { Iron: 150, Platinum: 100 },
-    Shipyard: { Iron: 800, Titanium: 400 },
-    GroundDefense: { Iron: 100 },
-    Spaceport: { Iron: 500, Copper: 200 },
-    Infrastructure: { Iron: 60 },
-    Terraformer: { Iron: 400, Titanium: 200, Ambergris: 100 },
-    AethericDistillery: { Iron: 400, Titanium: 200, Ambergris: 100 },
-    ConstructionOffice: { Iron: 150, Platinum: 50 },
-    ShipyardExpansion_Slipway: { Iron: 1200, Titanium: 600 },
-    ShipyardExpansion_Tonnage: { Iron: 800, Titanium: 400 },
-    AethericSiphon: { Iron: 1000, Titanium: 600, Ambergris: 300 },
-    DeepCoreExtractor: { Iron: 2500, Copper: 1200, Platinum: 600 },
-    ReclamationPlant: { Iron: 1500, Titanium: 800, Copper: 400 },
+    Factory: { Iron: 600, Copper: 100 },
+    Mine: { Iron: 400 },
+    ResearchLab: { Iron: 200, Copper: 200, Electronics: 20 },
+    Shipyard: { Iron: 2000, Machinery: 100 },
+    Terraformer: { Iron: 500, Electronics: 100 },
+    GroundDefense: { Iron: 400, Electronics: 20 },
+    Spaceport: { Iron: 1000, Electronics: 100 },
+    Infrastructure: { Iron: 40 },
+    ConstructionOffice: { Iron: 600, Machinery: 50 },
+    AethericDistillery: { Iron: 600, Machinery: 40 },
+    AethericSiphon: { Iron: 1200, Electronics: 50 },
+    DeepCoreExtractor: { Iron: 2000, Machinery: 100 },
+    ReclamationPlant: { Iron: 1200, Electronics: 40 },
+    Farm: { Iron: 200 },
+    CommercialCenter: { Iron: 400, ConsumerGoods: 20 },
+    LogisticsHub: { Iron: 600, Machinery: 50 },
+    CivilianFactory: { Iron: 800, Machinery: 40 },
+    CivilianMine: { Iron: 500, Machinery: 20 },
+    ElectronicsPlant: { Iron: 1200, Machinery: 100 },
+    CivilianElectronicsPlant: { Iron: 1200, Machinery: 100 },
+    MachineryPlant: { Iron: 1200, Machinery: 100 },
+    CivilianMachineryPlant: { Iron: 1200, Machinery: 100 },
+    ShipyardExpansion_Slipway: { Iron: 1000, Machinery: 50 },
+    ShipyardExpansion_Tonnage: { Iron: 800, Machinery: 40 },
 };
 
-import { makeEvent } from './events';
+function updateColonyPopulation(colony: Colony, policyMod: number, agriMod: number, happyMod: number, days: number, habitability: number) {
+    // Base survival threshold
+    const popRequirementInfra = colony.population / BALANCING.INFRA_POP_SUPPORT;
+    const survivalRatio = colony.infrastructure >= popRequirementInfra ? 1.0 : (colony.infrastructure / Math.max(0.01, popRequirementInfra));
 
-function processColonyInfrastructure(colony: Colony, govBonuses: Record<string, number>, constructionBP: number, days: number): void {
-    const decay = BALANCING.INFRA_DECAY_RATE;
-    const kit = BALANCING.INFRA_REPAIR_KIT ?? 0.1;
-    const repair = kit + constructionBP * BALANCING.INFRA_REPAIR_FACTOR * (1 + (govBonuses.infra_growth ?? 0));
-
-    colony.infrastructure = Math.min(10000, Math.max(0,
-        colony.infrastructure - decay * days + repair * days
-    ));
-}
-
-function updateColonyPopulation(colony: Colony, policyGrowthMod: number, agricultureGrowthMod: number, happinessMod: number, days: number, habitability: number = 1.0): void {
-    const basePop = (BALANCING.BASE_HABITABLE_POP ?? 10) * habitability;
-    const maxPop = basePop + (colony.infrastructure * BALANCING.INFRA_POP_SUPPORT / 100);
-    colony.maxPopulation = maxPop; // Keep in sync
-    const capacityMod = 1 - (colony.population / maxPop);
-
-    if (capacityMod < 0) {
-        colony.happiness = Math.max(0, colony.happiness + (capacityMod * 10 * days));
+    if (survivalRatio < 0.9) {
+        // Infrastructure failure: severe population loss
+        const loss = colony.population * (1 - survivalRatio) * 0.01 * days;
+        colony.population = Math.max(0.1, colony.population - loss);
+        // Habitability impact: if very low habitability and no infra, pop crashes even faster
+        if (habitability < 0.2) {
+            colony.population = Math.max(0, colony.population - colony.population * 0.02 * days);
+        }
     }
 
-    if (colony.populationSegments && colony.populationSegments.length > 0) {
-        for (const seg of colony.populationSegments) {
-            const speciesMod = getSpeciesGrowthMod(seg.speciesId);
-            const segHappinessMod = seg.happiness > 70 ? 1.1 : seg.happiness < 30 ? 0.95 : 1.0;
-            const annualGrowth = seg.count * colony.populationGrowthRate
-                * policyGrowthMod * segHappinessMod * speciesMod * seg.habitability * agricultureGrowthMod;
+    if (colony.population > 0) {
+        let annualGrowth = colony.population * 0.05 * policyMod * agriMod * happyMod;
+        const capacity = BALANCING.BASE_HABITABLE_POP + (colony.infrastructure * BALANCING.INFRA_POP_SUPPORT / 100);
+        const capacityMod = 1 - (colony.population / capacity);
 
-            const capacityAdjustedAnnual = capacityMod >= 0
-                ? annualGrowth * capacityMod
-                : (seg.count * capacityMod * BALANCING.POP_DIE_OFF_RATE);
-
-            seg.count = Math.max(0.01, seg.count + (capacityAdjustedAnnual / 365) * days);
-        }
-        colony.population = colony.populationSegments.reduce((sum, s) => sum + s.count, 0);
-    } else {
-        const annualGrowth = colony.population * colony.populationGrowthRate * policyGrowthMod * happinessMod * agricultureGrowthMod;
-        const capacityAdjustedAnnual = capacityMod >= 0
+        const capacityAdjustedAnnual = capacityMod > 0
             ? annualGrowth * capacityMod
             : (colony.population * capacityMod * BALANCING.POP_DIE_OFF_RATE);
 
@@ -102,42 +105,173 @@ function updateColonyPopulation(colony: Colony, policyGrowthMod: number, agricul
     }
 }
 
-function simulateColonyEconomy(colony: Colony, planet: Planet | undefined, infraEff: number, days: number): number {
-    const baseCommerceW = (colony.laborAllocation.commerce ?? 0) / 100 * colony.population;
-    const habMod = planet ? getAtmosphereHabitabilityMod(planet) : 0.1;
+function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: number, days: number): void {
+    if (!colony.buildingOwners) colony.buildingOwners = {};
+    if (!colony.resourcePrices) colony.resourcePrices = {};
+    if (colony.educationIndex === undefined) colony.educationIndex = 50;
+    if (colony.educationBudget === undefined) colony.educationBudget = 0;
 
-    const commerceGoods = baseCommerceW * BALANCING.COMMERCE_YIELD_BASE * infraEff * habMod * days;
-    const civilianGoods = colony.civilianFactories * BALANCING.CIVILIAN_FACTORY_TG * infraEff * days;
-    const goodsProduced = commerceGoods + civilianGoods;
+    const empire = state.empires[colony.empireId];
+    if (!empire) return;
 
-    colony.minerals['TradeGoods'] = (colony.minerals['TradeGoods'] || 0) + goodsProduced;
+    // 1. Education
+    const educationGrowth = (colony.educationBudget / Math.max(1, colony.population)) * 0.1 * days;
+    const educationDecay = BALANCING.EDUCATION_DECAY_RATE * days;
+    const oldEdu = colony.educationIndex || 0;
+    colony.educationIndex = Math.max(0, Math.min(100, (colony.educationIndex || 0) + educationGrowth - educationDecay));
 
-    const goodsNeeded = colony.population * BALANCING.POP_CONSUMPTION_RATE * days;
-    const availableGoods = colony.minerals['TradeGoods'] || 0;
-    const consumedGoods = Math.min(availableGoods, goodsNeeded);
+    if (days > 0.1) {
+        // SimLogger.debug('ECONOMY', `Colony ${colony.name} Edu: ${oldEdu.toFixed(2)} -> ${colony.educationIndex.toFixed(2)} (dt: ${days.toFixed(2)}d, budget: ${colony.educationBudget})`);
+    }
 
-    colony.minerals['TradeGoods'] = availableGoods - consumedGoods;
+    if (colony.educationBudget > 0) {
+        transferWithLedger(state, createTreasuryAccount(empire), createExternalAccount('education_sink'), colony.educationBudget * days, 'EDUCATION_FUNDING', { colonyId: colony.id });
+    }
 
-    if (availableGoods < goodsNeeded) {
-        colony.demand['TradeGoods'] = (colony.demand['TradeGoods'] || 0) + (goodsNeeded - availableGoods);
+    // 2. Wages & Private Wealth
+    const workerFactor = 1.0;
+    const staffingLevel = colony.staffingLevel || 1.0;
+    const colonyWage = 10.0 * staffingLevel * (1 + (colony.educationIndex / 100));
+
+    let totalPublicWages = 0;
+    let totalPrivateWages = 0;
+
+    // 3. Sectoral Production (Recipes)
+    const outputByOwner: Record<string, Record<string, number>> = {};
+
+    const processPlant = (type: string, reqIndex: number, good: string, recipe: any) => {
+        const count = (colony as any)[type] || 0;
+        if (count <= 0) return;
+
+        const eduFactor = Math.min(1.0, (colony.educationIndex || 0) / Math.max(1, reqIndex));
+        const efficiency = staffingLevel * eduFactor * infraEff;
+        const potentialOutput = count * (BALANCING.BP_PER_FACTORY / (recipe.time || 1)) * efficiency * days;
+
+        let possibleOutput = potentialOutput;
+        for (const [res, amt] of Object.entries(recipe.inputs || {})) {
+            const avail = colony.minerals[res as string] || 0;
+            const needed = (amt as number) * potentialOutput;
+            if (avail < needed) {
+                possibleOutput = Math.min(possibleOutput, avail / (amt as number));
+                colony.demand[res as string] = (colony.demand[res as string] || 0) + (needed - avail);
+            }
+        }
+
+        const finalOutput = possibleOutput * (recipe.outputMultiplier || 1);
+        if (finalOutput > 0) {
+            for (const [res, amt] of Object.entries(recipe.inputs || {})) {
+                colony.minerals[res as string] -= possibleOutput * (amt as number);
+            }
+            colony.minerals[good] = (colony.minerals[good] || 0) + finalOutput;
+            state.stats.totalProduced[good] = (state.stats.totalProduced[good] || 0) + finalOutput;
+
+            if (!outputByOwner[good]) outputByOwner[good] = {};
+            const owners = colony.buildingOwners![type] || { [empire.id]: count };
+            const totalInType = Object.values(owners).reduce((sum, v) => sum + v, 0);
+            for (const [ownerId, ownerCount] of Object.entries(owners)) {
+                outputByOwner[good][ownerId] = (outputByOwner[good][ownerId] || 0) + (ownerCount / totalInType) * finalOutput;
+            }
+        }
+    };
+
+    processPlant('ElectronicsPlant', BALANCING.JOB_REQUIREMENTS.ElectronicsPlant, 'Electronics', BALANCING.INDUSTRY_RECIPES.Electronics);
+    processPlant('CivilianElectronicsPlant', BALANCING.JOB_REQUIREMENTS.CivilianElectronicsPlant, 'Electronics', BALANCING.INDUSTRY_RECIPES.Electronics);
+    processPlant('MachineryPlant', BALANCING.JOB_REQUIREMENTS.MachineryPlant, 'Machinery', BALANCING.INDUSTRY_RECIPES.Machinery);
+    processPlant('CivilianMachineryPlant', BALANCING.JOB_REQUIREMENTS.CivilianMachineryPlant, 'Machinery', BALANCING.INDUSTRY_RECIPES.Machinery);
+
+    // Food production proportionality
+    const farmOwners = colony.buildingOwners['Farm'];
+    const totalFarms = colony.farms || 0;
+    if (farmOwners && totalFarms > 0) {
+        outputByOwner['Food'] = {};
+        for (const [ownerId, count] of Object.entries(farmOwners)) {
+            outputByOwner['Food'][ownerId] = count / totalFarms;
+        }
+    }
+
+    // 4. Market & Pricing
+    const processMarket = (good: string, demandAmt: number, spendMult: number = 1.0) => {
+        const supplyStock = colony.minerals[good] || 0;
+        let basePrice = 5.0;
+        if (good === 'Food') basePrice = 1.0;
+        if (good === 'Electronics') basePrice = 15.0;
+        if (good === 'Machinery') basePrice = 10.0;
+        if (good === 'ConsumerGoods') basePrice = 8.0;
+
+        let currentPrice = basePrice * (demandAmt / Math.max(1, (1 + supplyStock)));
+        currentPrice = Math.max(basePrice * 0.1, Math.min(currentPrice, basePrice * 5));
+
+        if (supplyStock <= 0.01 && demandAmt > 0.1) {
+            currentPrice = Math.max(currentPrice, basePrice * 2.5);
+        }
+
+        colony.resourcePrices![good] = currentPrice;
+        const purchasedAmt = Math.min(supplyStock, demandAmt);
+        colony.minerals[good] -= purchasedAmt;
+        state.stats.totalConsumed[good] = (state.stats.totalConsumed[good] || 0) + purchasedAmt;
+
+        const spend = purchasedAmt * currentPrice * spendMult;
+        if (spend > 0) {
+            colony.privateWealth = Math.max(0, (colony.privateWealth || 0) - spend);
+            const owners = outputByOwner[good];
+            if (owners) {
+                const totalShares = Object.values(owners).reduce((sum, v) => sum + v, 0);
+                if (totalShares > 0) {
+                    for (const [ownerId, shares] of Object.entries(owners)) {
+                        const ownerShare = (shares / totalShares) * spend;
+                        if (ownerShare > 0) {
+                            let toAccount = null;
+                            if (ownerId === empire.id) toAccount = createTreasuryAccount(empire);
+                            else if (ownerId === 'private') toAccount = createExternalAccount('civilian_capital');
+                            else {
+                                const corp = empire.companies.find(c => c.id === ownerId);
+                                if (corp) toAccount = createCompanyAccount(corp);
+                            }
+                            if (toAccount) transferWithLedger(state, createColonyPrivateWealthAccount(colony), toAccount, ownerShare, 'MARKET_PURCHASE', { colonyId: colony.id, resource: good });
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    // 5. Consumption Logic
+    const populationM = colony.population;
+    processMarket('Food', populationM * BALANCING.FOOD_CONSUMPTION_RATE * days, 1.0);
+
+    const cgNeeded = populationM * BALANCING.POP_CONSUMPTION_RATE * days;
+    const initialWealth = colony.privateWealth || 0;
+    processMarket('ConsumerGoods', cgNeeded, 1.0);
+    const boughtCG = initialWealth - (colony.privateWealth || 0);
+    if (boughtCG < cgNeeded * 0.8) {
         colony.happiness -= 1 * days;
     } else {
         colony.happiness += 0.5 * days;
     }
 
-    return consumedGoods;
+    const electronicsForLabs = (colony.researchLabs || 0) * BALANCING.ELECTRONICS_PER_RESEARCH_LAB * days;
+    if (electronicsForLabs > 0) processMarket('Electronics', electronicsForLabs, 1.0);
+
+    const machineryNeeded = (colony.shipyards || []).reduce((sum, sy) => {
+        return sum + (sy.activeBuilds || []).reduce((s, _b) => s + (BALANCING.MACHINERY_PER_SHIPYARD_BP * days), 0);
+    }, 0);
+    if (machineryNeeded > 0) processMarket('Machinery', machineryNeeded, 1.0);
+
+    // 6. Cost of Living sink
+    const costOfLiving = (colony.privateWealth || 0) * BALANCING.COST_OF_LIVING_RATE * days;
+    if (costOfLiving > 0) {
+        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('cost_of_living_sink'), costOfLiving, 'COST_OF_LIVING', { colonyId: colony.id });
+    }
 }
 
 function processAetherDistillation(colony: Colony, stats: GameStats, infraEff: number, days: number): number {
     const distillers = colony.aethericDistillery || 0;
     if (distillers <= 0) return 0;
-
     const rawAether = colony.minerals['Aether'] || 0;
     if (rawAether <= 0) return 0;
 
     const processRate = distillers * BALANCING.DISTILLERY_THROUGHPUT * infraEff * days;
     const amountToProcess = Math.min(rawAether, processRate);
-
     colony.minerals['Aether'] = rawAether - amountToProcess;
     const fuelProduced = amountToProcess * BALANCING.DISTILLATION_EFFICIENCY;
     colony.minerals['Fuel'] = (colony.minerals['Fuel'] || 0) + fuelProduced;
@@ -147,20 +281,16 @@ function processAetherDistillation(colony: Colony, stats: GameStats, infraEff: n
         stats.totalProduced['Fuel'] = (stats.totalProduced['Fuel'] || 0) + fuelProduced;
         stats.totalConverted['Aether_to_Fuel'] = (stats.totalConverted['Aether_to_Fuel'] || 0) + amountToProcess;
     }
-
     return amountToProcess;
 }
 
 export function tickColony(colony: Colony, state: GameState, dt: number, rng: RNG): GameEvent[] {
     const events: GameEvent[] = [];
-    // Reset rates for the new tick
     colony.lastMineralRates = {};
     const days = dt / 86400;
     const bonus = COLONY_TYPE_BONUS[colony.colonyType] ?? COLONY_TYPE_BONUS.Core;
 
-    // Infrastructure redefined: Basic life support + habitat
     colony.maxPopulation = 10 + (colony.infrastructure * BALANCING.INFRA_POP_SUPPORT / 100);
-
     const infraEff = 0.5 + (colony.infrastructure / 100) * 0.5;
     const empire = state.empires[colony.empireId];
     const techBonuses = empire ? getEmpireTechBonuses(empire.research.completedTechs) : {};
@@ -169,17 +299,13 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
 
     const planet = Object.values(state.galaxy.stars).flatMap(s => s.planets).find(p => p.id === colony.planetId);
 
-    // ── Habitability & Population Refresh ──
     if (planet && colony.populationSegments) {
         for (const seg of colony.populationSegments) {
             const speciesDef = SPECIES[seg.speciesId];
-            if (speciesDef) {
-                seg.habitability = computeHabitability(speciesDef, planet);
-            }
+            if (speciesDef) seg.habitability = computeHabitability(speciesDef, planet);
         }
     }
 
-    // ── Labor Model ──
     const requiredPublicLabor =
         colony.factories * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FACTORY +
         colony.mines * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_MINE +
@@ -198,20 +324,15 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         colony.civilianMines * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_CIV_MINE +
         companiesOnColony * BALANCING.EMPLOYMENT.OFFICE_WORKERS_PER_CORP;
 
-    const requiredAgriLabor = (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM;
-    const requiredServiceLabor = (colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER;
-    const totalRequiredLabor = requiredPublicLabor + requiredPrivateLabor + requiredAgriLabor + requiredServiceLabor;
+    const totalRequiredLabor = requiredPublicLabor + requiredPrivateLabor + (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM + (colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER;
 
     const baselineStaffing = totalRequiredLabor > 0 ? Math.min(1.0, colony.population / totalRequiredLabor) : 1.0;
-    const hubBonus = (colony.logisticsHubs ?? 0) * 0.02; // 2% efficiency per hub
-    const staffingLevel = (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + hubBonus) * (1 + (techBonuses.load_speed ?? 0))) || 0.001;
+    const staffingLevel = Math.min(BALANCING.MAX_STAFFING_LEVEL, (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + (colony.logisticsHubs ?? 0) * 0.02) * (1 + (techBonuses.load_speed ?? 0))) || 0.001);
     colony.staffingLevel = staffingLevel;
-    const unemploymentPct = colony.population > 0 ? Math.max(0, (colony.population - totalRequiredLabor) / colony.population) : 0;
 
     const constructionBP = colony.constructionOffices * BALANCING.EMPLOYMENT.CONSTRUCTION_BP_PER_OFFICE * staffingLevel;
 
-    processColonyInfrastructure(colony, govBonuses, constructionBP, days);
-
+    // Growth & Population
     let policyGrowthMod = 1.0;
     let policyHappinessBonus = 0;
     switch (colony.policy) {
@@ -220,58 +341,28 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         case 'Forced Labor': policyGrowthMod = 0.8; policyHappinessBonus = -30; break;
     }
 
-    const unemploymentPenalty = unemploymentPct * 15;
     const avgHabitability = (colony.populationSegments && colony.populationSegments.length > 0 && colony.population > 0)
         ? colony.populationSegments.reduce((sum, s) => sum + (s.habitability || 0) * s.count, 0) / colony.population : 1.0;
 
-    const happinessMod = colony.happiness > 70 ? 1.1 : colony.happiness < 30 ? 0.95 : 1.0;
-    const agricultureGrowthMod = 1.0 + (staffingLevel * 0.1);
-    updateColonyPopulation(colony, policyGrowthMod, agricultureGrowthMod, happinessMod, days, avgHabitability);
+    updateColonyPopulation(colony, policyGrowthMod, 1.0 + (staffingLevel * 0.1), colony.happiness > 70 ? 1.1 : colony.happiness < 30 ? 0.95 : 1.0, days, avgHabitability);
 
-    // --- Food Production & Consumption ---
-    const agriBonus = (1 + (govBonuses.agriculture ?? 0)) * (1 + (techBonuses.farm_yield ?? 0));
-    const foodProduced = (colony.farms ?? 0) * BALANCING.FARM_YIELD_BASE * staffingLevel * days * agriBonus * prodBonus;
-    colony.minerals.Food = (colony.minerals.Food || 0) + foodProduced;
+    // Food Production
+    const foodProduced = (colony.farms ?? 0) * BALANCING.FARM_YIELD_BASE * staffingLevel * days * (1 + (govBonuses.agriculture ?? 0)) * (1 + (techBonuses.farm_yield ?? 0)) * prodBonus;
+    colony.minerals['Food'] = (colony.minerals['Food'] || 0) + foodProduced;
     state.stats.totalProduced['Food'] = (state.stats.totalProduced['Food'] || 0) + foodProduced;
-
-    const foodTarget = (colony.population * BALANCING.FOOD_CONSUMPTION_RATE * days);
-    let foodShortage = 0;
-    if (colony.minerals.Food >= foodTarget) {
-        colony.minerals.Food -= foodTarget;
-        state.stats.totalConsumed['Food'] = (state.stats.totalConsumed['Food'] || 0) + foodTarget;
-    } else {
-        foodShortage = foodTarget - colony.minerals.Food;
-        state.stats.totalConsumed['Food'] = (state.stats.totalConsumed['Food'] || 0) + colony.minerals.Food;
-        colony.minerals.Food = 0;
-        colony.demand.Food = (colony.demand.Food || 0) + foodShortage;
-    }
-
-    const faminePct = foodTarget > 0 ? foodShortage / foodTarget : 0;
-    if (faminePct > 0) {
-        const dieOff = colony.population * BALANCING.FAMINE_DIE_OFF_RATE * faminePct;
-        colony.population -= dieOff;
-        colony.happiness -= faminePct * 5 * days; // Heavy happiness penalty
-    }
 
     processAetherDistillation(colony, state.stats, infraEff, days);
 
-    const targetHappiness = 60 + (avgHabitability - 0.5) * 30 + (colony.infrastructure - 50) * 0.3 - (colony.population > colony.maxPopulation * 0.9 ? 10 : 0) + (colony.spaceport ? 5 : 0) + (govBonuses.happiness ? govBonuses.happiness * 100 : 0) - unemploymentPenalty + policyHappinessBonus;
+    const targetHappiness = 60 + (avgHabitability - 0.5) * 30 + (colony.infrastructure - 50) * 0.3 - (colony.population > colony.maxPopulation * 0.9 ? 10 : 0) + (colony.spaceport ? 5 : 0) - (colony.population > 0 ? Math.max(0, (colony.population - totalRequiredLabor) / colony.population) * 15 : 0) + policyHappinessBonus;
     colony.happiness += (targetHappiness - colony.happiness) * 0.01 * days;
     colony.happiness = Math.max(0, Math.min(100, colony.happiness));
 
     if (colony.terraformProgress < 100) {
-        const tfRate = constructionBP * BALANCING.TP_PER_TERRAFORMER;
-        colony.terraformProgress = Math.min(100, colony.terraformProgress + tfRate * days);
-        if (colony.terraformProgress >= 100) {
-            events.push(makeEvent(state.turn, state.date, 'ResearchComplete',
-                `Research complete: ${colony.name} terraforming`, rng, { important: true }));
-        }
+        colony.terraformProgress = Math.min(100, colony.terraformProgress + (constructionBP * BALANCING.TP_PER_TERRAFORMER) * days);
+        if (colony.terraformProgress >= 100) events.push(makeEvent(state.turn, state.date, 'ResearchComplete', `Research complete: ${colony.name} terraforming`, rng, { important: true }));
     }
 
-    const factoryBonus = (1 + (govBonuses.factory_output ?? 0)) * (1 + (techBonuses.factory_output ?? 0));
-    // Base industrial capacity (Colonization Kit + Population Labor)
-    const baseIndustrialBP = 5 + (colony.population * 0.5) * (colony.laborAllocation.industry / 100);
-    const bpPerDay = (colony.factories * BALANCING.BP_PER_FACTORY + baseIndustrialBP) * staffingLevel * bonus.industry * infraEff * factoryBonus * prodBonus;
+    const bpPerDay = (colony.factories * BALANCING.BP_PER_FACTORY + 5 + (colony.population * 0.5) * (colony.laborAllocation.industry / 100)) * staffingLevel * bonus.industry * infraEff * (1 + (govBonuses.factory_output ?? 0)) * (1 + (techBonuses.factory_output ?? 0)) * prodBonus;
 
     if (colony.productionQueue.length > 0) {
         const item = colony.productionQueue[0];
@@ -280,24 +371,21 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
 
         if (bpAppliedTarget > 0) {
             let fractionOfJob = bpAppliedTarget / totalBpNeeded;
-            if (item.costPerUnit) {
-                for (const [res, cost] of Object.entries(item.costPerUnit)) {
-                    if (cost > 0) {
-                        const needed = cost * item.quantity * fractionOfJob;
-                        const avail = colony.minerals[res] || 0;
-                        if (avail < needed) {
-                            fractionOfJob = Math.min(fractionOfJob, avail / (cost * item.quantity));
-                            colony.demand[res] = (colony.demand[res] || 0) + (needed - avail);
-                        }
+            for (const [res, cost] of Object.entries(item.costPerUnit || {})) {
+                if (cost > 0) {
+                    const needed = cost * item.quantity * fractionOfJob;
+                    const avail = colony.minerals[res] || 0;
+                    if (avail < needed) {
+                        fractionOfJob = Math.min(fractionOfJob, avail / (cost * item.quantity));
+                        colony.demand[res] = (colony.demand[res] || 0) + (needed - avail);
                     }
                 }
-                for (const [res, cost] of Object.entries(item.costPerUnit)) {
-                    if (cost > 0) {
-                        const amount = cost * item.quantity * fractionOfJob;
-                        colony.minerals[res] = Math.max(0, (colony.minerals[res] || 0) - amount);
-                        colony.lastMineralRates![res] = (colony.lastMineralRates![res] || 0) - (amount / days);
-                        state.stats.totalConsumed[res] = (state.stats.totalConsumed[res] || 0) + amount;
-                    }
+            }
+            for (const [res, cost] of Object.entries(item.costPerUnit || {})) {
+                if (cost > 0) {
+                    const amount = cost * item.quantity * fractionOfJob;
+                    colony.minerals[res] = Math.max(0, (colony.minerals[res] || 0) - amount);
+                    state.stats.totalConsumed[res] = (state.stats.totalConsumed[res] || 0) + amount;
                 }
             }
             item.progress = Math.min(100, item.progress + fractionOfJob * 100);
@@ -310,64 +398,21 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
                 case 'Mine': colony.mines += item.quantity; break;
                 case 'ResearchLab': colony.researchLabs += item.quantity; break;
                 case 'GroundDefense': colony.groundDefenses += item.quantity; break;
-                case 'Spaceport': colony.spaceport = (colony.spaceport || 0) + 1; break;
+                case 'Spaceport': colony.spaceport += item.quantity; break;
                 case 'Infrastructure': colony.infrastructure = Math.min(100, colony.infrastructure + item.quantity * 5); break;
-                case 'Shipyard': colony.shipyards.push({ id: generateId('sy', rng), name: `${colony.name} Shipyard ${colony.shipyards.length + 1}`, slipways: 1, maxTonnage: 5000, activeBuilds: [] }); break;
-                case 'ShipyardExpansion_Slipway':
-                    if (colony.shipyards.length > 0) {
-                        const targetShipyard = colony.shipyards.find(sy => sy.id === item.targetId);
-                        if (targetShipyard) {
-                            targetShipyard.slipways += item.quantity;
-                        } else {
-                            colony.shipyards[0].slipways += item.quantity; // Fallback to first shipyard
-                        }
-                    }
-                    break;
-                case 'ShipyardExpansion_Tonnage':
-                    if (colony.shipyards.length > 0) {
-                        const targetShipyard = colony.shipyards.find(sy => sy.id === item.targetId);
-                        if (targetShipyard) {
-                            targetShipyard.maxTonnage += item.quantity * 5000;
-                        } else {
-                            colony.shipyards[0].maxTonnage += item.quantity * 5000; // Fallback to first shipyard
-                        }
-                    }
-                    break;
-                case 'Ship':
-                    // Ship construction is now handled by the shipyard's activeBuilds queue
-                    // This case should ideally not be reached if ships are only built via shipyards
-                    // For now, if it somehow gets here, we'll log an error or ignore.
-                    console.warn(`Ship item found in global production queue for ${colony.name}. Should be in shipyard queue.`);
-                    break;
-                case 'AethericDistillery':
-                    colony.aethericDistillery += item.quantity;
-                    break;
-                case 'AethericSiphon':
-                    colony.aethericSiphons = (colony.aethericSiphons ?? 0) + item.quantity;
-                    break;
-                case 'DeepCoreExtractor':
-                    colony.deepCoreExtractors = (colony.deepCoreExtractors ?? 0) + item.quantity;
-                    break;
-                case 'ReclamationPlant':
-                    colony.reclamationPlants = (colony.reclamationPlants ?? 0) + item.quantity;
-                    break;
+                case 'AethericDistillery': colony.aethericDistillery += item.quantity; break;
+                case 'AethericSiphon': colony.aethericSiphons += item.quantity; break;
+                case 'DeepCoreExtractor': colony.deepCoreExtractors += item.quantity; break;
+                case 'ReclamationPlant': colony.reclamationPlants += item.quantity; break;
             }
             events.push(makeEvent(state.turn, state.date, 'ProductionComplete', `${colony.name}: Completed ${item.quantity}x ${item.name}`, rng, { important: false }));
         }
     }
 
-    // ── Shipyard Construction (Parallel) ──
-    // For now let's assume shipyards use their own internal capacity or a share of the colony's industrial base.
-    // In many 4X games, shipyards have their own capacity.
-    // Let's use the colony industrial BP but divide it among all shipyards/slipways if they are active.
-
-    // For now let's assume shipyards use their own internal capacity or a share of the colony's industrial base.
-    // Calculate total available BP for shipyards: baseline per slipway + share of industrial BP
-    const industrialShareBP = (bpPerDay ?? 0) * BALANCING.SHIPYARD_BP_ALLOCATION_FACTOR;
-    const remainingShipyardBP = industrialShareBP + (colony.shipyards.length * 5); // 5 BP per day base
-
+    // Shipyard Construction
+    const remainingShipyardBP = (bpPerDay * BALANCING.SHIPYARD_BP_ALLOCATION_FACTOR) + (colony.shipyards.length * 5);
     for (const sy of colony.shipyards) {
-        if (!sy.activeBuilds) sy.activeBuilds = []; // Repair state if missing
+        if (!sy.activeBuilds) sy.activeBuilds = [];
         if (sy.activeBuilds.length > 0) {
             const activeCount = sy.activeBuilds.length;
             const activeSlipways = Math.min(sy.slipways, activeCount);
@@ -376,171 +421,63 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
             for (let i = 0; i < activeSlipways; i++) {
                 const item = sy.activeBuilds[i];
                 if (!item) continue;
-                const design = empire?.designLibrary.find(d => d.id === item.designId);
-                const hullSize = design ? (design.maxHullPoints * 10) : 0;
-
-                // Tonnage check
-                if (design && hullSize > sy.maxTonnage) {
-                    SimLogger.warn('SYSTEM', `Shipyard ${sy.name} STALL: ${item.name} too large (${hullSize} > ${sy.maxTonnage})`);
-                    continue;
-                }
                 const totalBpNeeded = item.bpCostPerUnit * item.quantity;
-                const bpToApply = Math.min(bpPerSlipway, Math.max(0.1, totalBpNeeded * (1 - item.progress / 100)));
+                let fractionOfJob = Math.min(bpPerSlipway, totalBpNeeded * (1 - item.progress / 100)) / totalBpNeeded;
 
-                if (bpToApply > 0) {
-                    let fractionOfJob = bpToApply / totalBpNeeded;
-                    SimLogger.debug('SYSTEM', `Shipyard ${sy.name}: ${item.name} totalBP: ${totalBpNeeded}, bpToApply: ${bpToApply.toFixed(2)}, progress: ${item.progress.toFixed(2)}%`);
-                    if (item.costPerUnit) {
-                        for (const [res, cost] of Object.entries(item.costPerUnit)) {
-                            if (cost <= 0) continue;
-                            const needed = cost * item.quantity * fractionOfJob;
-                            const avail = colony.minerals[res] || 0;
-                            if (avail < needed) {
-                                SimLogger.warn('SYSTEM', `Shipyard ${sy.name} STALL: ${item.name} missing ${res} (${avail.toFixed(1)} < ${needed.toFixed(1)})`);
-                                fractionOfJob = Math.min(fractionOfJob, avail / (cost * item.quantity));
-                            }
+                for (const [res, cost] of Object.entries(item.costPerUnit || {})) {
+                    if (cost > 0) {
+                        const needed = cost * item.quantity * fractionOfJob;
+                        const avail = colony.minerals[res] || 0;
+                        if (avail < needed) {
+                            fractionOfJob = Math.min(fractionOfJob, avail / (cost * item.quantity));
+                            colony.demand[res] = (colony.demand[res] || 0) + (needed - avail);
                         }
-                        for (const [res, cost] of Object.entries(item.costPerUnit)) {
-                            if (cost > 0) {
-                                const amount = cost * item.quantity * fractionOfJob;
-                                colony.minerals[res] = Math.max(0, (colony.minerals[res] || 0) - amount);
-                                state.stats.totalConsumed[res] = (state.stats.totalConsumed[res] || 0) + amount;
-                            }
-                        }
-                    }
-                    item.progress = Math.min(100, item.progress + fractionOfJob * 100);
-
-                    if (fractionOfJob > 0) {
-                        SimLogger.debug('SYSTEM', `Shipyard ${sy.name}: Progressing ${item.name} by ${(fractionOfJob * 100).toFixed(4)}%`);
-                    } else if (bpToApply > 0) {
-                        SimLogger.debug('SYSTEM', `Shipyard ${sy.name}: ${item.name} stalled (Missing resources or tiny output)`);
                     }
                 }
-
-                if (item.progress >= 99.99) {
-                    sy.activeBuilds.splice(i, 1);
-                    i--; // Adjust index after splice
-
-                    if (item.type === 'Ship' && item.designId && empire) {
-                        const design = empire.designLibrary.find(d => d.id === item.designId);
-                        if (design) {
-                            for (let j = 0; j < item.quantity; j++) {
-                                const shipId = generateId('ship', rng);
-                                state.ships[shipId] = {
-                                    id: shipId,
-                                    name: `${design.name} ${String.fromCharCode(65 + (j % 26))}`,
-                                    designId: design.id,
-                                    empireId: empire.id,
-                                    hullPoints: design.maxHullPoints,
-                                    maxHullPoints: design.maxHullPoints,
-                                    fuel: design.fuelCapacity,
-                                    experience: 0,
-                                    cargo: {},
-                                    inventory: [],
-                                    sourceCompanyId: item.sourceCompanyId
-                                };
-                                state.stats.totalProduced['Fuel'] = (state.stats.totalProduced['Fuel'] || 0) + design.fuelCapacity;
-                                const planet = Object.values(state.galaxy.stars).flatMap(s => s.planets).find(p => p.id === colony.planetId);
-                                const parentStar = Object.values(state.galaxy.stars).find(s => s.planets.some(p => p.id === colony.planetId));
-
-                                let isCivilian = false;
-                                if (item.sourceCompanyId) {
-                                    const company = empire.companies.find(c => c.id === item.sourceCompanyId);
-                                    if (company) {
-                                        if (design.hullClass === 'Freighter' || design.components.some(c => c.type.includes('Cargo'))) {
-                                            company.activeFreighters = (company.activeFreighters ?? 0) + 1;
-                                        }
-                                        isCivilian = true;
-                                    }
-                                }
-
-                                empire.fleets.push({
-                                    id: generateId('fleet', rng),
-                                    name: item.sourceCompanyId ? `${design.name} (Civilian)` : `${colony.name} Defense Flotilla ${String.fromCharCode(65 + Math.floor(rng.next() * 26))}`,
-                                    empireId: empire.id,
-                                    shipIds: [shipId],
-                                    currentStarId: parentStar?.id || 'star_0',
-                                    position: planet ? getPlanetPosition(planet, state.turn) : { x: 0, y: 0 },
-                                    orbitingPlanetId: colony.planetId,
-                                    orders: [],
-                                    isCivilian: isCivilian,
-                                    ownerCompanyId: item.sourceCompanyId
-                                });
-                            }
-                        }
+                for (const [res, cost] of Object.entries(item.costPerUnit || {})) {
+                    if (cost > 0) {
+                        const amount = cost * item.quantity * fractionOfJob;
+                        colony.minerals[res] -= amount;
+                        state.stats.totalConsumed[res] = (state.stats.totalConsumed[res] || 0) + amount;
                     }
-                    events.push(makeEvent(state.turn, state.date, 'ShipBuilt', `${colony.name}: Completed shipyard project ${item.name}`, rng, { important: false }));
                 }
+                item.progress = Math.min(100, item.progress + fractionOfJob * 100);
             }
         }
     }
 
     if (planet && empire) {
-        const reclamationBonus = (1 + (colony.reclamationPlants ?? 0) * 0.05);
         for (const mineral of planet.minerals) {
-            const mineBonus = (1 + (govBonuses.mining_rate ?? 0)) * (1 + (techBonuses.mining_rate ?? 0));
-            const extractorBonus = (colony.deepCoreExtractors ?? 0) * 0.2;
-            let extraction = (colony.mines + colony.civilianMines) * BALANCING.MINING_RATE_BASE * mineral.accessibility * staffingLevel * bonus.mining * infraEff * days * mineBonus * prodBonus * reclamationBonus * (1 + extractorBonus);
-
-            // Aetheric Siphons
-            if (mineral.name === 'Aether') {
-                const siphonRate = (colony.aethericSiphons ?? 0) * 50 * days * staffingLevel;
-                extraction += siphonRate;
-            }
-
+            let extraction = (colony.mines + colony.civilianMines) * BALANCING.MINING_RATE_BASE * mineral.accessibility * staffingLevel * bonus.mining * infraEff * days * (1 + (govBonuses.mining_rate ?? 0)) * (1 + (techBonuses.mining_rate ?? 0)) * prodBonus * (1 + (colony.reclamationPlants ?? 0) * 0.05) * (1 + (colony.deepCoreExtractors ?? 0) * 0.2);
+            if (mineral.name === 'Aether') extraction += (colony.aethericSiphons ?? 0) * 50 * days * staffingLevel;
             extraction = Math.min(extraction, mineral.amount);
             if (extraction > 0) {
                 colony.minerals[mineral.name] = (colony.minerals[mineral.name] ?? 0) + extraction;
                 mineral.amount -= extraction;
-                colony.lastMineralRates![mineral.name] = (colony.lastMineralRates![mineral.name] || 0) + (extraction / days);
                 state.stats.totalProduced[mineral.name] = (state.stats.totalProduced[mineral.name] || 0) + extraction;
             }
         }
     }
 
-    // Decay demand over time (0.95 per cycle or similar)
     if (colony.demand) {
         for (const res in colony.demand) {
-            colony.demand[res] *= Math.pow(0.5, days / 30); // Half-life of 30 days
+            colony.demand[res] *= Math.pow(0.5, days / 30);
             if (colony.demand[res] < 0.1) delete colony.demand[res];
         }
     }
 
-    const consumedGoods = simulateColonyEconomy(colony, planet, infraEff, days);
-
-    // Store income for the financial engine to process
-    colony.privateWealthIncome = consumedGoods;
-    colony.privateWealth = (colony.privateWealth || 0) + (consumedGoods * BALANCING.TRADE_GOOD_VALUE * 0.8);
+    simulateSectoralEconomy(colony, state, infraEff, days);
 
     if ((colony.privateWealth || 0) > BALANCING.CIVILIAN_EXPANSION_THRESHOLD && colony.population > (colony.factories + colony.mines + colony.civilianFactories + colony.civilianMines) * 10) {
-        if (rng.next() > 0.5) { colony.civilianFactories += 1; } else { colony.civilianMines += 1; }
-
-        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('civilian_expansion_sink'), BALANCING.CIVILIAN_EXPANSION_COST, 'CIVILIAN_EXPANSION',
-            { colonyId: colony.id, type: 'Investment' });
-
-        events.push(makeEvent(state.turn, state.date, 'CivilianExpansion', `Civilian investment on ${colony.name} built a new facility.`, rng, { important: false }));
-    }
-
-    const SNAPSHOT_INTERVAL = 86400 * 30;
-    const MAX_SNAPSHOTS = 24;
-    const isSnapshotTick = Math.floor(state.turn / SNAPSHOT_INTERVAL) < Math.floor((state.turn + dt) / SNAPSHOT_INTERVAL);
-
-    if (isSnapshotTick) {
-        const snapshot: ColonySnapshot = {
-            turn: state.turn + dt,
-            date: new Date(state.date.getTime() + dt * 1000),
-            population: colony.population,
-            minerals: { ...colony.minerals },
-            privateWealth: colony.privateWealth || 0,
-            civilianFactories: colony.civilianFactories || 0,
-            civilianMines: colony.civilianMines || 0,
-            logisticsHubs: colony.logisticsHubs || 0,
-            migrationMode: colony.migrationMode || 'Stable'
-        };
-        colony.history = [...(colony.history || []), snapshot].slice(-MAX_SNAPSHOTS);
+        if (rng.next() > 0.5) colony.civilianFactories += 1; else colony.civilianMines += 1;
+        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('civilian_expansion_sink'), BALANCING.CIVILIAN_EXPANSION_COST, 'CIVILIAN_EXPANSION', { colonyId: colony.id });
     }
 
     return events;
+}
+
+function makeEvent(turn: number, date: Date, type: EventType, message: string, rng: RNG, params?: any): GameEvent {
+    return { id: generateId('evt', rng), turn, date: date.toISOString().split('T')[0], type, message, ...params };
 }
 
 export function tickAetherHarvesting(state: GameState, dt: number) {
@@ -548,13 +485,10 @@ export function tickAetherHarvesting(state: GameState, dt: number) {
     for (const empire of Object.values(state.empires)) {
         for (const fleet of empire.fleets) {
             if (!fleet.orbitingPlanetId) continue;
-
             const star = state.galaxy.stars[fleet.currentStarId];
             if (!star) continue;
-
             const planet = star.planets.find(p => p.id === fleet.orbitingPlanetId);
             if (!planet || planet.bodyType !== 'GasGiant') continue;
-
             const aetherDeposit = planet.minerals.find(m => m.name === 'Aether');
             if (!aetherDeposit || aetherDeposit.amount <= 0) continue;
 
@@ -563,41 +497,27 @@ export function tickAetherHarvesting(state: GameState, dt: number) {
                 const ship = state.ships[sid];
                 if (!ship) continue;
                 const design = empire.designLibrary.find(d => d.id === ship.designId);
-                if (!design) continue;
-
-                const mod = design.components.find((c: ShipComponent) => c.type === 'ColonizationModule');
-                const scoop = design.components.find((c: ShipComponent) => c.id === 'scoop_aether');
-                if (scoop) {
-                    totalHarvestRate += (scoop.stats.harvestRate || 0);
-                }
+                const scoop = design?.components.find((c: ShipComponent) => c.id === 'scoop_aether');
+                if (scoop) totalHarvestRate += (scoop.stats.harvestRate || 0);
             }
 
             if (totalHarvestRate > 0) {
-                let amount = totalHarvestRate * aetherDeposit.accessibility * days;
-                amount = Math.min(amount, aetherDeposit.amount);
-
+                let amount = Math.min(totalHarvestRate * aetherDeposit.accessibility * days, aetherDeposit.amount);
                 let remainingToStore = amount;
                 for (const sid of fleet.shipIds) {
                     const ship = state.ships[sid];
-                    if (!ship) continue;
-                    const design = empire.designLibrary.find(d => d.id === ship.designId);
-                    if (!design) continue;
-
-                    const cargoCap = design.components.reduce((sum: number, c: ShipComponent) => sum + (c.stats.cargoCapacity || 0), 0);
-                    const currentCargo = Object.values(ship.cargo || {}).reduce((sum, v) => sum + v, 0);
-                    const space = cargoCap - currentCargo;
-
+                    const design = empire.designLibrary.find(d => d.id === ship!.designId);
+                    const cargoCap = design!.components.reduce((sum: number, c: ShipComponent) => sum + (c.stats.cargoCapacity || 0), 0);
+                    const space = cargoCap - Object.values(ship!.cargo || {}).reduce((sum, v) => sum + v, 0);
                     if (space > 0) {
                         const toAdd = Math.min(remainingToStore, space);
-                        ship.cargo = ship.cargo || {};
-                        ship.cargo['Aether'] = (ship.cargo['Aether'] || 0) + toAdd;
+                        ship!.cargo = ship!.cargo || {};
+                        ship!.cargo['Aether'] = (ship!.cargo['Aether'] || 0) + toAdd;
                         remainingToStore -= toAdd;
                     }
                     if (remainingToStore <= 0) break;
                 }
-
-                const harvested = amount - remainingToStore;
-                aetherDeposit.amount -= harvested;
+                aetherDeposit.amount -= (amount - remainingToStore);
             }
         }
     }

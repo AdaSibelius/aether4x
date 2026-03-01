@@ -1,4 +1,4 @@
-import type { Officer, OfficerRole, CompanyType } from '../types';
+import type { Officer, OfficerRole, CompanyType, TechCategory } from '../types';
 import { RNG } from '../utils/rng';
 
 // ─── Name Tables ─────────────────────────────────────────────────────────────
@@ -237,7 +237,7 @@ export function createOfficer(role: OfficerRole, empireBonuses: Record<string, n
 
     let specialization: string | undefined;
     if (role === 'Scientist') {
-        const categories: import('@/types').TechCategory[] = ['Computation', 'Engineering', 'Power', 'Military', 'Biology', 'Logistics', 'Geology', 'Astrogation'];
+        const categories: TechCategory[] = ['Computation', 'Engineering', 'Power', 'Military', 'Biology', 'Logistics', 'Geology', 'Astrogation'];
         specialization = rng.pick(categories);
     } else if (role === 'Engineer') {
         specialization = rng.pick(ENGINEER_DOMAINS);

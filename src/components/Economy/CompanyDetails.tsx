@@ -10,6 +10,7 @@ import {
     BarChart, Bar, Legend, Cell
 } from 'recharts';
 import { CompanyStrategy } from '@/types';
+import { getAccountName } from '@/utils/economy_format';
 
 export default function CompanyDetailsView({ isEmbedded }: { isEmbedded?: boolean }) {
     const game = useGameStore(s => s.game);
@@ -249,42 +250,41 @@ export default function CompanyDetailsView({ isEmbedded }: { isEmbedded?: boolea
 
                     {activeTab === 'ledger' && (
                         <div className={styles.panel}>
-                            <div className={styles.panelHeader}>Transaction Ledger</div>
-                            <div className={styles.panelBody} style={{ padding: 0 }}>
-                                <table className={styles.ledgerTable}>
+                            <div className={styles.panelHeader}>Cashflow Audit Ledger</div>
+                            <div className={styles.panelBody} style={{ padding: 16, maxHeight: 400, overflowY: 'auto' }}>
+                                <table className="audit-table" style={{ margin: 0 }}>
                                     <thead>
                                         <tr>
                                             <th>Date</th>
-                                            <th>Type</th>
-                                            <th>Description</th>
-                                            <th style={{ textAlign: 'right' }}>Amount</th>
+                                            <th>Category</th>
+                                            <th>Payer</th>
+                                            <th>Payee</th>
+                                            <th style={{ textAlign: 'right' }}>Amount (W)</th>
+                                            <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {[...company.transactions].reverse().map((tx, idx) => (
-                                            <tr key={idx}>
-                                                <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>{new Date(tx.date).toLocaleDateString()}</td>
-                                                <td>
-                                                    <span className={styles.traitBadge} style={{
-                                                        fontSize: 10,
-                                                        background: tx.type === 'Income' ? 'rgba(46, 204, 113, 0.1)' :
-                                                            tx.type === 'Grant' ? 'rgba(52, 152, 219, 0.1)' : 'rgba(231, 76, 60, 0.1)',
-                                                        color: tx.type === 'Income' ? '#2ecc71' :
-                                                            tx.type === 'Grant' ? '#3498db' : '#e74c3c'
-                                                    }}>
-                                                        {tx.type}
-                                                    </span>
-                                                </td>
-                                                <td style={{ fontSize: 12 }}>{tx.description}</td>
-                                                <td style={{
-                                                    textAlign: 'right',
-                                                    fontWeight: 600,
-                                                    color: tx.type === 'Income' || tx.type === 'Grant' ? 'var(--accent-green)' : 'var(--accent-red)'
-                                                }}>
-                                                    {tx.type === 'Income' || tx.type === 'Grant' ? '+' : '-'}{Math.floor(tx.amount).toLocaleString()} W
-                                                </td>
+                                        {game.monetaryLedger
+                                            ?.filter(entry => entry.from.includes(company.id) || entry.to.includes(company.id))
+                                            .slice().reverse().slice(0, 50).map(entry => (
+                                                <tr key={entry.id}>
+                                                    <td>Turn {Math.floor(entry.turn / 86400)}</td>
+                                                    <td style={{ color: 'var(--accent-blue)', fontSize: 11 }}>{entry.reasonCode.replace(/_/g, ' ')}</td>
+                                                    <td style={{ fontSize: 11 }}>{getAccountName(game, entry.from)}</td>
+                                                    <td style={{ fontSize: 11 }}>{getAccountName(game, entry.to)}</td>
+                                                    <td style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{(entry.amount || 0).toFixed(2)}</td>
+                                                    <td>
+                                                        <span className={`status-badge ${entry.shortfall === 0 ? 'status-settled' : 'status-partial'}`}>
+                                                            {entry.shortfall === 0 ? 'Settled' : 'Partial'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        {(!game.monetaryLedger || game.monetaryLedger.filter(entry => entry.from.includes(company.id) || entry.to.includes(company.id)).length === 0) && (
+                                            <tr>
+                                                <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px 0' }}>No recent corporate fiscal events.</td>
                                             </tr>
-                                        ))}
+                                        )}
                                     </tbody>
                                 </table>
                             </div>

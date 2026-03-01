@@ -40,17 +40,15 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
             const staffingEff = homeColony.staffingLevel || 1.0;
 
             if (company.type === 'Agricultural') {
-                const pool = (homeColony.farms || 0) * BALANCING.CORP_POOL.AGRICULTURAL * days;
-                const agriCos = empire.companies.filter(c => c.type === 'Agricultural' && c.homeColonyId === homeColony.id).length || 1;
-                tickRevenue = (pool / agriCos) * staffingEff;
+                // Revenue is handled dynamically in tickColony via MARKET_PURCHASE
+                tickRevenue = 0;
             } else if (company.type === 'Commercial') {
                 const pool = (homeColony.commercialCenters || 0) * BALANCING.CORP_POOL.COMMERCIAL * days;
                 const comCos = empire.companies.filter(c => c.type === 'Commercial' && c.homeColonyId === homeColony.id).length || 1;
                 tickRevenue = (pool / comCos) * staffingEff;
             } else if (company.type === 'Manufacturing') {
-                const pool = (homeColony.civilianFactories || 0) * BALANCING.CORP_POOL.MANUFACTURING * days;
-                const mfgCos = empire.companies.filter(c => c.type === 'Manufacturing' && c.homeColonyId === homeColony.id).length || 1;
-                tickRevenue = (pool / mfgCos) * staffingEff;
+                // Revenue is handled dynamically in tickColony via MARKET_PURCHASE
+                tickRevenue = 0;
             } else if (company.type === 'Extraction') {
                 tickRevenue = (1 + company.explorationLicenseIds.length * 0.2) * 20 * staffingEff * (dt / 86400);
             } else if (company.type === 'Transport') {
@@ -129,20 +127,44 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         messageValue = `${company.name} expanded mining on ${bestColony.name}.`;
                     }
                 } else if (company.type === 'Manufacturing') {
+                    // Manufacturing AI: Look for high demand/high price goods
+                    const hasElectronics = homeColony.resourcePrices?.Electronics && homeColony.resourcePrices.Electronics > 15;
+                    const hasMachinery = homeColony.resourcePrices?.Machinery && homeColony.resourcePrices.Machinery > 10;
+
+                    let targetBuilding = 'CivilianFactory';
+                    if (hasElectronics && hasMachinery) {
+                        targetBuilding = rng.chance(0.5) ? 'CivilianElectronicsPlant' : 'CivilianMachineryPlant';
+                    } else if (hasElectronics) {
+                        targetBuilding = 'CivilianElectronicsPlant';
+                    } else if (hasMachinery) {
+                        targetBuilding = 'CivilianMachineryPlant';
+                    }
+
                     // Manufacturing likes population hubs
                     bestColony = empireColonies.sort((a, b) => b.population - a.population)[0];
                     if (bestColony) {
-                        bestColony.civilianFactories = (bestColony.civilianFactories ?? 0) + 1;
+                        if (targetBuilding === 'CivilianFactory') bestColony.civilianFactories = (bestColony.civilianFactories ?? 0) + 1;
+                        if (targetBuilding === 'CivilianElectronicsPlant') bestColony.civilianElectronicsPlants = (bestColony.civilianElectronicsPlants ?? 0) + 1;
+                        if (targetBuilding === 'CivilianMachineryPlant') bestColony.civilianMachineryPlants = (bestColony.civilianMachineryPlants ?? 0) + 1;
+
+                        if (!bestColony.buildingOwners) bestColony.buildingOwners = {};
+                        if (!bestColony.buildingOwners[targetBuilding]) bestColony.buildingOwners[targetBuilding] = {};
+                        bestColony.buildingOwners[targetBuilding][company.id] = (bestColony.buildingOwners[targetBuilding][company.id] || 0) + 1;
+
                         const cost = buildThreshold * 0.5;
                         transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
-                            { companyId: company.id, colonyId: bestColony.id, type: 'CivilianFactory' });
-                        messageValue = `${company.name} built a new factory on ${bestColony.name}.`;
+                            { companyId: company.id, colonyId: bestColony.id, type: targetBuilding });
+                        messageValue = `${company.name} built a new ${targetBuilding} on ${bestColony.name}.`;
                     }
                 } else if (company.type === 'Agricultural') {
                     // Agri likes habitability and population
                     bestColony = empireColonies.sort((a, b) => (b.maxPopulation * b.happiness) - (a.maxPopulation * a.happiness))[0];
                     if (bestColony) {
                         bestColony.farms = (bestColony.farms ?? 0) + 1;
+                        if (!bestColony.buildingOwners) bestColony.buildingOwners = {};
+                        if (!bestColony.buildingOwners['Farm']) bestColony.buildingOwners['Farm'] = {};
+                        bestColony.buildingOwners['Farm'][company.id] = (bestColony.buildingOwners['Farm'][company.id] || 0) + 1;
+
                         const cost = buildThreshold * 0.5;
                         transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
                             { companyId: company.id, colonyId: bestColony.id, type: 'Farm' });

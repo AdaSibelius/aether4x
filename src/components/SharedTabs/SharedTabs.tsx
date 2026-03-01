@@ -76,7 +76,7 @@ export function SurfaceTab({ colony, planet }: {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {BALANCING.MINERAL_NAMES.map((mName: string) => {
+                                    {BALANCING.RAW_MINERALS.map((mName: string) => {
                                         const m = planet?.minerals.find(min => min.name === mName) || { name: mName, amount: 0, accessibility: 0 };
                                         const mineBonus = 1 + (govBonuses.mining_rate ?? 0);
                                         const prodBonus = 1 + (govBonuses.all_production ?? 0);

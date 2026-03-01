@@ -65,7 +65,7 @@ export const LogisticsValidation: Scenario = {
 
         const endInventory = getGlobalMineralInventory(state);
         let driftFound = false;
-        const driftDetails: Record<string, { start: number, prod: number, cons: number, end: number, drift: number, driftPct: number }> = {};
+        const allDrifts: import('./types').DriftDetail[] = [];
 
         Object.keys(startInventory).forEach(res => {
             const start = startInventory[res] || 0;
@@ -75,14 +75,24 @@ export const LogisticsValidation: Scenario = {
 
             const expected = start + prod - cons;
             const drift = end - expected;
-            const driftPct = expected > 0 ? (drift / expected) * 100 : 0;
-
-            driftDetails[res] = { start, prod, cons, end, drift, driftPct };
 
             if (Math.abs(drift) > 0.01) {
                 driftFound = true;
+                allDrifts.push({
+                    path: res,
+                    expected,
+                    actual: end,
+                    message: `Drift of ${drift} detected in ${res}`
+                });
             }
         });
+
+        const driftReport: import('./types').DriftReport = {
+            hasDrift: driftFound,
+            totalDifferences: allDrifts.length,
+            allDrifts,
+            firstDifference: allDrifts[0]
+        };
 
         const mars = Object.values(state.colonies).find(c => c.name === 'Mars Outpost');
         const tradeSuccess = (mars?.minerals['Iron'] || 0) > 5000;
@@ -95,7 +105,7 @@ export const LogisticsValidation: Scenario = {
                 population: Object.values(state.colonies).reduce((sum, c) => sum + c.population, 0),
                 tradeSuccess
             },
-            driftReport: driftDetails
+            driftReport
         };
     }
 };

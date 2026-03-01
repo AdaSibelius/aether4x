@@ -11,6 +11,7 @@
 import type { GameState, Colony, MonetaryLedgerEntry, MonetaryReasonCode } from '../types';
 import type { Empire, Company } from '../types';
 import { BALANCING } from './constants';
+import { generateId } from '../utils/id';
 
 // ─── Account References ───────────────────────────────────────────────────────
 
@@ -104,8 +105,10 @@ export function transferWithLedger(
         to.applyDelta(settled);
     }
 
+    if (!game.monetaryLedger) game.monetaryLedger = [];
+
     const entry: MonetaryLedgerEntry = {
-        id: `ml_${game.turn}_${game.monetaryLedger.length}`,
+        id: generateId('ml'),
         turn: game.turn,
         from: from.label,
         to: to.label,
@@ -138,6 +141,7 @@ export function transferWithLedger(
 
 /** Keep only the most recent entries to prevent unbounded memory growth. */
 export function pruneMonetaryLedger(game: GameState): void {
+    if (!game.monetaryLedger) return;
     const max = BALANCING.MAX_MONETARY_LEDGER_ENTRIES;
     if (game.monetaryLedger.length > max) {
         game.monetaryLedger = game.monetaryLedger.slice(-max);
@@ -148,7 +152,7 @@ export function pruneMonetaryLedger(game: GameState): void {
 
 /** Returns all ledger entries for external audit. Safe to call in any context. */
 export function exportMonetaryLedger(game: GameState): MonetaryLedgerEntry[] {
-    return [...game.monetaryLedger];
+    return game.monetaryLedger ? [...game.monetaryLedger] : [];
 }
 
 /** Filter ledger by reason code for targeted analysis. */
@@ -156,5 +160,6 @@ export function queryLedger(
     game: GameState,
     reasonCode: MonetaryReasonCode,
 ): MonetaryLedgerEntry[] {
+    if (!game.monetaryLedger) return [];
     return game.monetaryLedger.filter(e => e.reasonCode === reasonCode);
 }
