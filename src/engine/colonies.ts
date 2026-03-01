@@ -105,7 +105,7 @@ function updateColonyPopulation(colony: Colony, policyMod: number, agriMod: numb
     }
 }
 
-function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: number, days: number): void {
+function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: number, days: number, rng: RNG): void {
     if (!colony.buildingOwners) colony.buildingOwners = {};
     if (!colony.resourcePrices) colony.resourcePrices = {};
     if (colony.educationIndex === undefined) colony.educationIndex = 50;
@@ -125,7 +125,7 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     }
 
     if (colony.educationBudget > 0) {
-        transferWithLedger(state, createTreasuryAccount(empire), createExternalAccount('education_sink'), colony.educationBudget * days, 'EDUCATION_FUNDING', { colonyId: colony.id });
+        transferWithLedger(state, createTreasuryAccount(empire), createExternalAccount('education_sink'), colony.educationBudget * days, 'EDUCATION_FUNDING', { colonyId: colony.id }, rng);
     }
 
     // 2. Wages & Private Wealth
@@ -133,8 +133,20 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     const staffingLevel = colony.staffingLevel || 1.0;
     const colonyWage = 10.0 * staffingLevel * (1 + (colony.educationIndex / 100));
 
-    let totalPublicWages = 0;
-    let totalPrivateWages = 0;
+    const publicWorkersM = ((colony as any).publicWorkers || 0) * staffingLevel;
+    const privateWorkersM = ((colony as any).privateWorkers || 0) * staffingLevel;
+
+    let totalPublicWages = publicWorkersM * colonyWage * days;
+    let totalPrivateWages = privateWorkersM * colonyWage * days;
+
+    colony.privateWealth = (colony.privateWealth || 0) + totalPublicWages + totalPrivateWages;
+
+    if (totalPublicWages > 0) {
+        transferWithLedger(state, createTreasuryAccount(empire), createColonyPrivateWealthAccount(colony), totalPublicWages, 'WAGES_PAID', { colonyId: colony.id }, rng);
+    }
+    if (totalPrivateWages > 0) {
+        transferWithLedger(state, createExternalAccount('civilian_capital'), createColonyPrivateWealthAccount(colony), totalPrivateWages, 'WAGES_PAID', { colonyId: colony.id }, rng);
+    }
 
     // 3. Sectoral Production (Recipes)
     const outputByOwner: Record<string, Record<string, number>> = {};
@@ -160,10 +172,15 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
         const finalOutput = possibleOutput * (recipe.outputMultiplier || 1);
         if (finalOutput > 0) {
             for (const [res, amt] of Object.entries(recipe.inputs || {})) {
-                colony.minerals[res as string] -= possibleOutput * (amt as number);
+                const consumed = possibleOutput * (amt as number);
+                colony.minerals[res as string] -= consumed;
+                state.stats.totalConsumed[res as string] = (state.stats.totalConsumed[res as string] || 0) + consumed;
             }
             colony.minerals[good] = (colony.minerals[good] || 0) + finalOutput;
             state.stats.totalProduced[good] = (state.stats.totalProduced[good] || 0) + finalOutput;
+            if (good === 'ConsumerGoods' && finalOutput > 0) {
+                console.log(`DEBUG: Produced ${finalOutput.toFixed(2)} units of ${good} on ${colony.name}. New total: ${colony.minerals[good].toFixed(2)}`);
+            }
 
             if (!outputByOwner[good]) outputByOwner[good] = {};
             const owners = colony.buildingOwners![type] || { [empire.id]: count };
@@ -174,10 +191,12 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
         }
     };
 
-    processPlant('ElectronicsPlant', BALANCING.JOB_REQUIREMENTS.ElectronicsPlant, 'Electronics', BALANCING.INDUSTRY_RECIPES.Electronics);
-    processPlant('CivilianElectronicsPlant', BALANCING.JOB_REQUIREMENTS.CivilianElectronicsPlant, 'Electronics', BALANCING.INDUSTRY_RECIPES.Electronics);
-    processPlant('MachineryPlant', BALANCING.JOB_REQUIREMENTS.MachineryPlant, 'Machinery', BALANCING.INDUSTRY_RECIPES.Machinery);
-    processPlant('CivilianMachineryPlant', BALANCING.JOB_REQUIREMENTS.CivilianMachineryPlant, 'Machinery', BALANCING.INDUSTRY_RECIPES.Machinery);
+    processPlant('electronicsPlants', BALANCING.JOB_REQUIREMENTS.ElectronicsPlant, 'Electronics', BALANCING.INDUSTRY_RECIPES.Electronics);
+    processPlant('civilianElectronicsPlants', BALANCING.JOB_REQUIREMENTS.CivilianElectronicsPlant, 'Electronics', BALANCING.INDUSTRY_RECIPES.Electronics);
+    processPlant('machineryPlants', BALANCING.JOB_REQUIREMENTS.MachineryPlant, 'Machinery', BALANCING.INDUSTRY_RECIPES.Machinery);
+    processPlant('civilianMachineryPlants', BALANCING.JOB_REQUIREMENTS.CivilianMachineryPlant, 'Machinery', BALANCING.INDUSTRY_RECIPES.Machinery);
+    processPlant('factories', BALANCING.JOB_REQUIREMENTS.Factory, 'ConsumerGoods', BALANCING.INDUSTRY_RECIPES.ConsumerGoods);
+    processPlant('civilianFactories', BALANCING.JOB_REQUIREMENTS.CivilianFactory, 'ConsumerGoods', BALANCING.INDUSTRY_RECIPES.ConsumerGoods);
 
     // Food production proportionality
     const farmOwners = colony.buildingOwners['Farm'];
@@ -227,7 +246,7 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
                                 const corp = empire.companies.find(c => c.id === ownerId);
                                 if (corp) toAccount = createCompanyAccount(corp);
                             }
-                            if (toAccount) transferWithLedger(state, createColonyPrivateWealthAccount(colony), toAccount, ownerShare, 'MARKET_PURCHASE', { colonyId: colony.id, resource: good });
+                            if (toAccount) transferWithLedger(state, createColonyPrivateWealthAccount(colony), toAccount, ownerShare, 'MARKET_PURCHASE', { colonyId: colony.id, resource: good }, rng);
                         }
                     }
                 }
@@ -260,7 +279,7 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     // 6. Cost of Living sink
     const costOfLiving = (colony.privateWealth || 0) * BALANCING.COST_OF_LIVING_RATE * days;
     if (costOfLiving > 0) {
-        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('cost_of_living_sink'), costOfLiving, 'COST_OF_LIVING', { colonyId: colony.id });
+        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('cost_of_living_sink'), costOfLiving, 'COST_OF_LIVING', { colonyId: colony.id }, rng);
     }
 }
 
@@ -325,6 +344,10 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         companiesOnColony * BALANCING.EMPLOYMENT.OFFICE_WORKERS_PER_CORP;
 
     const totalRequiredLabor = requiredPublicLabor + requiredPrivateLabor + (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM + (colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER;
+
+    (colony as any).publicWorkers = requiredPublicLabor;
+    (colony as any).privateWorkers = totalRequiredLabor - requiredPublicLabor;
+
 
     const baselineStaffing = totalRequiredLabor > 0 ? Math.min(1.0, colony.population / totalRequiredLabor) : 1.0;
     const staffingLevel = Math.min(BALANCING.MAX_STAFFING_LEVEL, (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + (colony.logisticsHubs ?? 0) * 0.02) * (1 + (techBonuses.load_speed ?? 0))) || 0.001);
@@ -466,11 +489,11 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         }
     }
 
-    simulateSectoralEconomy(colony, state, infraEff, days);
+    simulateSectoralEconomy(colony, state, infraEff, days, rng);
 
     if ((colony.privateWealth || 0) > BALANCING.CIVILIAN_EXPANSION_THRESHOLD && colony.population > (colony.factories + colony.mines + colony.civilianFactories + colony.civilianMines) * 10) {
         if (rng.next() > 0.5) colony.civilianFactories += 1; else colony.civilianMines += 1;
-        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('civilian_expansion_sink'), BALANCING.CIVILIAN_EXPANSION_COST, 'CIVILIAN_EXPANSION', { colonyId: colony.id });
+        transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('civilian_expansion_sink'), BALANCING.CIVILIAN_EXPANSION_COST, 'CIVILIAN_EXPANSION', { colonyId: colony.id }, rng);
     }
 
     return events;

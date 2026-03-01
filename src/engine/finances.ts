@@ -1,4 +1,5 @@
 import type { GameState, Empire, Colony, EmpireSnapshot } from '../types';
+import { RNG } from '../utils/rng';
 import { BALANCING } from './constants';
 import {
     transferWithLedger,
@@ -129,7 +130,7 @@ export function calculateEmpireBudget(game: GameState, empireId: string): Empire
  * via transferWithLedger. Maintenance costs are debited from the treasury and
  * credited to an external sink. No silent money creation.
  */
-export function tickEmpireFinances(next: GameState, empire: Empire, dt: number): void {
+export function tickEmpireFinances(next: GameState, empire: Empire, dt: number, rng: RNG): void {
     const days = dt / 86400;
     const empireColonies = Object.values(next.colonies).filter(c => c.empireId === empire.id);
     const treasuryAccount = createTreasuryAccount(empire);
@@ -150,6 +151,7 @@ export function tickEmpireFinances(next: GameState, empire: Empire, dt: number):
             budget.taxes,
             'TAX_COLLECTION',
             { colonyId: colony.id, empireId: empire.id },
+            rng,
         );
         totalSettledTax += settled;
 
@@ -181,6 +183,7 @@ export function tickEmpireFinances(next: GameState, empire: Empire, dt: number):
             totalMaint,
             'MAINTENANCE_PAYMENT',
             { empireId: empire.id },
+            rng,
         );
     }
 }

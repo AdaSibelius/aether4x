@@ -28,7 +28,7 @@ function totalWealth(game: GameState): number {
 
 function runTick(game: GameState, dt: number): void {
     for (const empire of Object.values(game.empires)) {
-        tickEmpireFinances(game, empire, dt);
+        tickEmpireFinances(game, empire, dt, new RNG(game.seed + game.turn));
     }
     game.turn++;
 }
