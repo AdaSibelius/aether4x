@@ -37,7 +37,7 @@ export function tickEmpire(state: GameState, empire: Empire, rng: RNG, dt: numbe
     events.push(...tickOfficerLifecycle(state, empire, rng, dt));
 
     // 6. State Treasury & Maintenance
-    tickEmpireFinances(state, empire, dt);
+    tickEmpireFinances(state, empire, dt, rng);
 
     return events;
 }

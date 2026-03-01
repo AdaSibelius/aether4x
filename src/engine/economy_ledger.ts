@@ -12,6 +12,7 @@ import type { GameState, Colony, MonetaryLedgerEntry, MonetaryReasonCode } from 
 import type { Empire, Company } from '../types';
 import { BALANCING } from './constants';
 import { generateId } from '../utils/id';
+import { RNG } from '../utils/rng';
 
 // ─── Account References ───────────────────────────────────────────────────────
 
@@ -93,6 +94,7 @@ export function transferWithLedger(
     amount: number,
     reasonCode: MonetaryReasonCode,
     metadata?: Record<string, string | number | boolean>,
+    rng?: RNG,
 ): TransferResult {
     if (amount <= 0) return { settled: 0, shortfall: 0 };
 
@@ -108,7 +110,7 @@ export function transferWithLedger(
     if (!game.monetaryLedger) game.monetaryLedger = [];
 
     const entry: MonetaryLedgerEntry = {
-        id: generateId('ml'),
+        id: generateId('ml', rng),
         turn: game.turn,
         from: from.label,
         to: to.label,

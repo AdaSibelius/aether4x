@@ -59,8 +59,9 @@ function settleFreightFee(params: {
     description: string;
     payerAccounts: FeePayerAccount[];
     metadata?: Record<string, string | number>;
+    rng: RNG;
 }) {
-    const { state, empire, company, fee, category, description, payerAccounts, metadata } = params;
+    const { state, empire, company, fee, category, description, payerAccounts, metadata, rng } = params;
     if (fee <= 0) return { paid: 0, unpaid: 0 };
 
     let remaining = fee;
@@ -81,7 +82,8 @@ function settleFreightFee(params: {
             companyAccount,
             contribution,
             reason as any, // Cast to any to avoid strict reason code check if necessary, or ensure codes match
-            { ...metadata, reasonDetail: `${category}: ${description}` }
+            { ...metadata, reasonDetail: `${category}: ${description}` },
+            rng
         );
 
         if (settled <= 0) continue;
@@ -491,6 +493,7 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
                                     sourceColonyId: sourceColony?.id || 'unknown',
                                     amountMovedM: totalUnloaded,
                                 },
+                                rng,
                             });
 
                             if (result.unpaid > 0) {
@@ -638,6 +641,7 @@ function processTransportOrder(fleet: Fleet, order: ShipOrder, state: GameState,
                                     targetColonyId: colony.id,
                                     sourceColonyId: sourceColony?.id || 'unknown',
                                 },
+                                rng,
                             });
 
                             if (result.unpaid > 0) {
