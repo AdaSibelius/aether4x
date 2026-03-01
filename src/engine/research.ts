@@ -577,16 +577,7 @@ export const TECH_TREE: Technology[] = [
         prerequisites: ['high_capacity_bays', 'difference_engine_mk3'],
         effects: [{ type: 'load_speed', value: 0.5 }],
     },
-    {
-        id: 'aetheric_siphon_theory',
-        name: 'Aetheric Siphon Theory',
-        description: 'Advanced theory on harvesting aetheric currents for extreme energy. Unlocks Aetheric Siphon Corps.',
-        category: 'Power',
-        tier: 5,
-        cost: 3500000,
-        prerequisites: ['antimatter_forge'],
-        effects: [{ type: 'company_unlock', value: 1 }],
-    },
+
     {
         id: 'grand_scientist_mentorship',
         name: 'Grand Scientist Mentorship',
@@ -617,16 +608,7 @@ export const TECH_TREE: Technology[] = [
         prerequisites: ['deep_core_mining', 'precision_deep_drilling'],
         effects: [{ type: 'mining_rate', value: 0.45 }],
     },
-    {
-        id: 'deep_core_mining_logic',
-        name: 'Deep Core Mining Logic',
-        description: 'Mastering the logistics of extreme-pressure environments. Unlocks Deep Core Mining Entities.',
-        category: 'Geology',
-        tier: 5,
-        cost: 3300000,
-        prerequisites: ['nano_seismic_imaging'],
-        effects: [{ type: 'company_unlock', value: 2 }],
-    },
+
 
     // ═══════════════════════════════════════════════════════════════════════════
     // ERA VI: RESONATED SOCIETY (Tier 6)
@@ -662,16 +644,7 @@ export const TECH_TREE: Technology[] = [
         prerequisites: ['planetary_logistics_grid'],
         effects: [{ type: 'mineral_cost_reduction', value: 0.2 }],
     },
-    {
-        id: 'automated_reclamation_consortium',
-        name: 'Automated Reclamation Consortium',
-        description: 'Unlocks specialized corporations focused on harvesting industrial waste and planetary debris.',
-        category: 'Engineering',
-        tier: 6,
-        cost: 15000000,
-        prerequisites: ['automated_assembly_logic'],
-        effects: [{ type: 'company_unlock', value: 3 }],
-    },
+
     {
         id: 'subspace_research_nodes',
         name: 'Sub-Space Research Nodes',

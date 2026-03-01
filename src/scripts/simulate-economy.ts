@@ -85,13 +85,9 @@ function runSim() {
                     privateWealth: 1000,
                     constructionOffices: 0,
                     farms: 0,
-                    commercialCenters: 0,
+                    stores: 0,
                     terraformProgress: 0,
                     aethericDistillery: 0,
-                    logisticsHubs: 0,
-                    aethericSiphons: 0,
-                    deepCoreExtractors: 0,
-                    reclamationPlants: 0,
                     migrationMode: 'Stable'
                 };
                 console.log(`\n[EXPANSION] Day ${day}: Established colony on ${state.colonies[marsColonyId].name}`);

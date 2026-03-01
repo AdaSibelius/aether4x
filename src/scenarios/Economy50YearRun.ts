@@ -40,8 +40,7 @@ async function runScenario() {
             colonyType: 'Core',
             laborAllocation: { industry: 50, mining: 40, research: 0, construction: 10, agriculture: 0, commerce: 0 },
             productionQueue: [],
-            factories: 50, mines: 50, civilianFactories: 0, civilianMines: 0, researchLabs: 0, spaceport: 1, shipyards: [], groundDefenses: 0, constructionOffices: 5, farms: 0, commercialCenters: 0, terraformProgress: 0, aethericDistillery: 0, logisticsHubs: 0,
-            aethericSiphons: 0, deepCoreExtractors: 0, reclamationPlants: 0,
+            factories: 50, mines: 50, civilianFactories: 0, civilianMines: 0, researchLabs: 0, spaceport: 1, shipyards: [], groundDefenses: 0, constructionOffices: 5, farms: 0, stores: 0, terraformProgress: 0, aethericDistillery: 0,
             migrationMode: 'Stable',
             privateWealth: 10000,
             history: []

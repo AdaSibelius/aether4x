@@ -34,12 +34,10 @@ export const STRUCTURE_BP_COST: Record<string, number> = {
     Infrastructure: 100,
     ConstructionOffice: 1500,
     AethericDistillery: 1200,
-    AethericSiphon: 3000,
-    DeepCoreExtractor: 4000,
-    ReclamationPlant: 2500,
+    AethericHarvester: 3000,
+    CorporateOffice: 2000,
     Farm: 500,
-    CommercialCenter: 1000,
-    LogisticsHub: 1200,
+    Store: 1000,
     CivilianFactory: 1500,
     CivilianMine: 1000,
     ElectronicsPlant: 2500,
@@ -61,12 +59,10 @@ export const STRUCTURE_MINERAL_COST: Record<string, Record<string, number>> = {
     Infrastructure: { Iron: 40 },
     ConstructionOffice: { Iron: 600, Machinery: 50 },
     AethericDistillery: { Iron: 600, Machinery: 40 },
-    AethericSiphon: { Iron: 1200, Electronics: 50 },
-    DeepCoreExtractor: { Iron: 2000, Machinery: 100 },
-    ReclamationPlant: { Iron: 1200, Electronics: 40 },
+    AethericHarvester: { Iron: 1200, Electronics: 50 },
+    CorporateOffice: { Iron: 800, ConsumerGoods: 20 },
     Farm: { Iron: 200 },
-    CommercialCenter: { Iron: 400, ConsumerGoods: 20 },
-    LogisticsHub: { Iron: 600, Machinery: 50 },
+    Store: { Iron: 400, ConsumerGoods: 20 },
     CivilianFactory: { Iron: 800, Machinery: 40 },
     CivilianMine: { Iron: 500, Machinery: 20 },
     ElectronicsPlant: { Iron: 1200, Machinery: 100 },
@@ -125,7 +121,18 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     }
 
     if (colony.educationBudget > 0) {
-        transferWithLedger(state, createTreasuryAccount(empire), createExternalAccount('education_sink'), colony.educationBudget * days, 'EDUCATION_FUNDING', { colonyId: colony.id }, rng);
+        const copayRatio = 0.3 * (colony.educationIndex / 100);
+        const totalReq = colony.educationBudget * days;
+        const privateShare = Math.min((colony.privateWealth || 0), totalReq * copayRatio);
+        const publicShare = totalReq - privateShare;
+
+        if (privateShare > 0) {
+            colony.privateWealth = (colony.privateWealth || 0) - privateShare;
+            transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('education_sink'), privateShare, 'EDUCATION_COPAY', { colonyId: colony.id }, rng);
+        }
+        if (publicShare > 0) {
+            transferWithLedger(state, createTreasuryAccount(empire), createExternalAccount('education_sink'), publicShare, 'EDUCATION_FUNDING', { colonyId: colony.id }, rng);
+        }
     }
 
     // 2. Wages & Private Wealth
@@ -140,6 +147,15 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     let totalPrivateWages = privateWorkersM * colonyWage * days;
 
     colony.privateWealth = (colony.privateWealth || 0) + totalPublicWages + totalPrivateWages;
+
+    if ((colony.privateWealth || 0) > BALANCING.CORP_FOUND_WEALTH_THRESHOLD * 2) {
+        const excess = colony.privateWealth! - (BALANCING.CORP_FOUND_WEALTH_THRESHOLD * 2);
+        const transfer = excess * 0.02 * (days / 365);
+        if (transfer > 0) {
+            colony.privateWealth! -= transfer;
+            colony.investmentPool = (colony.investmentPool || 0) + transfer;
+        }
+    }
 
     if (totalPublicWages > 0) {
         transferWithLedger(state, createTreasuryAccount(empire), createColonyPrivateWealthAccount(colony), totalPublicWages, 'WAGES_PAID', { colonyId: colony.id }, rng);
@@ -198,46 +214,72 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     processPlant('factories', BALANCING.JOB_REQUIREMENTS.Factory, 'ConsumerGoods', BALANCING.INDUSTRY_RECIPES.ConsumerGoods);
     processPlant('civilianFactories', BALANCING.JOB_REQUIREMENTS.CivilianFactory, 'ConsumerGoods', BALANCING.INDUSTRY_RECIPES.ConsumerGoods);
 
-    // Food production proportionality
-    const farmOwners = colony.buildingOwners['Farm'];
+    // Food production proportionality — attribute to farm owners for MARKET_PURCHASE payment.
+    // Falls back to splitting equally among all Agricultural companies if ownership unregistered.
+    const farmOwners = colony.buildingOwners?.['Farm'];
     const totalFarms = colony.farms || 0;
-    if (farmOwners && totalFarms > 0) {
+    if (totalFarms > 0) {
         outputByOwner['Food'] = {};
-        for (const [ownerId, count] of Object.entries(farmOwners)) {
-            outputByOwner['Food'][ownerId] = count / totalFarms;
+        if (farmOwners && Object.keys(farmOwners).length > 0) {
+            // Use explicit ownership records
+            for (const [ownerId, count] of Object.entries(farmOwners)) {
+                outputByOwner['Food'][ownerId] = count / totalFarms;
+            }
+        } else {
+            // Fallback: split food revenue equally among Agricultural companies
+            const agrCorps = empire.companies.filter(c => c.type === 'Agricultural');
+            if (agrCorps.length > 0) {
+                const share = 1 / agrCorps.length;
+                for (const corp of agrCorps) {
+                    outputByOwner['Food'][corp.id] = share;
+                }
+            }
+            // If no agricultural corps exist, food revenue goes to empire treasury
+            if (!agrCorps.length) {
+                outputByOwner['Food'][empire.id] = 1;
+            }
         }
     }
 
     // 4. Market & Pricing
-    const processMarket = (good: string, demandAmt: number, spendMult: number = 1.0) => {
+    const processMarket = (good: string, demandAmt: number, retailMarkupPercent: number = 0.0) => {
         const supplyStock = colony.minerals[good] || 0;
         let basePrice = 5.0;
-        if (good === 'Food') basePrice = 1.0;
+        if (good === 'Food') basePrice = BALANCING.FARM_YIELD_BASE > 0 ? 1.0 : 1.0;
         if (good === 'Electronics') basePrice = 15.0;
         if (good === 'Machinery') basePrice = 10.0;
         if (good === 'ConsumerGoods') basePrice = 8.0;
 
         let currentPrice = basePrice * (demandAmt / Math.max(1, (1 + supplyStock)));
-        currentPrice = Math.max(basePrice * 0.1, Math.min(currentPrice, basePrice * 5));
-
-        if (supplyStock <= 0.01 && demandAmt > 0.1) {
-            currentPrice = Math.max(currentPrice, basePrice * 2.5);
+        if (good === 'Food') {
+            const daysSupply = supplyStock / Math.max(0.001, demandAmt / days);
+            if (daysSupply < BALANCING.FOOD_PRICE_SURGE_THRESHOLD) {
+                const surgeMult = 1 + ((BALANCING.FOOD_PRICE_SURGE_THRESHOLD - daysSupply) / BALANCING.FOOD_PRICE_SURGE_THRESHOLD) * (BALANCING.FOOD_PRICE_MAX - 1);
+                currentPrice = Math.max(currentPrice, basePrice * surgeMult);
+            }
         }
+        currentPrice = Math.max(basePrice * 0.1, Math.min(currentPrice, basePrice * 10));
 
         colony.resourcePrices![good] = currentPrice;
         const purchasedAmt = Math.min(supplyStock, demandAmt);
         colony.minerals[good] -= purchasedAmt;
         state.stats.totalConsumed[good] = (state.stats.totalConsumed[good] || 0) + purchasedAmt;
 
-        const spend = purchasedAmt * currentPrice * spendMult;
-        if (spend > 0) {
-            colony.privateWealth = Math.max(0, (colony.privateWealth || 0) - spend);
+        const spendMult = 1.0 + retailMarkupPercent;
+        const factoryRevenue = purchasedAmt * currentPrice;
+        const retailMarkup = purchasedAmt * currentPrice * retailMarkupPercent;
+
+        if (factoryRevenue > 0 || retailMarkup > 0) {
+            const totalSpend = factoryRevenue + retailMarkup;
+            colony.privateWealth = Math.max(0, (colony.privateWealth || 0) - totalSpend);
+
+            // Pay Producers
             const owners = outputByOwner[good];
             if (owners) {
                 const totalShares = Object.values(owners).reduce((sum, v) => sum + v, 0);
                 if (totalShares > 0) {
                     for (const [ownerId, shares] of Object.entries(owners)) {
-                        const ownerShare = (shares / totalShares) * spend;
+                        const ownerShare = (shares / totalShares) * factoryRevenue;
                         if (ownerShare > 0) {
                             let toAccount = null;
                             if (ownerId === empire.id) toAccount = createTreasuryAccount(empire);
@@ -251,6 +293,27 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
                     }
                 }
             }
+
+            // Pay Retailers (Stores)
+            if (retailMarkup > 0) {
+                const storeOwners = colony.buildingOwners?.['Store'];
+                if (storeOwners) {
+                    const totalStores = Object.values(storeOwners).reduce((sum, v) => sum + v, 0);
+                    if (totalStores > 0) {
+                        for (const [ownerId, count] of Object.entries(storeOwners)) {
+                            const storeShare = (count / totalStores) * retailMarkup;
+                            if (storeShare > 0) {
+                                let toAccount = null;
+                                const corp = empire.companies.find(c => c.id === ownerId);
+                                if (corp) toAccount = createCompanyAccount(corp);
+                                else if (ownerId === empire.id) toAccount = createTreasuryAccount(empire);
+
+                                if (toAccount) transferWithLedger(state, createColonyPrivateWealthAccount(colony), toAccount, storeShare, 'RETAIL_MARKUP', { colonyId: colony.id, resource: good }, rng);
+                            }
+                        }
+                    }
+                }
+            }
         }
     };
 
@@ -260,7 +323,7 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
 
     const cgNeeded = populationM * BALANCING.POP_CONSUMPTION_RATE * days;
     const initialWealth = colony.privateWealth || 0;
-    processMarket('ConsumerGoods', cgNeeded, 1.0);
+    processMarket('ConsumerGoods', cgNeeded, 0.25); // Stores markup is +25%
     const boughtCG = initialWealth - (colony.privateWealth || 0);
     if (boughtCG < cgNeeded * 0.8) {
         colony.happiness -= 1 * days;
@@ -269,7 +332,9 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     }
 
     const electronicsForLabs = (colony.researchLabs || 0) * BALANCING.ELECTRONICS_PER_RESEARCH_LAB * days;
-    if (electronicsForLabs > 0) processMarket('Electronics', electronicsForLabs, 1.0);
+    const electronicsForLux = ((colony.privateWealth || 0) / BALANCING.ELECTRONICS_LUXURY_THRESHOLD) * BALANCING.ELECTRONICS_LUXURY_CONSUMPTION * colony.population * days;
+    const totalElectronics = electronicsForLabs + electronicsForLux;
+    if (totalElectronics > 0) processMarket('Electronics', totalElectronics, 0.25);
 
     const machineryNeeded = (colony.shipyards || []).reduce((sum, sy) => {
         return sum + (sy.activeBuilds || []).reduce((s, _b) => s + (BALANCING.MACHINERY_PER_SHIPYARD_BP * days), 0);
@@ -280,6 +345,39 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     const costOfLiving = (colony.privateWealth || 0) * BALANCING.COST_OF_LIVING_RATE * days;
     if (costOfLiving > 0) {
         transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('cost_of_living_sink'), costOfLiving, 'COST_OF_LIVING', { colonyId: colony.id }, rng);
+    }
+
+    // 7. Office Rent
+    const corporateOfficesCount = colony.corporateOffices || 0;
+    if (corporateOfficesCount > 0 && colony.buildingOwners?.['CorporateOffice']) {
+        let rentPool = 0;
+        for (const corp of empire.companies) {
+            if (corp.homeColonyId !== colony.id || corp.type === 'Commercial') continue;
+
+            let buildingsOwned = 0;
+            for (const bType in colony.buildingOwners) {
+                buildingsOwned += (colony.buildingOwners[bType][corp.id] || 0);
+            }
+            if (buildingsOwned > 0) {
+                const rent = buildingsOwned * BALANCING.CORP_POOL.OFFICE * days;
+                transferWithLedger(state, createCompanyAccount(corp), createExternalAccount('office_rent_routing'), rent, 'OFFICE_RENT', { colonyId: colony.id }, rng);
+                rentPool += rent;
+            }
+        }
+
+        if (rentPool > 0) {
+            const officeOwners = colony.buildingOwners['CorporateOffice'];
+            const totalOffices = Object.values(officeOwners).reduce((sum, v) => sum + v, 0);
+            for (const [ownerId, count] of Object.entries(officeOwners)) {
+                const share = (count / totalOffices) * rentPool;
+                if (share > 0) {
+                    const ownerCorp = empire.companies.find(c => c.id === ownerId);
+                    if (ownerCorp) {
+                        transferWithLedger(state, createExternalAccount('office_rent_routing'), createCompanyAccount(ownerCorp), share, 'OFFICE_RENT_INCOME', { colonyId: colony.id }, rng);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -332,9 +430,8 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         colony.shipyards.length * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_SHIPYARD +
         (colony.spaceport ? BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_SPACEPORT : 0) +
         colony.groundDefenses * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_GROUND_DEFENSE +
-        colony.constructionOffices * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_CONSTRUCTION_OFFICE +
+        (colony.constructionOffices || 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_CONSTRUCTION_OFFICE +
         (colony.aethericDistillery ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_DISTILLERY +
-        (colony.logisticsHubs ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_LOGISTICS_HUB +
         (colony.factories > 0 && colony.terraformProgress < 100 ? BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_TERRAFORMER : 0);
 
     const companiesOnColony = (empire?.companies || []).filter(c => c.homeColonyId === colony.id).length;
@@ -343,17 +440,17 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         colony.civilianMines * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_CIV_MINE +
         companiesOnColony * BALANCING.EMPLOYMENT.OFFICE_WORKERS_PER_CORP;
 
-    const totalRequiredLabor = requiredPublicLabor + requiredPrivateLabor + (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM + (colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER;
+    const totalRequiredLabor = requiredPublicLabor + requiredPrivateLabor + (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM + (colony.stores ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_STORE;
 
     (colony as any).publicWorkers = requiredPublicLabor;
     (colony as any).privateWorkers = totalRequiredLabor - requiredPublicLabor;
 
 
     const baselineStaffing = totalRequiredLabor > 0 ? Math.min(1.0, colony.population / totalRequiredLabor) : 1.0;
-    const staffingLevel = Math.min(BALANCING.MAX_STAFFING_LEVEL, (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + (colony.logisticsHubs ?? 0) * 0.02) * (1 + (techBonuses.load_speed ?? 0))) || 0.001);
+    const staffingLevel = Math.min(BALANCING.MAX_STAFFING_LEVEL, (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + (techBonuses.load_speed ?? 0))) || 0.001);
     colony.staffingLevel = staffingLevel;
 
-    const constructionBP = colony.constructionOffices * BALANCING.EMPLOYMENT.CONSTRUCTION_BP_PER_OFFICE * staffingLevel;
+    const constructionBP = (colony.constructionOffices || 0) * BALANCING.EMPLOYMENT.CONSTRUCTION_BP_PER_OFFICE * staffingLevel;
 
     // Growth & Population
     let policyGrowthMod = 1.0;
@@ -423,10 +520,10 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
                 case 'GroundDefense': colony.groundDefenses += item.quantity; break;
                 case 'Spaceport': colony.spaceport += item.quantity; break;
                 case 'Infrastructure': colony.infrastructure = Math.min(100, colony.infrastructure + item.quantity * 5); break;
-                case 'AethericDistillery': colony.aethericDistillery += item.quantity; break;
-                case 'AethericSiphon': colony.aethericSiphons += item.quantity; break;
-                case 'DeepCoreExtractor': colony.deepCoreExtractors += item.quantity; break;
-                case 'ReclamationPlant': colony.reclamationPlants += item.quantity; break;
+                case 'AethericDistillery': colony.aethericDistillery = (colony.aethericDistillery ?? 0) + item.quantity; break;
+                case 'AethericHarvester': colony.aethericHarvesters = (colony.aethericHarvesters ?? 0) + item.quantity; break;
+                case 'CorporateOffice': colony.corporateOffices = (colony.corporateOffices ?? 0) + item.quantity; break;
+                case 'Store': colony.stores = (colony.stores ?? 0) + item.quantity; break;
             }
             events.push(makeEvent(state.turn, state.date, 'ProductionComplete', `${colony.name}: Completed ${item.quantity}x ${item.name}`, rng, { important: false }));
         }
@@ -471,8 +568,13 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
 
     if (planet && empire) {
         for (const mineral of planet.minerals) {
-            let extraction = (colony.mines + colony.civilianMines) * BALANCING.MINING_RATE_BASE * mineral.accessibility * staffingLevel * bonus.mining * infraEff * days * (1 + (govBonuses.mining_rate ?? 0)) * (1 + (techBonuses.mining_rate ?? 0)) * prodBonus * (1 + (colony.reclamationPlants ?? 0) * 0.05) * (1 + (colony.deepCoreExtractors ?? 0) * 0.2);
-            if (mineral.name === 'Aether') extraction += (colony.aethericSiphons ?? 0) * 50 * days * staffingLevel;
+            const isOrbital = colony.colonyType === 'Orbital';
+            let extraction = 0;
+            if (!isOrbital) {
+                extraction = (colony.mines + colony.civilianMines) * BALANCING.MINING_RATE_BASE * mineral.accessibility * staffingLevel * bonus.mining * infraEff * days * (1 + (govBonuses.mining_rate ?? 0)) * (1 + (techBonuses.mining_rate ?? 0)) * prodBonus;
+            } else if (mineral.name === 'Aether') {
+                extraction = (colony.aethericHarvesters || 0) * BALANCING.AETHER_HARVEST_RATE_BASE * mineral.accessibility * staffingLevel * days;
+            }
             extraction = Math.min(extraction, mineral.amount);
             if (extraction > 0) {
                 colony.minerals[mineral.name] = (colony.minerals[mineral.name] ?? 0) + extraction;

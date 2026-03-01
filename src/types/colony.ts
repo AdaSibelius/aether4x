@@ -1,6 +1,6 @@
 import { PopulationSegment } from './species';
 
-export type ColonyType = 'Core' | 'Mining' | 'Research' | 'Military' | 'Agricultural';
+export type ColonyType = 'Core' | 'Mining' | 'Research' | 'Military' | 'Agricultural' | 'Orbital';
 export type ColonyPolicy = 'Normal' | 'Encourage Growth' | 'Population Control' | 'Forced Labor';
 export type MigrationMode = 'Source' | 'Target' | 'Stable';
 
@@ -41,15 +41,13 @@ export interface Colony {
     spaceport: number;
     groundDefenses: number;
     shipyards: Shipyard[];
-    constructionOffices: number;
-    farms: number;
-    commercialCenters: number;
+    aethericDistillery?: number;
+    aethericHarvesters?: number;
+    constructionOffices?: number;
+    corporateOffices?: number;
+    stores?: number;
     terraformProgress: number;
-    aethericDistillery: number;
-    logisticsHubs: number;
-    aethericSiphons: number;
-    deepCoreExtractors: number;
-    reclamationPlants: number;
+    farms: number;
     buildingOwners?: Record<string, Record<string, number>>; // e.g. { 'Factory': { 'empire_player': 2, 'corp_123': 3 } }
     educationIndex?: number;
     educationBudget?: number;
@@ -65,6 +63,8 @@ export interface Colony {
     staffingLevel?: number;
     laborEfficiency?: number;
     lastMineralRates?: Record<string, number>;
+    incentives?: { taxReduction: number, preferredSector: 'Transport' | 'Extraction' | 'Manufacturing' | 'Agricultural' | 'Commercial' | null };
+    investmentPool?: number;
     history: ColonySnapshot[];
 }
 
@@ -76,7 +76,6 @@ export interface ColonySnapshot {
     privateWealth: number;
     civilianFactories: number;
     civilianMines: number;
-    logisticsHubs: number;
     migrationMode: MigrationMode;
     averageWage?: number;
     educationIndex?: number;
@@ -87,8 +86,8 @@ export type ProductionItemType =
     | 'Ship' | 'Factory' | 'Mine' | 'ResearchLab' | 'Shipyard'
     | 'Terraformer' | 'GroundDefense' | 'Spaceport' | 'Infrastructure' | 'ConstructionOffice'
     | 'AethericDistillery' | 'ShipyardExpansion_Slipway' | 'ShipyardExpansion_Tonnage'
-    | 'AethericSiphon' | 'DeepCoreExtractor' | 'ReclamationPlant'
-    | 'Farm' | 'CommercialCenter' | 'LogisticsHub' | 'CivilianFactory' | 'CivilianMine'
+    | 'AethericHarvester' | 'CorporateOffice' | 'Store'
+    | 'Farm' | 'CivilianFactory' | 'CivilianMine'
     | 'ElectronicsPlant' | 'CivilianElectronicsPlant' | 'MachineryPlant' | 'CivilianMachineryPlant';
 
 export interface ProductionItem {

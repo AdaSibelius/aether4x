@@ -34,34 +34,46 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
         transferWithLedger(next, companyAccount, externalSink, maintenance, 'MAINTENANCE_PAYMENT',
             { companyId: company.id, empireId: empire.id }, rng);
 
+        // 1b. Farm upkeep (Agricultural only) — scanned colony-by-colony since calculateMaintenance has no colony access
+        if (company.type === 'Agricultural') {
+            let totalOwnedFarms = 0;
+            for (const colony of empireColonies) {
+                totalOwnedFarms += colony.buildingOwners?.['Farm']?.[company.id] || 0;
+            }
+            const farmUpkeep = totalOwnedFarms * BALANCING.MAINTENANCE.FARM * days;
+            if (farmUpkeep > 0) {
+                transferWithLedger(next, companyAccount, externalSink, farmUpkeep, 'FARM_UPKEEP',
+                    { companyId: company.id, empireId: empire.id }, rng);
+            }
+        }
+
         // 2. Revenue via opportunity pools (econ-003: replaces inverse-divisor formulas)
         let tickRevenue = 0;
         if (homeColony) {
             const staffingEff = homeColony.staffingLevel || 1.0;
 
             if (company.type === 'Agricultural') {
-                // Revenue is handled dynamically in tickColony via MARKET_PURCHASE
+                // Agricultural revenue flows via processMarket → outputByOwner['Food'] → buildingOwners['Farm'].
+                // No abstract CORP_POOL pool — income comes purely from food sold to colonies at market price.
                 tickRevenue = 0;
             } else if (company.type === 'Commercial') {
-                const pool = (homeColony.commercialCenters || 0) * BALANCING.CORP_POOL.COMMERCIAL * days;
+                const pool = ((homeColony.stores || 0) * BALANCING.CORP_POOL.COMMERCIAL + (homeColony.corporateOffices || 0) * BALANCING.CORP_POOL.OFFICE) * days;
                 const comCos = empire.companies.filter(c => c.type === 'Commercial' && c.homeColonyId === homeColony.id).length || 1;
                 tickRevenue = (pool / comCos) * staffingEff;
             } else if (company.type === 'Manufacturing') {
-                // Revenue is handled dynamically in tickColony via MARKET_PURCHASE
-                tickRevenue = 0;
+                // Main manufacturing revenue handled dynamically via MARKET_PURCHASE
+                const pool = (homeColony.aethericDistillery || 0) * BALANCING.CORP_POOL.DISTILLERY * days;
+                const manCos = empire.companies.filter(c => c.type === 'Manufacturing' && c.homeColonyId === homeColony.id).length || 1;
+                tickRevenue = (pool / manCos) * staffingEff;
             } else if (company.type === 'Extraction') {
-                tickRevenue = (1 + company.explorationLicenseIds.length * 0.2) * 20 * staffingEff * (dt / 86400);
+                const baseTick = (1 + company.explorationLicenseIds.length * 0.2) * 20 * staffingEff * days;
+                const pool = (homeColony.aethericHarvesters || 0) * BALANCING.CORP_POOL.HARVESTER * days;
+                const extCos = empire.companies.filter(c => c.type === 'Extraction' && c.homeColonyId === homeColony.id).length || 1;
+                tickRevenue = baseTick + (pool / extCos) * staffingEff;
             } else if (company.type === 'Transport') {
-                const pool = (homeColony.logisticsHubs ?? 0) * BALANCING.CORP_POOL.LOGISTICS * days;
+                const pool = (homeColony.constructionOffices || 0) * BALANCING.CORP_POOL.CONSTRUCTION * days;
                 const transCos = empire.companies.filter(c => c.type === 'Transport' && c.homeColonyId === homeColony.id).length || 1;
-                const baseRevenue = (company.activeFreighters || 0) * 15 * staffingEff * days;
-                tickRevenue = baseRevenue + (pool / transCos) * staffingEff;
-            } else if (company.type === 'AethericSiphon') {
-                tickRevenue = (homeColony.aethericSiphons || 0) * 80 * staffingEff * (dt / 86400);
-            } else if (company.type === 'DeepCoreMining') {
-                tickRevenue = (homeColony.deepCoreExtractors || 0) * 70 * staffingEff * (dt / 86400);
-            } else if (company.type === 'Reclamation') {
-                tickRevenue = (homeColony.reclamationPlants || 0) * 40 * staffingEff * (dt / 86400);
+                tickRevenue = (pool / transCos) * staffingEff;
             }
         }
 
@@ -98,54 +110,86 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
             const ceo = empire.officers.find(o => o.id === company.ceoId);
             const companyAccount = createCompanyAccount(company);
             const revBonus = ceo?.bonuses?.corp_revenue ? (1 + ceo.bonuses.corp_revenue) : 1;
-            const buildThreshold = 5000 / revBonus;
+            // Agricultural companies expand at a lower wealth threshold — food security is a public good
+            const buildThreshold = (company.type === 'Agricultural' ? 2000 : 5000) / revBonus;
 
             if (homeColony && company.wealth > buildThreshold) {
                 let messageValue = '';
 
                 // --- Find Best Target Colony for Expansion ---
                 let bestColony: Colony | undefined = homeColony;
-                const otherColonies = empireColonies.filter(c => c.id !== company.homeColonyId);
+
+                // Slots logic
+                const getAvailableSlots = (c: Colony) => {
+                    const capacity = BALANCING.COLONY_BASELINE_SLOTS + (c.corporateOffices || 0) * BALANCING.OFFICE_CAPACITY_PER_BUILDING;
+                    // Farms are excluded from slot cap — food security is a public good
+                    const used = (c.civilianFactories || 0) + (c.civilianMines || 0) + (c.civilianElectronicsPlants || 0) + (c.civilianMachineryPlants || 0) + (c.stores || 0) + (c.constructionOffices || 0) + (c.aethericDistillery || 0) + (c.aethericHarvesters || 0);
+                    return capacity - used;
+                };
+
+                const eligibleColonies = empireColonies.filter(c => getAvailableSlots(c) > 0);
 
                 if (company.type === 'Extraction') {
-                    // Pick colony with highest accessibility for a random mineral
-                    const res = rng.pick(BALANCING.MINERAL_NAMES);
-                    const planets = Object.values(next.galaxy.stars).flatMap(s => s.planets);
-                    bestColony = empireColonies.sort((a, b) => {
-                        const bPlanet = planets.find(p => p.id === b.planetId);
-                        const aPlanet = planets.find(p => p.id === a.planetId);
-                        const bAcc = bPlanet?.minerals.find(m => m.name === res)?.accessibility || 0;
-                        const aAcc = aPlanet?.minerals.find(m => m.name === res)?.accessibility || 0;
-                        return bAcc - aAcc;
-                    })[0];
+                    const isOrbital = rng.chance(0.3);
+                    const planetPool = eligibleColonies.filter(c => isOrbital ? c.colonyType === 'Orbital' : c.colonyType !== 'Orbital');
 
-                    if (bestColony) {
-                        bestColony.civilianMines = (bestColony.civilianMines ?? 0) + 1;
-                        const cost = buildThreshold * 0.5;
-                        transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
-                            { companyId: company.id, colonyId: bestColony.id, type: 'CivilianMine' }, rng);
-                        messageValue = `${company.name} expanded mining on ${bestColony.name}.`;
+                    if (planetPool.length > 0) {
+                        const res = isOrbital ? 'Aether' : rng.pick(BALANCING.MINERAL_NAMES.filter(m => m !== 'Aether'));
+                        const planets = Object.values(next.galaxy.stars).flatMap(s => s.planets);
+                        bestColony = planetPool.sort((a, b) => {
+                            const bPlanet = planets.find(p => p.id === b.planetId);
+                            const aPlanet = planets.find(p => p.id === a.planetId);
+                            const bAcc = bPlanet?.minerals.find(m => m.name === res)?.accessibility || 0;
+                            const aAcc = aPlanet?.minerals.find(m => m.name === res)?.accessibility || 0;
+                            const bScore = bAcc * (b.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                            const aScore = aAcc * (a.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                            return bScore - aScore;
+                        })[0];
+
+                        if (bestColony) {
+                            const targetBuilding = isOrbital ? 'AethericHarvester' : 'CivilianMine';
+                            if (targetBuilding === 'CivilianMine') bestColony.civilianMines = (bestColony.civilianMines ?? 0) + 1;
+                            if (targetBuilding === 'AethericHarvester') bestColony.aethericHarvesters = (bestColony.aethericHarvesters ?? 0) + 1;
+
+                            const cost = buildThreshold * 0.5;
+                            transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
+                                { companyId: company.id, colonyId: bestColony.id, type: targetBuilding }, rng);
+                            messageValue = `${company.name} expanded ${res} extraction on ${bestColony.name}.`;
+                        }
                     }
                 } else if (company.type === 'Manufacturing') {
-                    // Manufacturing AI: Look for high demand/high price goods
+                    // Manufacturing AI: Looks for high Aether base or high demand goods
                     const hasElectronics = homeColony.resourcePrices?.Electronics && homeColony.resourcePrices.Electronics > 15;
                     const hasMachinery = homeColony.resourcePrices?.Machinery && homeColony.resourcePrices.Machinery > 10;
 
-                    let targetBuilding = 'CivilianFactory';
-                    if (hasElectronics && hasMachinery) {
-                        targetBuilding = rng.chance(0.5) ? 'CivilianElectronicsPlant' : 'CivilianMachineryPlant';
-                    } else if (hasElectronics) {
-                        targetBuilding = 'CivilianElectronicsPlant';
-                    } else if (hasMachinery) {
-                        targetBuilding = 'CivilianMachineryPlant';
+                    let targetBuilding = rng.chance(0.3) ? 'AethericDistillery' : 'CivilianFactory';
+                    if (targetBuilding !== 'AethericDistillery') {
+                        if (hasElectronics && hasMachinery) {
+                            targetBuilding = rng.chance(0.5) ? 'CivilianElectronicsPlant' : 'CivilianMachineryPlant';
+                        } else if (hasElectronics) {
+                            targetBuilding = 'CivilianElectronicsPlant';
+                        } else if (hasMachinery) {
+                            targetBuilding = 'CivilianMachineryPlant';
+                        }
                     }
 
-                    // Manufacturing likes population hubs
-                    bestColony = empireColonies.sort((a, b) => b.population - a.population)[0];
+                    bestColony = eligibleColonies.sort((a, b) => {
+                        let bScore = b.population;
+                        let aScore = a.population;
+                        if (targetBuilding === 'AethericDistillery') {
+                            bScore = b.minerals['Aether'] || 0;
+                            aScore = a.minerals['Aether'] || 0;
+                        }
+                        bScore *= (b.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                        aScore *= (a.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                        return bScore - aScore;
+                    })[0];
+
                     if (bestColony) {
                         if (targetBuilding === 'CivilianFactory') bestColony.civilianFactories = (bestColony.civilianFactories ?? 0) + 1;
                         if (targetBuilding === 'CivilianElectronicsPlant') bestColony.civilianElectronicsPlants = (bestColony.civilianElectronicsPlants ?? 0) + 1;
                         if (targetBuilding === 'CivilianMachineryPlant') bestColony.civilianMachineryPlants = (bestColony.civilianMachineryPlants ?? 0) + 1;
+                        if (targetBuilding === 'AethericDistillery') bestColony.aethericDistillery = (bestColony.aethericDistillery ?? 0) + 1;
 
                         if (!bestColony.buildingOwners) bestColony.buildingOwners = {};
                         if (!bestColony.buildingOwners[targetBuilding]) bestColony.buildingOwners[targetBuilding] = {};
@@ -157,27 +201,47 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                         messageValue = `${company.name} built a new ${targetBuilding} on ${bestColony.name}.`;
                     }
                 } else if (company.type === 'Agricultural') {
-                    // Agri likes habitability and population
-                    bestColony = empireColonies.sort((a, b) => (b.maxPopulation * b.happiness) - (a.maxPopulation * a.happiness))[0];
+                    // Farms bypass slot cap, so use all empire colonies as candidates.
+                    // Prefer colonies with the most food scarcity (low food / high consumption).
+                    bestColony = empireColonies.sort((a, b) => {
+                        const bDaySupply = (b.minerals['Food'] || 0) / Math.max(1, b.population * BALANCING.FOOD_CONSUMPTION_RATE);
+                        const aDaySupply = (a.minerals['Food'] || 0) / Math.max(1, a.population * BALANCING.FOOD_CONSUMPTION_RATE);
+                        const bScore = -bDaySupply * (b.incentives?.preferredSector === company.type ? 0.5 : 1.0); // most scarce = highest priority
+                        const aScore = -aDaySupply * (a.incentives?.preferredSector === company.type ? 0.5 : 1.0);
+                        return bScore - aScore;
+                    })[0];
+
                     if (bestColony) {
                         bestColony.farms = (bestColony.farms ?? 0) + 1;
                         if (!bestColony.buildingOwners) bestColony.buildingOwners = {};
                         if (!bestColony.buildingOwners['Farm']) bestColony.buildingOwners['Farm'] = {};
                         bestColony.buildingOwners['Farm'][company.id] = (bestColony.buildingOwners['Farm'][company.id] || 0) + 1;
 
-                        const cost = buildThreshold * 0.5;
+                        const cost = 500; // Flat build cost per farm — cheaper than other buildings to encourage food investment
                         transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
                             { companyId: company.id, colonyId: bestColony.id, type: 'Farm' }, rng);
                         messageValue = `${company.name} established a new farm complex on ${bestColony.name}.`;
                     }
                 } else if (company.type === 'Commercial') {
-                    bestColony = empireColonies.sort((a, b) => b.population - a.population)[0];
+                    // Decide if building Office or Store based on slot scarcity or randomly
+                    const buildingOffices = rng.chance(0.3);
+                    const pool = buildingOffices ? empireColonies : eligibleColonies; // Offices ignore slot cap!
+
+                    bestColony = pool.sort((a, b) => {
+                        const bScore = b.population * (b.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                        const aScore = a.population * (a.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                        return bScore - aScore;
+                    })[0];
+
                     if (bestColony) {
-                        bestColony.commercialCenters = (bestColony.commercialCenters ?? 0) + 1;
+                        const targetBuilding = buildingOffices ? 'CorporateOffice' : 'Store';
+                        if (targetBuilding === 'Store') bestColony.stores = (bestColony.stores ?? 0) + 1;
+                        if (targetBuilding === 'CorporateOffice') bestColony.corporateOffices = (bestColony.corporateOffices ?? 0) + 1;
+
                         const cost = buildThreshold * 0.5;
                         transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
-                            { companyId: company.id, colonyId: bestColony.id, type: 'CommercialCenter' }, rng);
-                        messageValue = `${company.name} opened a new commercial center on ${bestColony.name}.`;
+                            { companyId: company.id, colonyId: bestColony.id, type: targetBuilding }, rng);
+                        messageValue = `${company.name} opened a new ${targetBuilding} on ${bestColony.name}.`;
                     }
                 } else if (company.type === 'Transport') {
                     const highMigrationDemand = totalMigrantDemand > 5.0;
@@ -228,13 +292,18 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
                             messageValue = `${company.name} commissioned a ${selectedDesign.role} to meet empire demands.`;
                         }
                     } else {
-                        bestColony = empireColonies.sort((a, b) => (Object.keys(a.demand).length) - (Object.keys(b.demand).length))[0];
+                        bestColony = eligibleColonies.sort((a, b) => {
+                            const bScore = (b.productionQueue.length || 1) * (b.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                            const aScore = (a.productionQueue.length || 1) * (a.incentives?.preferredSector === company.type ? 2.0 : 1.0);
+                            return bScore - aScore;
+                        })[0];
+
                         if (bestColony) {
-                            bestColony.logisticsHubs = (bestColony.logisticsHubs ?? 0) + 1;
+                            bestColony.constructionOffices = (bestColony.constructionOffices ?? 0) + 1;
                             const cost = buildThreshold * 0.5;
                             transferWithLedger(next, companyAccount, createExternalAccount('corp_expansion_sink'), cost, 'CORP_EXPANSION',
-                                { companyId: company.id, colonyId: bestColony.id, type: 'LogisticsHub' }, rng);
-                            messageValue = `${company.name} established a new logistics hub on ${bestColony.name}.`;
+                                { companyId: company.id, colonyId: bestColony.id, type: 'ConstructionOffice' }, rng);
+                            messageValue = `${company.name} established a new construction office on ${bestColony.name}.`;
                         }
                     }
                 }
@@ -279,10 +348,6 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
 
         if ((colony.privateWealth || 0) > BALANCING.CORP_FOUND_WEALTH_THRESHOLD && colony.population > (existingOnColony + 1) * 20 && rng.chance(adjustedFoundationChance)) {
             const types: CompanyType[] = ['Transport', 'Extraction', 'Manufacturing', 'Agricultural', 'Commercial'];
-
-            if (empire.research.completedTechs.includes('aetheric_siphon_theory')) types.push('AethericSiphon');
-            if (empire.research.completedTechs.includes('deep_core_mining')) types.push('DeepCoreMining');
-            if (empire.research.completedTechs.includes('automated_reclamation_consortium')) types.push('Reclamation');
 
             const type = rng.pick(types);
             const name = generateCompanyName(rng, type);

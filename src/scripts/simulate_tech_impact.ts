@@ -40,13 +40,10 @@ function simulateTechImpact() {
                 techCount: empire.research.completedTechs.length,
                 miningRate: techBonuses.mining_rate?.toFixed(2) || 1.0,
                 farmYield: techBonuses.farm_yield?.toFixed(2) || 1.0,
-                aether: colony.minerals.Aether?.toFixed(0) || 0,
-                siphons: colony.aethericSiphons || 0,
-                extractors: colony.deepCoreExtractors || 0,
-                reclamation: colony.reclamationPlants || 0
+                aether: colony.minerals.Aether?.toFixed(0) || 0
             };
             snapshots.push(stats);
-            console.log(`Year ${year}: Pop=${stats.population} Corps=${stats.companies} (Spec=${stats.specializedCompanies}) Siphons=${stats.siphons} Aether=${stats.aether}`);
+            console.log(`Year ${year}: Pop=${stats.population} Corps=${stats.companies} (Spec=${stats.specializedCompanies}) Aether=${stats.aether}`);
         }
     }
 

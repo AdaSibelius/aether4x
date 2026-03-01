@@ -24,7 +24,12 @@ export type MonetaryReasonCode =
     | 'EDUCATION_FUNDING'    // Treasury → external (education upkeep)
     | 'WAGES_PAID'           // Employer → pops (sectoral wages)
     | 'MARKET_PURCHASE'      // Pops → Producers (buying goods on local market)
-    | 'COST_OF_LIVING';      // Colony private wealth → external (living expenses sink)
+    | 'COST_OF_LIVING'       // Colony private wealth → external (living expenses sink)
+    | 'EDUCATION_COPAY'      // Colony private wealth -> treasury (education co-pay)
+    | 'RETAIL_MARKUP'        // Colony private wealth -> commercial company
+    | 'OFFICE_RENT'          // Company -> corporate office owners
+    | 'OFFICE_RENT_INCOME'   // Corporate office owners -> company
+    | 'FARM_UPKEEP';         // Agricultural company -> external (per-farm maintenance)
 
 /** One entry in the bounded monetary ledger. */
 export interface MonetaryLedgerEntry {

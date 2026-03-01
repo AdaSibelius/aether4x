@@ -62,13 +62,9 @@ async function runSimulation() {
             groundDefenses: 0,
             constructionOffices: 0,
             farms: 0,
-            commercialCenters: 0,
+            stores: 0,
             terraformProgress: 0,
             aethericDistillery: 0,
-            logisticsHubs: 0,
-            aethericSiphons: 0,
-            deepCoreExtractors: 0,
-            reclamationPlants: 0,
             migrationMode: 'Target', // Set to Target for growth
             privateWealth: 0,
             history: []
@@ -139,7 +135,7 @@ async function runSimulation() {
 
     Object.values(state.colonies).filter(c => c.name.includes('Outpost')).forEach(c => {
         const queueStatus = c.productionQueue[0] ? `${c.productionQueue[0].name} (${c.productionQueue[0].progress.toFixed(1)}%)` : 'Idle';
-        const corpBuildings = (c.civilianMines || 0) + (c.civilianFactories || 0) + (c.farms || 0) + (c.commercialCenters || 0);
+        const corpBuildings = (c.civilianMines || 0) + (c.civilianFactories || 0) + (c.farms || 0) + (c.stores || 0);
         console.log(`- ${c.name}: Pop=${c.population.toFixed(2)}M | Spaceport=${c.spaceport} | CorpBuildings=${corpBuildings}`);
         console.log(`  Minerals: Iron=${c.minerals['Iron']?.toFixed(0)}, Copper=${c.minerals['Copper']?.toFixed(0)}`);
         console.log(`  Queue: ${queueStatus}`);

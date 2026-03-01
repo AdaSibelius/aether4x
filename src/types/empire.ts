@@ -45,7 +45,7 @@ export interface TradeRoute {
     active: boolean;
 }
 
-export type CompanyType = 'Transport' | 'Extraction' | 'Manufacturing' | 'Agricultural' | 'Commercial' | 'AethericSiphon' | 'DeepCoreMining' | 'Reclamation';
+export type CompanyType = 'Transport' | 'Extraction' | 'Manufacturing' | 'Agricultural' | 'Commercial';
 export type CompanyStrategy = 'Expansionist' | 'Optimized' | 'Vanguard';
 
 export interface CompanySnapshot {

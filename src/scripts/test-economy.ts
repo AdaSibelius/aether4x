@@ -14,6 +14,7 @@ import { setupNewGame } from '../engine/setup';
 import { tickEmpireFinances } from '../engine/finances';
 import { tickCorporations } from '../engine/corporations';
 import type { GameState } from '../types/game';
+import { RNG } from '../utils/rng';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

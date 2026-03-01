@@ -126,37 +126,16 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         shipyards: [{ id: generateId('sy', rng), name: 'Royal Orbital Yards', slipways: 1, maxTonnage: 100000, activeBuilds: [] }],
         constructionOffices: 10,
         farms: realSpace ? 300 : 100,
-        commercialCenters: 20,
+        stores: 20,
         terraformProgress: 100,
-        logisticsHubs: 0,
         migrationMode: 'Stable',
         history: [],
         aethericDistillery: 5,
-        aethericSiphons: 0,
-        deepCoreExtractors: 0,
-        reclamationPlants: 0,
         electronicsPlants: 5,
         civilianElectronicsPlants: 5,
         machineryPlants: 5,
         civilianMachineryPlants: 5,
-        buildingOwners: {
-            'Factory': { [playerEmpireId]: 25 },
-            'Mine': { [playerEmpireId]: 10 },
-            'CivilianFactory': { 'private': 25 },
-            'CivilianMine': { 'private': 10 },
-            'ElectronicsPlant': { [playerEmpireId]: 5 },
-            'CivilianElectronicsPlant': { 'private': 5 },
-            'MachineryPlant': { [playerEmpireId]: 5 },
-            'CivilianMachineryPlant': { 'private': 5 },
-            'Farm': { 'private': realSpace ? 300 : 100 },
-            'CommercialCenter': { 'private': 20 },
-            'ResearchLab': { [playerEmpireId]: 3 },
-            'Shipyard': { [playerEmpireId]: 1 },
-            'Spaceport': { [playerEmpireId]: 1 },
-            'ConstructionOffice': { [playerEmpireId]: 10 },
-            'AethericDistillery': { [playerEmpireId]: 5 }
-        },
-        educationIndex: 70, // Start with a decent education on the homeworld
+        educationIndex: 70,
         educationBudget: 0,
         resourcePrices: {},
     };
@@ -266,6 +245,29 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         };
     });
     playerEmpire.companies = companies;
+
+    const manCorp = companies.find(c => c.type === 'Manufacturing');
+    const extCorp = companies.find(c => c.type === 'Extraction');
+    const agrCorp = companies.find(c => c.type === 'Agricultural');
+    const comCorp = companies.find(c => c.type === 'Commercial');
+
+    homeColony.buildingOwners = {
+        'Factory': { [playerEmpireId]: 25 },
+        'Mine': { [playerEmpireId]: 10 },
+        'CivilianFactory': { [manCorp!.id]: 25 },
+        'CivilianMine': { [extCorp!.id]: 10 },
+        'ElectronicsPlant': { [playerEmpireId]: 5 },
+        'CivilianElectronicsPlant': { [manCorp!.id]: 5 },
+        'MachineryPlant': { [playerEmpireId]: 5 },
+        'CivilianMachineryPlant': { [manCorp!.id]: 5 },
+        'Farm': { [agrCorp!.id]: realSpace ? 300 : 100 },
+        'Store': { [comCorp!.id]: 20 },
+        'ResearchLab': { [playerEmpireId]: 3 },
+        'Shipyard': { [playerEmpireId]: 1 },
+        'Spaceport': { [playerEmpireId]: 1 },
+        'ConstructionOffice': { [playerEmpireId]: 10 },
+        'AethericDistillery': { [playerEmpireId]: 5 }
+    };
 
     // 8. Initial Military Fleets
     const startFleetConfigs = [
