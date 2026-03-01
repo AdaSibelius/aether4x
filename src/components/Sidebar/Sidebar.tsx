@@ -73,7 +73,7 @@ export default function Sidebar() {
                         .filter(([, v]) => v > 0)
                         .slice(0, 5)
                         .map(([name, amount]) => (
-                            <div key={name} className={styles.mineralRow}>
+                            <div key={name} className={styles.mineralRow} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
                                 <span>{name}</span>
                                 <span className="stat-value">{Math.floor(amount).toLocaleString()}</span>
                             </div>

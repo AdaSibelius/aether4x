@@ -331,53 +331,95 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 {/* Mineral stockpile panel */}
                 <div className={styles.panel}>
                     <div className="panel-header"><h3>⛏️ Mineral Stockpile</h3></div>
-                    <div className="panel-body">
-                        {(() => {
-                            const minerals = colony.minerals ?? {};
-                            return BALANCING.RAW_MINERALS
-                                .map(m => (
-                                    <div className="stat-row" key={m} style={{ gap: 4 }}>
-                                        <span className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 2 }}>
-                                            <img src={`/minerals/${m.toLowerCase()}.png`} alt={m} width={20} height={20} style={{ imageRendering: 'pixelated' as const, borderRadius: 2 }} />
-                                            {m}
-                                        </span>
-                                        <span className="stat-value" style={{ flex: 1, textAlign: 'right' }}>{Math.floor(minerals[m] ?? 0).toLocaleString()}</span>
-                                        {(() => {
-                                            const spec = rates.mineralSpecific.find(ms => ms.name === m);
-                                            if (spec && spec.rate > 0) {
-                                                const years = spec.remaining / (spec.rate * 365);
-                                                return (
-                                                    <span style={{ fontSize: 9, color: years < 5 ? 'var(--accent-red)' : 'var(--text-muted)', flex: 1, textAlign: 'right' }}>
-                                                        {years < 100 ? `${years.toFixed(1)}y` : '>100y'}
-                                                    </span>
-                                                );
-                                            }
-                                            return <span style={{ flex: 1 }} />;
-                                        })()}
-                                    </div>
-                                ));
-                        })()}
+                    <div className="panel-body" style={{ padding: 0 }}>
+                        <table className={styles.ledgerTable}>
+                            <thead>
+                                <tr>
+                                    <th>Resource</th>
+                                    <th style={{ textAlign: 'right', minWidth: '80px' }}>Stockpile</th>
+                                    <th style={{ textAlign: 'right', minWidth: '90px' }}>Local Price</th>
+                                    <th style={{ textAlign: 'right', minWidth: '80px' }}>Deficit</th>
+                                    <th style={{ textAlign: 'right', minWidth: '80px' }}>Depletion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(() => {
+                                    const minerals = colony.minerals ?? {};
+                                    return BALANCING.RAW_MINERALS.map(m => {
+                                        const spec = rates.mineralSpecific.find(ms => ms.name === m);
+                                        const rate = spec && spec.rate > 0 ? spec.rate : 0;
+                                        const years = rate > 0 ? spec!.remaining / (rate * 365) : null;
+                                        const price = colony.resourcePrices?.[m];
+                                        const deficit = colony.demand?.[m] || 0;
+                                        return (
+                                            <tr key={m}>
+                                                <td>
+                                                    <div className={styles.ledgerLabel}>
+                                                        <span className={styles.ledgerIcon}><img src={`/minerals/${m.toLowerCase()}.png`} alt={m} width={20} height={20} style={{ imageRendering: 'pixelated' as const, borderRadius: 2 }} /></span>
+                                                        <span className={styles.ledgerName}>{m}</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{Math.floor(minerals[m] ?? 0).toLocaleString()}</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-gold)' }}>
+                                                    {price ? `${price.toFixed(2)} W` : '-'}
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: deficit > 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                                                    {deficit > 0 ? `-${Math.ceil(deficit)}` : '-'}
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', fontSize: 10, color: years && years < 5 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                                                    {years !== null ? (years < 100 ? `${years.toFixed(1)}y` : '>100y') : '-'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    });
+                                })()}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
                 {/* Manufactured Goods panel */}
                 <div className={styles.panel}>
                     <div className="panel-header"><h3>🛒 Manufactured Goods</h3></div>
-                    <div className="panel-body">
-                        {(() => {
-                            const minerals = colony.minerals ?? {};
-                            return BALANCING.MANUFACTURED_GOODS
-                                .map(m => (
-                                    <div className="stat-row" key={m} style={{ gap: 4 }}>
-                                        <span className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 2 }}>
-                                            <img src={`/minerals/${m.toLowerCase()}.png`} alt={m} width={20} height={20} style={{ imageRendering: 'pixelated' as const, borderRadius: 2 }} />
-                                            {m}
-                                        </span>
-                                        <span className="stat-value" style={{ flex: 1, textAlign: 'right' }}>{Math.floor(minerals[m] ?? 0).toLocaleString()}</span>
-                                        <span style={{ flex: 1 }} />
-                                    </div>
-                                ));
-                        })()}
+                    <div className="panel-body" style={{ padding: 0 }}>
+                        <table className={styles.ledgerTable}>
+                            <thead>
+                                <tr>
+                                    <th>Resource</th>
+                                    <th style={{ textAlign: 'right', minWidth: '80px' }}>Stockpile</th>
+                                    <th style={{ textAlign: 'right', minWidth: '90px' }}>Local Price</th>
+                                    <th style={{ textAlign: 'right', minWidth: '80px' }}>Deficit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(() => {
+                                    const minerals = colony.minerals ?? {};
+                                    return BALANCING.MANUFACTURED_GOODS.map(m => {
+                                        const price = colony.resourcePrices?.[m] || (m === 'Food' ? 1 : m === 'ConsumerGoods' ? 8 : 0);
+                                        const deficit = colony.demand?.[m] || 0;
+                                        return (
+                                            <tr key={m}>
+                                                <td>
+                                                    <div className={styles.ledgerLabel}>
+                                                        <span className={styles.ledgerIcon} style={{ fontSize: 16 }}>
+                                                            {m === 'Food' ? '🌾' : m === 'Fuel' ? '🛢️' : m === 'ConsumerGoods' ? '📦' : '⚙️'}
+                                                        </span>
+                                                        <span className={styles.ledgerName}>{m}</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{Math.floor(minerals[m] ?? 0).toLocaleString()}</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-gold)' }}>
+                                                    {price ? `${price.toFixed(2)} W` : '-'}
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: deficit > 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                                                    {deficit > 0 ? `-${Math.ceil(deficit)}` : '-'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    });
+                                })()}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -398,34 +440,9 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                             <span className="stat-value">{(colony.educationIndex || 0).toFixed(1)} / 100</span>
                         </div>
                         <div className="stat-row">
-                            <span className="stat-label">Local CG Price</span>
-                            <span className="stat-value">{(colony.resourcePrices?.ConsumerGoods || 8).toFixed(1)} W</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">Local Food Price</span>
-                            <span className="stat-value">{(colony.resourcePrices?.Food || 1).toFixed(1)} W</span>
-                        </div>
-                        <div className="stat-row">
                             <span className="stat-label">Investment Pool</span>
                             <span className="stat-value good">{(colony.investmentPool || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} W</span>
                         </div>
-                        <div className="stat-row">
-                            <span className="stat-label">Local Food Price</span>
-                            <span className="stat-value">{(colony.resourcePrices?.Food || 1).toFixed(1)} W</span>
-                        </div>
-                        {colony.demand && Object.values(colony.demand).some(amt => amt > 0) ? (
-                            <div style={{ marginTop: 8 }}>
-                                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-red)', marginBottom: 4 }}>Current Deficits</div>
-                                {Object.entries(colony.demand).filter(([, amt]) => amt > 0).map(([req, amt]) => (
-                                    <div className="stat-row" key={req}>
-                                        <span className="stat-label" style={{ fontSize: 11 }}>{req}</span>
-                                        <span className="stat-value bad">-{Math.ceil(amt)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, fontStyle: 'italic' }}>No local deficits.</div>
-                        )}
                         <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '8px 0' }} />
                         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>DAILY BUDGET</div>
                         <div className="stat-row">
@@ -587,25 +604,38 @@ function LaborReport({ report, staffing, population }: {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px' }}>
-                {sectors.map((s, i) => (
-                    <div key={i} className={styles.laborRow} style={{ margin: 0, padding: '2px 0' }}>
-                        <span className={styles.laborLabel} style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center' }}>
-                            <span style={{
-                                display: 'inline-block',
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                backgroundColor: s.color,
-                                marginRight: 6
-                            }} />
-                            {s.name}
-                        </span>
-                        <span className={styles.laborVal} style={{ fontSize: '0.85em' }}>{s.value.toFixed(1)}M</span>
-                    </div>
-                ))}
-            </div>
-            <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '12px 0' }} />
+            <table className={styles.ledgerTable} style={{ marginTop: 12 }}>
+                <thead>
+                    <tr>
+                        <th>Sector</th>
+                        <th style={{ textAlign: 'right' }}>Workers</th>
+                        <th style={{ textAlign: 'right' }}>% Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sectors.map((s, i) => (
+                        <tr key={i}>
+                            <td>
+                                <div className={styles.ledgerLabel}>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: '50%',
+                                        backgroundColor: s.color,
+                                        marginRight: 8
+                                    }} />
+                                    <span className={styles.ledgerName}>{s.name}</span>
+                                </div>
+                            </td>
+                            <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{s.value.toFixed(1)}M</td>
+                            <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                                {((s.value / (report.totalReq + report.unemployed)) * 100).toFixed(1)}%
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
             <div className={styles.laborRow} style={{ color: report.unemployed > 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                 <span className={styles.laborLabel} style={{ fontWeight: 600 }}>
                     {report.unemployed > 0 ? '👷 Labor Reserve' : '⚠️ Labor Deficit'}
@@ -1264,7 +1294,7 @@ export default function ColonyManager() {
             <SidebarSection
                 header={
                     <div style={{
-                        fontFamily: 'Orbitron',
+                        fontFamily: 'Outfit',
                         fontSize: 11,
                         color: 'var(--accent-blue)',
                         textTransform: 'uppercase',

@@ -112,7 +112,7 @@
 }
 
 .menuTitleMain {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
     font-size: 40px;
     font-weight: 700;
     color: #e8edf5;
@@ -121,7 +121,7 @@
 }
 
 .menuTitleSub {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
     font-size: 22px;
     font-weight: 400;
     color: var(--accent-blue);

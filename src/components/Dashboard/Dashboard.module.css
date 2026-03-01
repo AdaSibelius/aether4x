@@ -24,7 +24,7 @@
 }
 
 .empireName {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
     font-size: 16px;
     font-weight: 700;
     color: var(--text-primary);
@@ -43,7 +43,7 @@
 
 .statNum {
     display: block;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
     font-size: 20px;
     font-weight: 700;
     color: var(--accent-blue);
@@ -127,7 +127,7 @@
 }
 
 .metricValue {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Outfit', sans-serif;
     font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);

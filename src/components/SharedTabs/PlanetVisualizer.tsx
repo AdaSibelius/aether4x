@@ -809,7 +809,7 @@ function drawLegend(
     x: number, y: number,
     type: CelestialType, subtype: CelestialSubtype, colony: Colony | null
 ) {
-    ctx.font = '11px Inter, sans-serif';
+    ctx.font = "11px 'Outfit', sans-serif";
     const isGas = subtype === 'GasGiant' || subtype === 'IceGiant';
     const items: { color: string; label: string }[] = isGas
         ? [
@@ -901,11 +901,11 @@ export default function PlanetVisualizer({ planet, colony, compact }: Props) {
             if (!compact) {
                 // Labels
                 const labelX = 18;
-                ctx.font = 'bold 13px "Orbitron", sans-serif';
+                ctx.font = "bold 13px 'Outfit', sans-serif";
                 ctx.fillStyle = '#8ab4d4';
                 ctx.fillText(planet?.name ?? 'Unknown', labelX, 30);
 
-                ctx.font = '11px Inter, sans-serif';
+                ctx.font = "11px 'Outfit', sans-serif";
                 ctx.fillStyle = 'rgba(140,160,190,0.8)';
                 ctx.fillText(`${subtype} ${type} · ${atmo} Atmosphere`, labelX, 50);
 

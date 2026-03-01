@@ -115,7 +115,7 @@ export default function CorporateExchange() {
                 <div className={styles.panel}>
                     <div className={styles.panelHeader}>Market Leaderboard</div>
                     <div className={styles.panelBody}>
-                        <table className={styles.exchangeTable}>
+                        <table className={styles.ledgerTable}>
                             <thead>
                                 <tr>
                                     <th>Rank</th>
@@ -131,7 +131,12 @@ export default function CorporateExchange() {
                                 {sortedCompanies.map((c, i) => (
                                     <tr key={c.id}>
                                         <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>#{i + 1}</td>
-                                        <td style={{ fontWeight: 600 }}>{c.name}</td>
+                                        <td>
+                                            <div className={styles.ledgerLabel}>
+                                                <span className={styles.ledgerIcon}>💼</span>
+                                                <span className={styles.ledgerName}>{c.name}</span>
+                                            </div>
+                                        </td>
                                         <td>
                                             <span style={{
                                                 fontSize: 10,
@@ -145,9 +150,9 @@ export default function CorporateExchange() {
                                             </span>
                                         </td>
                                         <td style={{ fontSize: 11 }}>{c.strategy}</td>
-                                        <td style={{ textAlign: 'right' }}>{Math.floor(c.wealth || 0).toLocaleString()} W</td>
-                                        <td style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>{Math.floor(c.valuation || 0).toLocaleString()} W</td>
-                                        <td style={{ textAlign: 'right' }}>{(c.explorationLicenseIds || []).length}</td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{Math.floor(c.wealth || 0).toLocaleString()} W</td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>{Math.floor(c.valuation || 0).toLocaleString()} W</td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(c.explorationLicenseIds || []).length}</td>
                                     </tr>
                                 ))}
                             </tbody>

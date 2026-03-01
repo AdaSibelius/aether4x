@@ -196,7 +196,7 @@ export default function EconomyView() {
                         <div className={styles.panel}>
                             <div className={styles.panelHeader}>Global Mineral Audit</div>
                             <div className={styles.panelBody}>
-                                <table className="audit-table">
+                                <table className={styles.ledgerTable}>
                                     <thead>
                                         <tr>
                                             <th>Mineral</th>
@@ -207,10 +207,17 @@ export default function EconomyView() {
                                     <tbody>
                                         {BALANCING.RAW_MINERALS.map(m => (
                                             <tr key={m}>
-                                                <td style={{ color: 'var(--text-secondary)' }}>{m}</td>
-                                                <td style={{ textAlign: 'right' }}>{Math.floor(globalStockpiles[m] || 0).toLocaleString()}</td>
-                                                <td style={{ textAlign: 'right' }} className={mineralRates[m] > 0 ? styles.increase : ''}>
-                                                    {mineralRates[m] > 0 ? '+' : ''}{mineralRates[m].toFixed(1)}
+                                                <td>
+                                                    <div className={styles.ledgerLabel}>
+                                                        <span className={styles.ledgerIcon}><img src={`/minerals/${m.toLowerCase()}.png`} alt={m} width={20} height={20} style={{ imageRendering: 'pixelated' as const, borderRadius: 2 }} /></span>
+                                                        <span className={styles.ledgerName}>{m}</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{Math.floor(globalStockpiles[m] || 0).toLocaleString()}</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>
+                                                    <span className={mineralRates[m] > 0 ? styles.increase : ''}>
+                                                        {mineralRates[m] > 0 ? '+' : ''}{mineralRates[m].toFixed(1)}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -222,7 +229,7 @@ export default function EconomyView() {
                         <div className={styles.panel} style={{ marginTop: 16 }}>
                             <div className={styles.panelHeader}>Manufactured Goods & Consumables</div>
                             <div className={styles.panelBody}>
-                                <table className="audit-table">
+                                <table className={styles.ledgerTable}>
                                     <thead>
                                         <tr>
                                             <th>Item</th>
@@ -233,10 +240,19 @@ export default function EconomyView() {
                                     <tbody>
                                         {BALANCING.MANUFACTURED_GOODS.map(m => (
                                             <tr key={m}>
-                                                <td style={{ color: 'var(--text-secondary)' }}>{m}</td>
-                                                <td style={{ textAlign: 'right' }}>{Math.floor(globalStockpiles[m] || 0).toLocaleString()}</td>
-                                                <td style={{ textAlign: 'right' }} className={mineralRates[m] > 0 ? styles.increase : ''}>
-                                                    {mineralRates[m] > 0 ? '+' : ''}{mineralRates[m].toFixed(1)}
+                                                <td>
+                                                    <div className={styles.ledgerLabel}>
+                                                        <span className={styles.ledgerIcon} style={{ fontSize: 16 }}>
+                                                            {m === 'Food' ? '🌾' : m === 'Fuel' ? '🛢️' : m === 'ConsumerGoods' ? '📦' : '⚙️'}
+                                                        </span>
+                                                        <span className={styles.ledgerName}>{m}</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{Math.floor(globalStockpiles[m] || 0).toLocaleString()}</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>
+                                                    <span className={mineralRates[m] > 0 ? styles.increase : ''}>
+                                                        {mineralRates[m] > 0 ? '+' : ''}{mineralRates[m].toFixed(1)}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -247,7 +263,7 @@ export default function EconomyView() {
                         <div className={styles.panel} style={{ marginTop: 16 }}>
                             <div className={styles.panelHeader}>Market Prices</div>
                             <div className={styles.panelBody}>
-                                <table className="audit-table">
+                                <table className={styles.ledgerTable}>
                                     <thead>
                                         <tr>
                                             <th>Colony</th>
@@ -258,9 +274,14 @@ export default function EconomyView() {
                                     <tbody>
                                         {colonies.map(c => (
                                             <tr key={c.id}>
-                                                <td style={{ color: 'var(--text-secondary)' }}>{c.name}</td>
-                                                <td style={{ textAlign: 'right' }}>{(c.resourcePrices?.Food || 1).toFixed(2)} W</td>
-                                                <td style={{ textAlign: 'right' }}>{(c.resourcePrices?.ConsumerGoods || 8).toFixed(2)} W</td>
+                                                <td>
+                                                    <div className={styles.ledgerLabel}>
+                                                        <span className={styles.ledgerIcon}>🪐</span>
+                                                        <span className={styles.ledgerName}>{c.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(c.resourcePrices?.Food || 1).toFixed(2)} W</td>
+                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(c.resourcePrices?.ConsumerGoods || 8).toFixed(2)} W</td>
                                             </tr>
                                         ))}
                                     </tbody>

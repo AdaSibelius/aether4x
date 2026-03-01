@@ -198,7 +198,7 @@ export default function CompanyHQGenerator({ company, width = 250, height = 200 
 
             const holoFlicker = Math.random() > 0.98 ? 0.3 : 1;
             ctx.fillStyle = `rgba(52, 152, 219, ${0.8 * holoFlicker})`;
-            ctx.font = 'bold 11px "Inter", sans-serif';
+            ctx.font = "bold 11px 'Outfit', sans-serif";
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             let shortName = company.name.toUpperCase();

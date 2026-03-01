@@ -138,7 +138,7 @@ export default function SystemMap() {
 
                     // Add a subtle ? mark on unexplored planets when zoomed in
                     if (systemMapCamera.zoom > 1.5) {
-                        ctx.font = `bold ${pRadius * 1.2}px Inter`;
+                        ctx.font = `bold ${pRadius * 1.2}px 'Outfit'`;
                         ctx.fillStyle = 'rgba(255,255,255,0.4)';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
@@ -157,7 +157,7 @@ export default function SystemMap() {
 
             // Labels
             if (isSurveyed || isSelected) {
-                ctx.font = `${10 * systemMapCamera.zoom}px Inter`;
+                ctx.font = `${10 * systemMapCamera.zoom}px 'Outfit'`;
                 ctx.fillStyle = isSelected ? '#4fc3f7' : 'rgba(140,170,200,0.7)';
                 ctx.textAlign = 'center';
                 ctx.fillText(planet.name, px, py + pRadius + 12);
@@ -175,7 +175,7 @@ export default function SystemMap() {
             ctx.strokeStyle = 'rgba(79,195,247,0.6)';
             ctx.lineWidth = 2;
             ctx.stroke();
-            ctx.font = '9px Inter';
+            ctx.font = "9px 'Outfit'";
             ctx.fillStyle = 'rgba(79,195,247,0.6)';
             ctx.textAlign = 'center';
             const dest = game?.galaxy.stars[jp.targetStarId];
@@ -371,7 +371,7 @@ export default function SystemMap() {
                     // Draw fleet name label only if selected or hovered
                     const isHovered = hoverPos && Math.hypot(hoverPos.x - fx, hoverPos.y - fy) < 20;
                     if (isPlayer && (fleet.id === selectedFleetId || isHovered)) {
-                        ctx.font = `italic 400 ${Math.max(10, 11 * systemMapCamera.zoom)}px 'Playfair Display'`;
+                        ctx.font = `italic 400 ${Math.max(10, 11 * systemMapCamera.zoom)}px 'Outfit'`;
                         ctx.fillStyle = '#b3e5fc';
                         ctx.textAlign = 'center';
                         ctx.shadowColor = '#000';
@@ -486,9 +486,12 @@ export default function SystemMap() {
             if (t.type === 'Fleet') {
                 selectPlanet(null);
                 selectFleet(t.id);
-            } else {
+                useUIStore.getState().setView('Fleets');
+            } else { // Planet or Asteroid
                 selectPlanet(t.id);
                 selectFleet(null);
+                const hasColony = Object.values(game.colonies).some(c => c.planetId === t.id);
+                useUIStore.getState().setView(hasColony ? 'Colonies' : 'Planets');
             }
             useUIStore.getState().setContextMenu(null);
         } else {
@@ -545,15 +548,12 @@ export default function SystemMap() {
                                 if (t.type === 'Fleet') {
                                     selectPlanet(null);
                                     selectFleet(t.id);
+                                    useUIStore.getState().setView('Fleets');
                                 } else { // t.type === 'Planet'
-                                    const p = star.planets.find(pl => pl.id === t.id);
-                                    if (p?.type === 'Asteroid') {
-                                        selectPlanet(null);
-                                        selectFleet(t.id);
-                                    } else {
-                                        selectPlanet(t.id);
-                                        selectFleet(null);
-                                    }
+                                    selectPlanet(t.id);
+                                    selectFleet(null);
+                                    const hasColony = Object.values(useGameStore.getState().game?.colonies || {}).some(c => c.planetId === t.id);
+                                    useUIStore.getState().setView(hasColony ? 'Colonies' : 'Planets');
                                 }
                                 useUIStore.getState().setContextMenu(null);
                             }}

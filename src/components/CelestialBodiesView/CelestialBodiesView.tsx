@@ -286,7 +286,7 @@ export default function CelestialBodiesView() {
                                             Atmosphere {getSortIcon('atmosphere')}
                                         </th>
                                         {BALANCING.RAW_MINERALS.map(m => (
-                                            <th key={m} className={styles.sortableHeader} onClick={() => handleSort(m)} style={{ minWidth: 100 }}>
+                                            <th key={m} className={styles.sortableHeader} onClick={() => handleSort(m)} style={{ minWidth: 100, textAlign: 'right' }}>
                                                 {m} {getSortIcon(m)}
                                             </th>
                                         ))}
@@ -306,9 +306,9 @@ export default function CelestialBodiesView() {
                                                 const avgAccess = mins.accessibility;
 
                                                 return (
-                                                    <td key={mName} className={styles.mineralCell}>
+                                                    <td key={mName} className={styles.mineralCell} style={{ textAlign: 'right', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' }}>
                                                         <span className={styles.mineralAmount}>{Math.floor(totalAmount)}</span>
-                                                        <span className={styles.mineralAcc}>{(avgAccess * 100).toFixed(0)}%</span>
+                                                        <span className={styles.mineralAcc} style={{ marginLeft: 6, color: 'var(--text-muted)' }}>{(avgAccess * 100).toFixed(0)}%</span>
                                                     </td>
                                                 );
                                             })}

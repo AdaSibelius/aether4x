@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   /* Color Palette */
@@ -39,6 +39,12 @@
   --shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.6);
   --glow-blue: 0 0 20px rgba(79, 195, 247, 0.2);
   --glow-cyan: 0 0 12px rgba(0, 229, 255, 0.3);
+
+  /* Fonts */
+  --font-heading: 'Outfit', sans-serif;
+  --font-main: 'Outfit', sans-serif;
+  --font-fancy: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 *,
@@ -58,7 +64,7 @@ body {
 body {
   background: var(--bg-deep);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-main);
   font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -85,17 +91,17 @@ body {
 
 /* Typography */
 .font-heading {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 h1,
 h2,
 h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   letter-spacing: 0.05em;
 }
 
