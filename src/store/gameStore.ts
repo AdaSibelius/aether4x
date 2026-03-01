@@ -411,15 +411,11 @@ export const useGameStore = create<GameStore>()(
                     groundDefenses: 0,
                     constructionOffices: 0,
                     farms: 0,
-                    commercialCenters: 0,
+                    stores: 0,
                     terraformProgress: 0,
                     aethericDistillery: 0,
-                    logisticsHubs: 0,
                     migrationMode: 'Stable',
                     history: [],
-                    aethericSiphons: 0,
-                    deepCoreExtractors: 0,
-                    reclamationPlants: 0,
                     minerals: {
                         Iron: 600, // Enough to build the Spaceport (cost: 500)
                         Copper: 300,

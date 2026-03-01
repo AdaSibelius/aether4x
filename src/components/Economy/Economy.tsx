@@ -244,6 +244,29 @@ export default function EconomyView() {
                                 </table>
                             </div>
                         </div>
+                        <div className={styles.panel} style={{ marginTop: 16 }}>
+                            <div className={styles.panelHeader}>Market Prices</div>
+                            <div className={styles.panelBody}>
+                                <table className="audit-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Colony</th>
+                                            <th style={{ textAlign: 'right' }}>Food Price</th>
+                                            <th style={{ textAlign: 'right' }}>CG Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {colonies.map(c => (
+                                            <tr key={c.id}>
+                                                <td style={{ color: 'var(--text-secondary)' }}>{c.name}</td>
+                                                <td style={{ textAlign: 'right' }}>{(c.resourcePrices?.Food || 1).toFixed(2)} W</td>
+                                                <td style={{ textAlign: 'right' }}>{(c.resourcePrices?.ConsumerGoods || 8).toFixed(2)} W</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </>
             )}

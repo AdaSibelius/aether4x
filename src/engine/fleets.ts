@@ -11,6 +11,7 @@ import {
     createColonyPrivateWealthAccount,
     createCompanyAccount,
     MonetaryAccount,
+    createExternalAccount,
 } from './economy_ledger';
 
 type FeeCategory = 'MigrationFee' | 'TransportFee';
@@ -430,6 +431,11 @@ function processMigrateOrder(fleet: Fleet, order: ShipOrder, state: GameState, e
 
                         events.push(makeEvent(state.turn, state.date, 'CivilianExpansion',
                             `Passenger fleet "${fleet.name}" loaded ${actualLoaded.toFixed(2)}M colonists from ${colony.name}.`, rng));
+
+                        const departureCost = actualLoaded * 200;
+                        if (departureCost > 0) {
+                            transferWithLedger(state, createColonyPrivateWealthAccount(colony), createExternalAccount('migration_departure'), departureCost, 'MIGRATION_FEE', { colonyId: colony.id, type: 'migration_departure' }, rng);
+                        }
                     }
                 }
             } else if (order.cargoAction === 'Unload') {

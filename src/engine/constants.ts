@@ -29,6 +29,8 @@ export const BALANCING = {
     BASE_HABITABLE_POP: 100,  // Base population (M) supported by habitability without infra [NEW]
     INFRA_REPAIR_KIT: 0.1,     // Baseline infrastructure repair for all colonies [NEW]
     FARM_YIELD_BASE: 2.0,      // Food units produced per farm per day [Rebalanced: was 5.0, lowered to create food scarcity]
+    FOOD_PRICE_SURGE_THRESHOLD: 30, // Days supply at current consumption before price skyrockets
+    FOOD_PRICE_MAX: 3.0,       // Max multiplier for food price during famine
 
     // --- Wealth & Taxes ---
     CONSUMER_GOOD_VALUE: 8,    // Base Wealth generated per 1 unit of Consumer Goods consumed
@@ -36,6 +38,8 @@ export const BALANCING = {
     TRADE_TAX_RATE: 0.2,       // Percentage of trade value taken as state tax
 
     // --- Socioeconomic Depth ---
+    OFFICE_CAPACITY_PER_BUILDING: 5,
+    COLONY_BASELINE_SLOTS: 3,
     BUILDING_WAGES: {
         ResearchLab: 15.0,
         ElectronicsPlant: 12.0,
@@ -46,15 +50,13 @@ export const BALANCING = {
         CivilianFactory: 8.0,
         Shipyard: 8.0,
         ConstructionOffice: 8.0,
-        LogisticsHub: 6.0,
         Spaceport: 6.0,
         Mine: 5.0,
         CivilianMine: 5.0,
-        CommercialCenter: 5.0,
+        Store: 5.0,
         AethericDistillery: 5.0,
-        AethericSiphon: 5.0,
-        DeepCoreExtractor: 5.0,
-        ReclamationPlant: 5.0,
+        AethericHarvester: 5.0,
+        CorporateOffice: 5.0,
         GroundDefense: 5.0,
         Farm: 3.0,
         Default: 1.0
@@ -82,7 +84,7 @@ export const BALANCING = {
         CivilianFactory: 30,
         Mine: 0,
         CivilianMine: 0,
-        Farm: 0,
+        Farm: 8,
         Default: 0
     },
     EDUCATION_DECAY_RATE: 0.05, // Index loss per day [Rebalanced: was 0.1, lowered so education budget isn't prohibitively expensive]
@@ -96,10 +98,11 @@ export const BALANCING = {
         SHIPYARD: 5.0,
         SPACEPORT: 3.0,
         DISTILLERY: 0.5,
-        LOGISTICS_HUB: 1.0,
         OFFICE_BASE: 100.0, // Maintenance cost per corporate office
         SHIP_BASE: 10.0,    // Base maintenance per ship
         CORP_LICENSE_FEE: 500.0, // Base daily tax fee per corporation
+        STORE: 1.0,         // Maintenance cost per store
+        FARM: 0.5,          // Maintenance cost per farm per day [NEW: prevents Agricultural from compounding indefinitely]
     },
 
     // --- Officer Logic ---
@@ -126,11 +129,7 @@ export const BALANCING = {
         WORKER_REQUIREMENT_CIV_FACTORY: 10,     // Millions per private factory
         WORKER_REQUIREMENT_CIV_MINE: 5,         // Millions per private mine
         WORKER_REQUIREMENT_FARM: 10,           // Millions per farm
-        WORKER_REQUIREMENT_COMMERCIAL_CENTER: 10, // Millions per commercial center
-        WORKER_REQUIREMENT_LOGISTICS_HUB: 5,   // Millions per hub [NEW]
-        WORKER_REQUIREMENT_SIPHON: 15,        // Millions per Aetheric Siphon [NEW]
-        WORKER_REQUIREMENT_EXTRACTOR: 12,      // Millions per Deep Core Extractor [NEW]
-        WORKER_REQUIREMENT_RECLAMATION: 10,    // Millions per Reclamation Plant [NEW]
+        WORKER_REQUIREMENT_STORE: 10,          // Millions per store (commercial center)
         OFFICE_WORKERS_PER_CORP: 5,             // Millions per established company
         WORKER_REQUIREMENT_DISTILLERY: 15,    // Millions per Aetheric Distillery
         PUBLIC_SERVICE_FRACTION: 0.05,         // 5% baseline government/admin requirement (Optional - baseline overhead)
@@ -154,11 +153,14 @@ export const BALANCING = {
     // This replaces the inverse-divisor formulas and makes revenue tick-length
     // invariant for a fixed elapsed simulated time.
     CORP_POOL: {
-        COMMERCIAL: 8.0,   // Per commercial center per day
+        COMMERCIAL: 4.0,   // Per store per day [Rebalanced: was 8.0, halved to reduce Commercial dominance]
         MANUFACTURING: 6.0,   // Per civilian factory per day
         EXTRACTION: 5.0,   // Per civilian mine per day
-        LOGISTICS: 4.0,   // Per logistics hub per day
-        AGRICULTURAL: 3.0,   // Per farm per day
+        AGRICULTURAL: 10.0,  // Per farm per day [Rebalanced: was 3.0, raised to make farming viable]
+        CONSTRUCTION: 10.0,  // Per construction office per day
+        DISTILLERY: 12.0,    // Per aetheric distillery per day
+        HARVESTER: 20.0,     // Per aetheric harvester per day
+        OFFICE: 3.0,         // Per corporate office per day [Rebalanced: was 8.0, lowered to reduce Commercial dominance]
     },
 };
 

@@ -19,7 +19,7 @@ export interface BudgetBreakdown {
         groundDefenses: number;
         spaceports: number;
         distilleries: number;
-        logisticsHubs: number;
+        stores: number;
         total: number;
     };
     netIncome: number;
@@ -56,11 +56,11 @@ export function calculateColonyBudget(colony: Colony, days: number): BudgetBreak
         shipyards: colony.shipyards.length * BALANCING.MAINTENANCE.SHIPYARD * days,
         spaceports: (colony.spaceport ? BALANCING.MAINTENANCE.SPACEPORT : 0) * days,
         distilleries: (colony.aethericDistillery ?? 0) * BALANCING.MAINTENANCE.DISTILLERY * days,
-        logisticsHubs: (colony.logisticsHubs ?? 0) * BALANCING.MAINTENANCE.LOGISTICS_HUB * days,
+        stores: (colony.stores ?? 0) * BALANCING.MAINTENANCE.STORE * days,
         total: 0
     };
 
-    maint.total = maint.factories + maint.mines + maint.researchLabs + maint.groundDefenses + maint.shipyards + maint.spaceports + maint.distilleries + maint.logisticsHubs;
+    maint.total = maint.factories + maint.mines + maint.researchLabs + maint.groundDefenses + maint.shipyards + maint.spaceports + maint.distilleries + maint.stores;
 
     return {
         taxes,

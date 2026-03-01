@@ -27,27 +27,31 @@ const generateSimId = () => `item_${Date.now()}_${Math.random().toString(36).sub
 
 const COLONY_TYPES: ColonyType[] = ['Core', 'Mining', 'Research', 'Military', 'Agricultural'];
 const COLONY_TYPE_ICON: Record<ColonyType, string> = {
-    Core: '🏛️', Mining: '⛏️', Research: '🔬', Military: '⚔️', Agricultural: '🌾',
+    Core: '🏛️', Mining: '⛏️', Research: '🧪',
+    Military: '🛡️',
+    Agricultural: '🌾',
+    Orbital: '🛰️',
 };
 const COLONY_TYPE_DESC: Record<ColonyType, string> = {
     Core: 'Balanced production',
     Mining: '+50% mineral yield',
-    Research: '+50% research output',
-    Military: '+20% build points',
-    Agricultural: 'Increased population cap',
+    Research: '/assets/bg-colony-research.jpg',
+    Military: '/assets/bg-colony-military.jpg',
+    Agricultural: '/assets/bg-colony-agri.jpg',
+    Orbital: '/assets/bg-colony-orbital.jpg',
 };
 
 const BUILDABLE_STRUCTURES: { type: ProductionItemType; label: string; icon: string; desc: string }[] = [
     { type: 'Factory', label: 'Factory', icon: '🏭', desc: '+10 BP/day base output' },
     { type: 'Mine', label: 'Mine', icon: '⛏️', desc: '+1 mineral extraction site' },
     { type: 'ResearchLab', label: 'Research Lab', icon: '🔬', desc: '+5 RP/day per worker' },
-    { type: 'Infrastructure', label: 'Infrastructure', icon: '🏗️', desc: '+5% infrastructure rating' },
+    { type: 'ConstructionOffice', label: 'Construction Office', icon: '🏢', desc: 'Repairs infrastructure and supports terraforming' },
     { type: 'GroundDefense', label: 'PDC Battery', icon: '🛡️', desc: 'Planetary defense cannon' },
+    { type: 'Farm', label: 'Agricultural Farm', icon: '🚜', desc: '+2 Food/day, supports population' },
     { type: 'Spaceport', label: 'Spaceport', icon: '🚀', desc: '+5 happiness, enables trade' },
     { type: 'AethericDistillery', label: 'Aetheric Distillery', icon: '⚗️', desc: 'Refines Raw Aether into Fuel' },
-    { type: 'AethericSiphon', label: 'Aetheric Siphon', icon: '🌀', desc: 'Directly harvests Aether from planetary currents' },
-    { type: 'DeepCoreExtractor', label: 'Deep Core Extractor', icon: '🌋', desc: 'Advanced extraction of deep-seated minerals' },
-    { type: 'ReclamationPlant', label: 'Reclamation Plant', icon: '♻️', desc: '+5% global production via waste recycling' },
+    { type: 'Store', label: 'Store', icon: '🏪', desc: '+8W Corporate Revenue, provides local services' },
+    { type: 'CorporateOffice', label: 'Corporate Office', icon: '💼', desc: 'Generates Construction BP on Core Worlds' },
 ];
 
 export const COLONY_TYPE_BONUSES: Record<ColonyType, Record<string, number>> = {
@@ -55,7 +59,8 @@ export const COLONY_TYPE_BONUSES: Record<ColonyType, Record<string, number>> = {
     Mining: { industry: 0.8, mining: 1.5, research: 0.8 },
     Research: { industry: 0.8, mining: 0.8, research: 1.5 },
     Military: { industry: 1.2, mining: 1.0, research: 0.7 },
-    Agricultural: { industry: 0.9, mining: 0.9, research: 0.9 },
+    Agricultural: { industry: 1.0, mining: 0.9, research: 1.0 },
+    Orbital: { industry: 1.0, mining: 0.8, research: 1.5 },
 };
 
 export function calcEffectiveRates(colony: Colony, officers: Officer[], planet?: Planet | null, empires?: Record<string, Empire>) {
@@ -80,7 +85,7 @@ export function calcEffectiveRates(colony: Colony, officers: Officer[], planet?:
     const reqCorpOffices = (empire?.companies?.length || 0) * BALANCING.EMPLOYMENT.OFFICE_WORKERS_PER_CORP;
 
     const reqAgri = (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM;
-    const reqServices = (colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER;
+    const reqServices = (colony.stores ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_STORE;
 
     const totalReq = reqIndustry + reqMining + reqResearch + reqConstruction + reqLogistics + reqCorpOffices + reqAgri + reqServices;
 
@@ -400,6 +405,14 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                             <span className="stat-label">Local Food Price</span>
                             <span className="stat-value">{(colony.resourcePrices?.Food || 1).toFixed(1)} W</span>
                         </div>
+                        <div className="stat-row">
+                            <span className="stat-label">Investment Pool</span>
+                            <span className="stat-value good">{(colony.investmentPool || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} W</span>
+                        </div>
+                        <div className="stat-row">
+                            <span className="stat-label">Local Food Price</span>
+                            <span className="stat-value">{(colony.resourcePrices?.Food || 1).toFixed(1)} W</span>
+                        </div>
                         {colony.demand && Object.values(colony.demand).some(amt => amt > 0) ? (
                             <div style={{ marginTop: 8 }}>
                                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-red)', marginBottom: 4 }}>Current Deficits</div>
@@ -709,7 +722,7 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
                                         </div>
                                     </td>
                                     <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>{rates.bpPerDay.toFixed(1)} BP</td>
-                                    <td>{buildAction('Factory')}</td>
+                                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>Corporate</td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -724,7 +737,7 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
                                         </div>
                                     </td>
                                     <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{rates.mineralsPerDay.toFixed(1)}t</td>
-                                    <td>{buildAction('Mine')}</td>
+                                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>Corporate</td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -794,13 +807,13 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
                                     <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>Ready</td>
                                     <td>{buildAction('GroundDefense')}</td>
                                 </tr>
-                                {colony.aethericDistillery > 0 && (
+                                {(colony.aethericDistillery ?? 0) > 0 && (
                                     <tr>
                                         <td>
                                             <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>⚗️</span><span className={styles.ledgerName}>Aetheric Distillery</span></div>
                                         </td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.aethericDistillery}</td>
-                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{(colony.aethericDistillery * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_DISTILLERY).toFixed(1)}M</td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.aethericDistillery ?? 0}</td>
+                                        <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.aethericDistillery ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_DISTILLERY).toFixed(1)}M</td>
                                         <td>
                                             <div className={styles.ledgerStaffing}>
                                                 <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: '#50e3c2' }} /></div>
@@ -808,7 +821,7 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
                                             </div>
                                         </td>
                                         <td className={styles.ledgerValue} style={{ textAlign: 'right', color: '#50e3c2' }}>Active</td>
-                                        <td>{buildAction('AethericDistillery')}</td>
+                                        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>Corporate</td>
                                     </tr>
                                 )}
                                 <tr className={styles.ledgerCategory}>
@@ -827,14 +840,14 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
                                         </div>
                                     </td>
                                     <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{(colony.farms * BALANCING.FARM_YIELD_BASE * rates.staffingLevel).toFixed(0)} Food/day</td>
-                                    <td>{buildAction('Farm')}</td>
+                                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>Corporate</td>
                                 </tr>
                                 <tr>
                                     <td>
-                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏢</span><span className={styles.ledgerName}>Commercial Centers</span></div>
+                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🏪</span><span className={styles.ledgerName}>Stores</span></div>
                                     </td>
-                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.commercialCenters ?? 0}</td>
-                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER).toFixed(1)}M</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.stores ?? 0}</td>
+                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.stores ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_STORE).toFixed(1)}M</td>
                                     <td>
                                         <div className={styles.ledgerStaffing}>
                                             <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-gold)' }} /></div>
@@ -842,98 +855,9 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
                                         </div>
                                     </td>
                                     <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-gold)' }}>Active</td>
-                                    <td>{buildAction('CommercialCenter')}</td>
+                                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>Corporate</td>
                                 </tr>
-                                <tr>
-                                    <td>
-                                        <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>📦</span><span className={styles.ledgerName}>Logistics Hubs</span></div>
-                                    </td>
-                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.logisticsHubs ?? 0}</td>
-                                    <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.logisticsHubs ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_LOGISTICS_HUB).toFixed(1)}M</td>
-                                    <td>
-                                        <div className={styles.ledgerStaffing}>
-                                            <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-blue)' }} /></div>
-                                            <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                        </div>
-                                    </td>
-                                    <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>+{(colony.logisticsHubs * 2).toFixed(0)}% Efficiency</td>
-                                    <td>{buildAction('LogisticsHub')}</td>
-                                </tr>
-
                                 {(() => {
-                                    const completedTechs = empire.research?.completedTechs || [];
-                                    const specialtyRows = [];
-
-                                    if (completedTechs.includes('aetheric_siphon_theory')) {
-                                        specialtyRows.push(
-                                            <tr key="siphon">
-                                                <td>
-                                                    <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🌀</span><span className={styles.ledgerName}>Aetheric Siphons</span></div>
-                                                </td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.aethericSiphons ?? 0}</td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.aethericSiphons ?? 0) * (BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_SIPHON || 5)).toFixed(1)}M</td>
-                                                <td>
-                                                    <div className={styles.ledgerStaffing}>
-                                                        <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-cyan, #06b6d4)' }} /></div>
-                                                        <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                                    </div>
-                                                </td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-cyan, #06b6d4)' }}>{((colony.aethericSiphons ?? 0) * 50 * rates.staffingLevel).toFixed(0)} Aether/day</td>
-                                                <td>{buildAction('AethericSiphon')}</td>
-                                            </tr>
-                                        );
-                                    }
-
-                                    if (completedTechs.includes('deep_core_mining')) {
-                                        specialtyRows.push(
-                                            <tr key="extractor">
-                                                <td>
-                                                    <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>🌋</span><span className={styles.ledgerName}>Deep Core Extractors</span></div>
-                                                </td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.deepCoreExtractors ?? 0}</td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.deepCoreExtractors ?? 0) * (BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_EXTRACTOR || 8)).toFixed(1)}M</td>
-                                                <td>
-                                                    <div className={styles.ledgerStaffing}>
-                                                        <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-orange, #f97316)' }} /></div>
-                                                        <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                                    </div>
-                                                </td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-orange, #f97316)' }}>+{((colony.deepCoreExtractors ?? 0) * 20).toFixed(0)}% Extraction</td>
-                                                <td>{buildAction('DeepCoreExtractor')}</td>
-                                            </tr>
-                                        );
-                                    }
-
-                                    if (completedTechs.includes('automated_reclamation_consortium')) {
-                                        specialtyRows.push(
-                                            <tr key="reclamation">
-                                                <td>
-                                                    <div className={styles.ledgerLabel}><span className={styles.ledgerIcon}>♻️</span><span className={styles.ledgerName}>Reclamation Plants</span></div>
-                                                </td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{colony.reclamationPlants ?? 0}</td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right' }}>{((colony.reclamationPlants ?? 0) * (BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_RECLAMATION || 3)).toFixed(1)}M</td>
-                                                <td>
-                                                    <div className={styles.ledgerStaffing}>
-                                                        <div className={styles.meterTrack} style={{ margin: 0 }}><div className={styles.meterFill} style={{ width: `${rates.staffingLevel * 100}%`, background: 'var(--accent-emerald, #10b981)' }} /></div>
-                                                        <span className={styles.staffingText}>{(rates.staffingLevel * 100).toFixed(0)}%</span>
-                                                    </div>
-                                                </td>
-                                                <td className={styles.ledgerValue} style={{ textAlign: 'right', color: 'var(--accent-emerald, #10b981)' }}>+{((colony.reclamationPlants ?? 0) * 5).toFixed(0)}% Output</td>
-                                                <td>{buildAction('ReclamationPlant')}</td>
-                                            </tr>
-                                        );
-                                    }
-
-                                    if (specialtyRows.length > 0) {
-                                        return (
-                                            <>
-                                                <tr className={styles.ledgerCategory}>
-                                                    <td colSpan={6}>Advanced Technology Structures</td>
-                                                </tr>
-                                                {specialtyRows}
-                                            </>
-                                        );
-                                    }
                                     return null;
                                 })()}
                             </tbody>
@@ -1190,9 +1114,9 @@ function PopulationTab({ colony, rates, planet }: {
                                     <td style={{ textAlign: 'right' }}><span className="stat-value">Growth</span></td>
                                 </tr>
                                 <tr>
-                                    <td>🛒 Services</td>
+                                    <td>🏪 Services</td>
                                     <td style={{ textAlign: 'right' }}>{rates.laborReport.services.toFixed(1)} M</td>
-                                    <td style={{ textAlign: 'right' }}>{colony.commercialCenters} Comm. Centers</td>
+                                    <td style={{ textAlign: 'right' }}>{colony.stores ?? 0} Stores</td>
                                     <td style={{ textAlign: 'right' }}><span className="stat-value">Trade Goods</span></td>
                                 </tr>
                                 {rates.laborReport.unemployed > 0 && (

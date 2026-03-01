@@ -36,11 +36,12 @@ export const LogisticsValidation: Scenario = {
                 colonyType: 'Core',
                 laborAllocation: { industry: 40, mining: 20, research: 10, construction: 10, agriculture: 10, commerce: 10 },
                 productionQueue: [{ id: 'init_port', type: 'Spaceport', name: 'Planetary Spaceport', quantity: 1, progress: 0, costPerUnit: { Iron: 500, Copper: 200 }, bpCostPerUnit: 3000 }],
-                factories: 0, mines: 0, civilianFactories: 0, civilianMines: 0, researchLabs: 0, spaceport: 0, shipyards: [], groundDefenses: 0, constructionOffices: 0, farms: 0, commercialCenters: 0, terraformProgress: 0, aethericDistillery: 0, logisticsHubs: 0,
-                aethericSiphons: 0, deepCoreExtractors: 0, reclamationPlants: 0,
+                factories: 0, mines: 0, researchLabs: 0, spaceport: 0, shipyards: [], groundDefenses: 0, constructionOffices: 0, terraformProgress: 0, aethericDistillery: 0,
+                civilianFactories: 0, civilianMines: 0, farms: 0, stores: 0,
                 migrationMode: 'Target',
                 privateWealth: 0,
-                history: []
+                history: [],
+                governorId: undefined,
             };
             state.colonies[id] = newColony;
             return id;
