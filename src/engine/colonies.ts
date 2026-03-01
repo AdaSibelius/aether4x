@@ -133,8 +133,20 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     const staffingLevel = colony.staffingLevel || 1.0;
     const colonyWage = 10.0 * staffingLevel * (1 + (colony.educationIndex / 100));
 
-    let totalPublicWages = 0;
-    let totalPrivateWages = 0;
+    const publicWorkersM = ((colony as any).publicWorkers || 0) * staffingLevel;
+    const privateWorkersM = ((colony as any).privateWorkers || 0) * staffingLevel;
+
+    let totalPublicWages = publicWorkersM * colonyWage * days;
+    let totalPrivateWages = privateWorkersM * colonyWage * days;
+
+    colony.privateWealth = (colony.privateWealth || 0) + totalPublicWages + totalPrivateWages;
+
+    if (totalPublicWages > 0) {
+        transferWithLedger(state, createTreasuryAccount(empire), createColonyPrivateWealthAccount(colony), totalPublicWages, 'WAGES_PAID', { colonyId: colony.id }, rng);
+    }
+    if (totalPrivateWages > 0) {
+        transferWithLedger(state, createExternalAccount('civilian_capital'), createColonyPrivateWealthAccount(colony), totalPrivateWages, 'WAGES_PAID', { colonyId: colony.id }, rng);
+    }
 
     // 3. Sectoral Production (Recipes)
     const outputByOwner: Record<string, Record<string, number>> = {};
@@ -332,6 +344,10 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
         companiesOnColony * BALANCING.EMPLOYMENT.OFFICE_WORKERS_PER_CORP;
 
     const totalRequiredLabor = requiredPublicLabor + requiredPrivateLabor + (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM + (colony.commercialCenters ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_COMMERCIAL_CENTER;
+
+    (colony as any).publicWorkers = requiredPublicLabor;
+    (colony as any).privateWorkers = totalRequiredLabor - requiredPublicLabor;
+
 
     const baselineStaffing = totalRequiredLabor > 0 ? Math.min(1.0, colony.population / totalRequiredLabor) : 1.0;
     const staffingLevel = Math.min(BALANCING.MAX_STAFFING_LEVEL, (baselineStaffing * (colony.laborEfficiency ?? 1.0) * (1 + (colony.logisticsHubs ?? 0) * 0.02) * (1 + (techBonuses.load_speed ?? 0))) || 0.001);
