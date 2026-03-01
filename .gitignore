@@ -12,6 +12,7 @@ out/
 
 # Production
 build/
+*.tsbuildinfo
 
 # IDEs and Editors
 .vscode/
