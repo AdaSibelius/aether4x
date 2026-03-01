@@ -13,6 +13,7 @@ import { BALANCING } from '@/engine/constants';
 import { canHostBuildings, isBodyHabitable } from '@/engine/galaxy';
 import { RosterShell, SidebarSection, RosterGroup, RosterItem, MainArea } from '@/components/Roster/Roster';
 import { calculateColonyBudget } from '@/engine/finances';
+import { getAccountName } from '@/utils/economy_format';
 import styles from './ColonyManager.module.css';
 import ShipyardTab from './ShipyardTab';
 import InvestmentHistoryChart from './InvestmentHistoryChart';
@@ -328,7 +329,7 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                     <div className="panel-body">
                         {(() => {
                             const minerals = colony.minerals ?? {};
-                            return BALANCING.MINERAL_NAMES
+                            return BALANCING.RAW_MINERALS
                                 .map(m => (
                                     <div className="stat-row" key={m} style={{ gap: 4 }}>
                                         <span className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 2 }}>
@@ -354,26 +355,51 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                     </div>
                 </div>
 
-                {/* Economy & Trade panel */}
+                {/* Manufactured Goods panel */}
                 <div className={styles.panel}>
-                    <div className="panel-header"><h3>⚖️ Economy & Trade</h3></div>
+                    <div className="panel-header"><h3>🛒 Manufactured Goods</h3></div>
+                    <div className="panel-body">
+                        {(() => {
+                            const minerals = colony.minerals ?? {};
+                            return BALANCING.MANUFACTURED_GOODS
+                                .map(m => (
+                                    <div className="stat-row" key={m} style={{ gap: 4 }}>
+                                        <span className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 2 }}>
+                                            <img src={`/minerals/${m.toLowerCase()}.png`} alt={m} width={20} height={20} style={{ imageRendering: 'pixelated' as const, borderRadius: 2 }} />
+                                            {m}
+                                        </span>
+                                        <span className="stat-value" style={{ flex: 1, textAlign: 'right' }}>{Math.floor(minerals[m] ?? 0).toLocaleString()}</span>
+                                        <span style={{ flex: 1 }} />
+                                    </div>
+                                ));
+                        })()}
+                    </div>
+                </div>
+
+                {/* Standard of Living panel */}
+                <div className={styles.panel}>
+                    <div className="panel-header"><h3>⚖️ Standard of Living</h3></div>
                     <div className="panel-body">
                         <div className="stat-row">
                             <span className="stat-label">Civilian Wealth</span>
                             <span className="stat-value good">{(colony.privateWealth ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} W</span>
                         </div>
-                        {(colony.civilianFactories ?? 0) > 0 && (
-                            <div className="stat-row">
-                                <span className="stat-label">Civilian Factories</span>
-                                <span className="stat-value">{colony.civilianFactories}</span>
-                            </div>
-                        )}
-                        {(colony.civilianMines ?? 0) > 0 && (
-                            <div className="stat-row">
-                                <span className="stat-label">Civilian Mines</span>
-                                <span className="stat-value">{colony.civilianMines}</span>
-                            </div>
-                        )}
+                        <div className="stat-row">
+                            <span className="stat-label">Average Wage</span>
+                            <span className="stat-value">{((colony.privateWealthIncome || 0) / Math.max(0.1, colony.population)).toLocaleString(undefined, { maximumFractionDigits: 2 })} W/day</span>
+                        </div>
+                        <div className="stat-row">
+                            <span className="stat-label">Education Index</span>
+                            <span className="stat-value">{(colony.educationIndex || 0).toFixed(1)} / 100</span>
+                        </div>
+                        <div className="stat-row">
+                            <span className="stat-label">Local CG Price</span>
+                            <span className="stat-value">{(colony.resourcePrices?.ConsumerGoods || 8).toFixed(1)} W</span>
+                        </div>
+                        <div className="stat-row">
+                            <span className="stat-label">Local Food Price</span>
+                            <span className="stat-value">{(colony.resourcePrices?.Food || 1).toFixed(1)} W</span>
+                        </div>
                         {colony.demand && Object.values(colony.demand).some(amt => amt > 0) ? (
                             <div style={{ marginTop: 8 }}>
                                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-red)', marginBottom: 4 }}>Current Deficits</div>
@@ -1328,14 +1354,14 @@ export default function ColonyManager() {
                     <RosterGroup key={system} title={system.toUpperCase()} icon="🪐">
                         {list.map(c => {
                             const p = Object.values(game.galaxy.stars).flatMap(s => s.planets).find(pl => pl.id === c.planetId) ?? null;
-                            const r = calcEffectiveRates(c, empire.officers, p, game.empires);
+                            const r = calcEffectiveRates(c, empire?.officers ?? [], p, game.empires);
                             return (
                                 <RosterItem
                                     key={c.id}
                                     name={c.name}
                                     active={c.id === colony.id}
                                     onClick={() => { selectColony(c.id); setActiveTab('Overview'); }}
-                                    subtitle={`${c.population.toFixed(1)}M · ${r.bpPerDay.toFixed(0)} BP/d`}
+                                    subtitle={`${c.population.toFixed(1)}M · ${r?.bpPerDay.toFixed(0) ?? 0} BP/d`}
                                     thumbnail={<div style={{ fontSize: 20 }}>{COLONY_TYPE_ICON[c.colonyType ?? 'Core'] ?? '🏛️'}</div>}
                                 />
                             );
@@ -1365,18 +1391,61 @@ export default function ColonyManager() {
             >
                 <div style={{ padding: '0 16px', height: '100%', overflowY: 'auto' }}>
                     {activeTab === 'Overview' && (
-                        <OverviewTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} governor={empire.officers.find(o => o.id === colony.governorId) ?? null} />
+                        <OverviewTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} governor={empire?.officers.find(o => o.id === colony.governorId) ?? null} />
                     )}
                     {activeTab === 'Population' && (
                         <PopulationTab colony={colony} rates={rates} planet={planet} />
                     )}
-                    {activeTab === 'Industry' && <IndustryTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} empire={empire} />}
-                    {activeTab === 'Shipyards' && <ShipyardTab colony={colony} rates={rates} updateColony={updateColony} empire={empire} />}
+                    {activeTab === 'Industry' && empire && <IndustryTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} empire={empire} />}
+                    {activeTab === 'Shipyards' && empire && <ShipyardTab colony={colony} rates={rates} updateColony={updateColony} empire={empire} />}
                     {activeTab === 'History' && (
-                        <div className={styles.panel} style={{ marginTop: 10 }}>
-                            <div className="panel-header"><h3>📈 Development History</h3></div>
-                            <div className="panel-body">
-                                <InvestmentHistoryChart history={colony.history || []} height={400} />
+                        <div className={styles.ledgerSection}>
+                            <div className={styles.panel} style={{ marginTop: 10 }}>
+                                <div className="panel-header"><h3>📈 Development History</h3></div>
+                                <div className="panel-body">
+                                    <InvestmentHistoryChart history={colony.history || []} height={250} />
+                                </div>
+                            </div>
+
+                            <div className={styles.panel} style={{ marginTop: 20 }}>
+                                <div className="panel-header"><h3>🧾 Local Cashflow Audit</h3></div>
+                                <div className="panel-body" style={{ maxHeight: 400, overflowY: 'auto', padding: 16 }}>
+                                    <table className="audit-table" style={{ margin: 0 }}>
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Category</th>
+                                                <th>Payer</th>
+                                                <th>Payee</th>
+                                                <th style={{ textAlign: 'right' }}>Amount (W)</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {game.monetaryLedger
+                                                ?.filter(entry => entry.from.includes(colony.id) || entry.to.includes(colony.id))
+                                                .slice().reverse().slice(0, 50).map(entry => (
+                                                    <tr key={entry.id}>
+                                                        <td>Turn {Math.floor(entry.turn / 86400)}</td>
+                                                        <td style={{ color: 'var(--accent-blue)', fontSize: 11 }}>{entry.reasonCode.replace(/_/g, ' ')}</td>
+                                                        <td style={{ fontSize: 11 }}>{getAccountName(game, entry.from)}</td>
+                                                        <td style={{ fontSize: 11 }}>{getAccountName(game, entry.to)}</td>
+                                                        <td style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{(entry.amount || 0).toFixed(2)}</td>
+                                                        <td>
+                                                            <span className={`status-badge ${entry.shortfall === 0 ? 'status-settled' : 'status-partial'}`}>
+                                                                {entry.shortfall === 0 ? 'Settled' : 'Partial'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            {(!game.monetaryLedger || game.monetaryLedger.filter(entry => entry.from.includes(colony.id) || entry.to.includes(colony.id)).length === 0) && (
+                                                <tr>
+                                                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px 0' }}>No local fiscal events on record.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     )}

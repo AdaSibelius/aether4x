@@ -21,19 +21,71 @@ export const BALANCING = {
     AETHER_HARVEST_RATE_BASE: 5, // Base units per scoop per day
 
     // --- Consumption & Population ---
-    POP_CONSUMPTION_RATE: 0.1, // Trade Goods consumed per 1M population per day
-    FOOD_CONSUMPTION_RATE: 0.2, // Food units consumed per 1M population per day [NEW]
+    POP_CONSUMPTION_RATE: 0.1, // Consumer Goods consumed per 1M population per day
+    FOOD_CONSUMPTION_RATE: 0.5, // Food units consumed per 1M population per day [Rebalanced: was 0.2, raised to force inter-colony food trade]
     POP_DIE_OFF_RATE: 0.1,     // Die-off rate per year per 1x over-capacity
     FAMINE_DIE_OFF_RATE: 0.005, // Daily population loss percentage during starvation [NEW]
     INFRA_POP_SUPPORT: 2500,   // Population (M) supported per 1.0 Infrastructure level [NEW]
     BASE_HABITABLE_POP: 100,  // Base population (M) supported by habitability without infra [NEW]
     INFRA_REPAIR_KIT: 0.1,     // Baseline infrastructure repair for all colonies [NEW]
-    FARM_YIELD_BASE: 5.0,      // Food units produced per farm per day [NEW]
+    FARM_YIELD_BASE: 2.0,      // Food units produced per farm per day [Rebalanced: was 5.0, lowered to create food scarcity]
 
     // --- Wealth & Taxes ---
-    TRADE_GOOD_VALUE: 8,       // Wealth generated per 1 unit of Trade Goods consumed
+    CONSUMER_GOOD_VALUE: 8,    // Base Wealth generated per 1 unit of Consumer Goods consumed
     TAX_INCOME_BASE: 0.1,      // Wealth tax per 1M population per day (scaled by happiness)
     TRADE_TAX_RATE: 0.2,       // Percentage of trade value taken as state tax
+
+    // --- Socioeconomic Depth ---
+    BUILDING_WAGES: {
+        ResearchLab: 15.0,
+        ElectronicsPlant: 12.0,
+        CivilianElectronicsPlant: 12.0,
+        MachineryPlant: 10.0,
+        CivilianMachineryPlant: 10.0,
+        Factory: 8.0,
+        CivilianFactory: 8.0,
+        Shipyard: 8.0,
+        ConstructionOffice: 8.0,
+        LogisticsHub: 6.0,
+        Spaceport: 6.0,
+        Mine: 5.0,
+        CivilianMine: 5.0,
+        CommercialCenter: 5.0,
+        AethericDistillery: 5.0,
+        AethericSiphon: 5.0,
+        DeepCoreExtractor: 5.0,
+        ReclamationPlant: 5.0,
+        GroundDefense: 5.0,
+        Farm: 3.0,
+        Default: 1.0
+    },
+    INDUSTRY_RECIPES: {
+        ConsumerGoods: { inputs: { Iron: 1, Copper: 1 }, time: 1, outputMultiplier: 2 }, // [Rebalanced: 2x output vs before]
+        Electronics: { inputs: { Copper: 2, Platinum: 1 }, time: 1, outputMultiplier: 1 },
+        Machinery: { inputs: { Iron: 2, Tungsten: 1 }, time: 1, outputMultiplier: 1 },
+    },
+    // --- Asset Consumption (demand drivers for Electronics & Machinery) ---
+    MACHINERY_PER_SHIPYARD_BP: 0.05,   // Machinery units consumed per BP of shipyard work per day
+    ELECTRONICS_PER_RESEARCH_LAB: 0.5, // Electronics units consumed per research lab per day
+    ELECTRONICS_LUXURY_THRESHOLD: 5000, // Private wealth per colony above which pops buy Electronics
+    ELECTRONICS_LUXURY_CONSUMPTION: 0.02, // Electronics units consumed per 1M wealthy pops per day
+    // --- Wealth Sink ---
+    COST_OF_LIVING_RATE: 0.008, // Fraction of private wealth consumed as basic living expenses per day
+    MAX_STAFFING_LEVEL: 1.2,    // Hard cap on staffing efficiency (prevents over-staffing feedback loops)
+    JOB_REQUIREMENTS: {
+        ResearchLab: 60,
+        ElectronicsPlant: 60,
+        CivilianElectronicsPlant: 60,
+        MachineryPlant: 30,
+        CivilianMachineryPlant: 30,
+        Factory: 30,
+        CivilianFactory: 30,
+        Mine: 0,
+        CivilianMine: 0,
+        Farm: 0,
+        Default: 0
+    },
+    EDUCATION_DECAY_RATE: 0.05, // Index loss per day [Rebalanced: was 0.1, lowered so education budget isn't prohibitively expensive]
 
     // --- Maintenance (Wealth/Day) ---
     MAINTENANCE: {
@@ -84,7 +136,9 @@ export const BALANCING = {
         PUBLIC_SERVICE_FRACTION: 0.05,         // 5% baseline government/admin requirement (Optional - baseline overhead)
         CONSTRUCTION_BP_PER_OFFICE: 20,         // Construction BP generated per office per day
     },
-    MINERAL_NAMES: ['Iron', 'Copper', 'Titanium', 'Uranium', 'Tungsten', 'Cobalt', 'Lithium', 'Platinum', 'Ambergris', 'Aether', 'Fuel', 'Food'],
+    MINERAL_NAMES: ['Iron', 'Copper', 'Titanium', 'Uranium', 'Tungsten', 'Cobalt', 'Lithium', 'Platinum', 'Ambergris', 'Aether', 'Fuel', 'Food', 'ConsumerGoods', 'Electronics', 'Machinery'],
+    RAW_MINERALS: ['Iron', 'Copper', 'Titanium', 'Uranium', 'Tungsten', 'Cobalt', 'Lithium', 'Platinum', 'Ambergris', 'Aether'],
+    MANUFACTURED_GOODS: ['Fuel', 'Food', 'ConsumerGoods', 'Electronics', 'Machinery'],
     SHIPYARD_BP_ALLOCATION_FACTOR: 0.3, // 30% of industrial BP goes to shipyards by default
     SHIPYARD_BASE_MAX_TONNAGE: 5000,
 

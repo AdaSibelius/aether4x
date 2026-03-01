@@ -6,9 +6,11 @@ import { calculateEmpireBudget } from '@/engine/finances';
 import { BALANCING } from '@/engine/constants';
 import { COLONY_TYPE_BONUS } from '@/engine/colonies';
 import { getGovernorBonuses } from '@/engine/officers';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import InvestmentHistoryChart from '@/components/ColonyManager/InvestmentHistoryChart';
 import LogisticsMonitor from './LogisticsMonitor';
 import CorporateExchange from './CorporateExchange';
+import { getAccountName } from '@/utils/economy_format';
 import styles from './Economy.module.css';
 
 export default function EconomyView() {
@@ -25,6 +27,7 @@ export default function EconomyView() {
     const colonies = Object.values(game.colonies).filter(c => c.empireId === empire.id);
 
     const totalPrivateWealth = colonies.reduce((sum, c) => sum + (c.privateWealth || 0), 0);
+    const totalPrivateWages = colonies.reduce((sum, c) => sum + (c.privateWages || 0), 0);
     const totalCorpWealth = empire.companies?.reduce((sum, c) => sum + c.wealth, 0) || 0;
     const history = empire.history || [];
 
@@ -85,21 +88,21 @@ export default function EconomyView() {
                             <div className={`${styles.statValueSmall} ${budget.netIncome >= 0 ? styles.increase : styles.decrease}`}>
                                 {budget.netIncome >= 0 ? '+' : ''}{Math.floor(budget.netIncome).toLocaleString()} / day
                             </div>
-                            <Sparkline data={history.map(h => h.treasury)} color="var(--accent-blue)" />
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statLabel}>Civilian Wealth</div>
                             <div className={styles.statValue} style={{ color: 'var(--accent-green)' }}>
                                 {Math.floor(totalPrivateWealth).toLocaleString()} W
                             </div>
-                            <Sparkline data={history.map(h => h.privateWealth)} color="var(--accent-green)" />
+                            <div className={styles.statValueSmall} style={{ color: 'var(--accent-green)' }}>
+                                +{Math.floor(totalPrivateWages).toLocaleString()} W / day payroll
+                            </div>
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statLabel}>Corporate Capital</div>
                             <div className={styles.statValue} style={{ color: '#f1c40f' }}>
                                 {Math.floor(totalCorpWealth).toLocaleString()} W
                             </div>
-                            <Sparkline data={history.map(h => h.corporateWealth)} color="#f1c40f" />
                         </div>
                     </div>
 
@@ -171,6 +174,10 @@ export default function EconomyView() {
                                             <td style={{ textAlign: 'right' }} className={styles.decrease}>-{Math.floor(budget.salaries).toLocaleString()}</td>
                                         </tr>
                                         <tr>
+                                            <td>Public Sector Payroll</td>
+                                            <td style={{ textAlign: 'right' }} className={styles.decrease}>-{Math.floor(budget.publicSectorPayroll).toLocaleString()}</td>
+                                        </tr>
+                                        <tr>
                                             <td>Administrative Overhead</td>
                                             <td style={{ textAlign: 'right' }} className={styles.decrease}>-{Math.floor(budget.maintenance.offices).toLocaleString()}</td>
                                         </tr>
@@ -189,7 +196,7 @@ export default function EconomyView() {
                         <div className={styles.panel}>
                             <div className={styles.panelHeader}>Global Mineral Audit</div>
                             <div className={styles.panelBody}>
-                                <table className={styles.auditTable}>
+                                <table className="audit-table">
                                     <thead>
                                         <tr>
                                             <th>Mineral</th>
@@ -198,7 +205,33 @@ export default function EconomyView() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {BALANCING.MINERAL_NAMES.map(m => (
+                                        {BALANCING.RAW_MINERALS.map(m => (
+                                            <tr key={m}>
+                                                <td style={{ color: 'var(--text-secondary)' }}>{m}</td>
+                                                <td style={{ textAlign: 'right' }}>{Math.floor(globalStockpiles[m] || 0).toLocaleString()}</td>
+                                                <td style={{ textAlign: 'right' }} className={mineralRates[m] > 0 ? styles.increase : ''}>
+                                                    {mineralRates[m] > 0 ? '+' : ''}{mineralRates[m].toFixed(1)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className={styles.panel} style={{ marginTop: 16 }}>
+                            <div className={styles.panelHeader}>Manufactured Goods & Consumables</div>
+                            <div className={styles.panelBody}>
+                                <table className="audit-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th style={{ textAlign: 'right' }}>Stockpile</th>
+                                            <th style={{ textAlign: 'right' }}>Daily Net</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {BALANCING.MANUFACTURED_GOODS.map(m => (
                                             <tr key={m}>
                                                 <td style={{ color: 'var(--text-secondary)' }}>{m}</td>
                                                 <td style={{ textAlign: 'right' }}>{Math.floor(globalStockpiles[m] || 0).toLocaleString()}</td>
@@ -266,20 +299,68 @@ export default function EconomyView() {
 
                     <div className={styles.ledgerSection}>
                         <div className={styles.panel}>
-                            <div className={styles.panelHeader}>History (Empire-Wide Treasury)</div>
-                            <div className={styles.panelBody} style={{ height: 180, display: 'flex', alignItems: 'flex-end', gap: 4, paddingBottom: 30 }}>
+                            <div className={styles.panelHeader}>🏛️ Macroeconomic Growth (Empire-Wide)</div>
+                            <div className={styles.panelBody} style={{ height: 350, paddingBottom: 30, color: 'var(--text-primary)' }}>
                                 {history.length === 0 ? (
                                     <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)' }}>Historical data being gathered...</div>
                                 ) : (
-                                    history.map((snap, i) => {
-                                        const total = snap.treasury + snap.privateWealth + snap.corporateWealth;
-                                        const maxW = Math.max(...history.map(h => h.treasury + h.privateWealth + h.corporateWealth));
-                                        const height = (total / maxW) * 100;
-                                        return (
-                                            <div key={i} className={styles.historyBar} style={{ height: `${height}%`, flex: 1 }} title={`Cycle ${snap.turn}: ${Math.floor(total)}W`} />
-                                        );
-                                    })
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={history} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                            <XAxis dataKey="turn" stroke="var(--text-muted)" tickFormatter={(val) => `Turn ${Math.floor(val / 86400)}`} />
+                                            <YAxis stroke="var(--text-muted)" tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
+                                            <RechartsTooltip
+                                                contentStyle={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-color)', borderRadius: '8px' }}
+                                                formatter={(value: any) => [`${Math.floor(Number(value) || 0).toLocaleString()} W`]}
+                                                labelFormatter={(label: any) => `Turn ${Math.floor(Number(label) || 0) / 86400}`}
+                                            />
+                                            <Area type="monotone" dataKey="treasury" name="Treasury" stackId="1" stroke="var(--accent-blue)" fill="var(--accent-blue)" fillOpacity={0.6} />
+                                            <Area type="monotone" dataKey="privateWealth" name="Civilian Wealth" stackId="1" stroke="var(--accent-green)" fill="var(--accent-green)" fillOpacity={0.6} />
+                                            <Area type="monotone" dataKey="corporateWealth" name="Corporate Wealth" stackId="1" stroke="#f1c40f" fill="#f1c40f" fillOpacity={0.6} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={styles.ledgerSection}>
+                        <div className={styles.panel}>
+                            <div className={styles.panelHeader}>🧾 Cashflow Ledger Audit (Recent Activity)</div>
+                            <div className={styles.panelBody} style={{ maxHeight: 400, overflowY: 'auto' }}>
+                                <table className="audit-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Category</th>
+                                            <th>Payer</th>
+                                            <th>Payee</th>
+                                            <th style={{ textAlign: 'right' }}>Amount (W)</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {game.monetaryLedger?.slice().reverse().slice(0, 50).map(entry => (
+                                            <tr key={entry.id}>
+                                                <td>Turn {Math.floor(entry.turn / 86400)}</td>
+                                                <td style={{ color: 'var(--accent-blue)', fontSize: 11 }}>{entry.reasonCode.replace(/_/g, ' ')}</td>
+                                                <td style={{ fontSize: 11 }}>{getAccountName(game, entry.from)}</td>
+                                                <td style={{ fontSize: 11 }}>{getAccountName(game, entry.to)}</td>
+                                                <td style={{ textAlign: 'right', color: 'var(--accent-green)' }}>{(entry.amount || 0).toFixed(2)}</td>
+                                                <td>
+                                                    <span className={`status-badge ${entry.shortfall === 0 ? 'status-settled' : 'status-partial'}`}>
+                                                        {entry.shortfall === 0 ? 'Settled' : 'Partial'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {(!game.monetaryLedger || game.monetaryLedger.length === 0) && (
+                                            <tr>
+                                                <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No recent fiscal events.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -289,16 +370,3 @@ export default function EconomyView() {
     );
 }
 
-function Sparkline({ data, color }: { data: number[], color: string }) {
-    if (data.length < 2) return <div style={{ height: 20 }} />;
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-    const points = data.map((d, i) => `${(i / (data.length - 1)) * 100},${100 - ((d - min) / range) * 100}`).join(' ');
-
-    return (
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={styles.sparkline}>
-            <polyline points={points} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-        </svg>
-    );
-}

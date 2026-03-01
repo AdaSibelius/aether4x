@@ -97,9 +97,12 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
             Ambergris: 20000,
             Aether: 100000,
             Fuel: 100000,
-            Food: 1000000
+            Food: 1000000,
+            ConsumerGoods: 100000,
+            Electronics: 50000,
+            Machinery: 50000
         },
-        demand: { Iron: 0, Copper: 0, Uranium: 0, Titanium: 0, TradeGoods: 0 },
+        demand: { Iron: 0, Copper: 0, Uranium: 0, Titanium: 0, ConsumerGoods: 0 },
         privateWealth: realSpace ? 5000 : 2000,
         infrastructure: realSpace ? 3000 : 1000,
         colonyType: 'Core' as const,
@@ -132,6 +135,30 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         aethericSiphons: 0,
         deepCoreExtractors: 0,
         reclamationPlants: 0,
+        electronicsPlants: 5,
+        civilianElectronicsPlants: 5,
+        machineryPlants: 5,
+        civilianMachineryPlants: 5,
+        buildingOwners: {
+            'Factory': { [playerEmpireId]: 25 },
+            'Mine': { [playerEmpireId]: 10 },
+            'CivilianFactory': { 'private': 25 },
+            'CivilianMine': { 'private': 10 },
+            'ElectronicsPlant': { [playerEmpireId]: 5 },
+            'CivilianElectronicsPlant': { 'private': 5 },
+            'MachineryPlant': { [playerEmpireId]: 5 },
+            'CivilianMachineryPlant': { 'private': 5 },
+            'Farm': { 'private': realSpace ? 300 : 100 },
+            'CommercialCenter': { 'private': 20 },
+            'ResearchLab': { [playerEmpireId]: 3 },
+            'Shipyard': { [playerEmpireId]: 1 },
+            'Spaceport': { [playerEmpireId]: 1 },
+            'ConstructionOffice': { [playerEmpireId]: 10 },
+            'AethericDistillery': { [playerEmpireId]: 5 }
+        },
+        educationIndex: 70, // Start with a decent education on the homeworld
+        educationBudget: 0,
+        resourcePrices: {},
     };
 
     if (homePlanet) {

@@ -36,13 +36,14 @@ export interface EmpireBudget {
         offices: number;
     };
     salaries: number;
+    publicSectorPayroll: number;
     totalRevenue: number;
     totalExpenses: number;
     netIncome: number;
 }
 
 export function calculateColonyBudget(colony: Colony, days: number): BudgetBreakdown {
-    const revenue = (colony.privateWealthIncome || 0) * BALANCING.TRADE_GOOD_VALUE;
+    const revenue = (colony.privateWealthIncome || 0) * BALANCING.CONSUMER_GOOD_VALUE;
     const taxes = (revenue * BALANCING.TRADE_TAX_RATE) + (colony.population * BALANCING.TAX_INCOME_BASE * (colony.happiness / 50) * days);
 
     // Maintenance
@@ -75,12 +76,14 @@ export function calculateEmpireBudget(game: GameState, empireId: string): Empire
     let totalTax = 0;
     let totalFacilityMaint = 0;
     let totalTradeRev = 0;
+    let publicSectorPayroll = 0;
 
     for (const colony of colonies) {
         const budget = calculateColonyBudget(colony, 1);
         totalTax += budget.taxes;
         totalFacilityMaint += budget.maintenance.total;
         totalTradeRev += budget.tradeIncome;
+        publicSectorPayroll += (colony.publicWages || 0);
     }
 
     // Corporate Fees (Daily license fee per corp)
@@ -98,7 +101,7 @@ export function calculateEmpireBudget(game: GameState, empireId: string): Empire
     const officeMaint = empire.companies.length * BALANCING.MAINTENANCE.OFFICE_BASE;
 
     const totalRevenue = totalTax + corporateFees + totalTradeRev;
-    const totalExpenses = totalFacilityMaint + shipMaint + officeMaint + totalSalaries;
+    const totalExpenses = totalFacilityMaint + shipMaint + officeMaint + totalSalaries + publicSectorPayroll;
 
     return {
         colonyRevenue: {
@@ -112,6 +115,7 @@ export function calculateEmpireBudget(game: GameState, empireId: string): Empire
             offices: officeMaint,
         },
         salaries: totalSalaries,
+        publicSectorPayroll,
         totalRevenue,
         totalExpenses,
         netIncome: totalRevenue - totalExpenses,
@@ -155,6 +159,10 @@ export function tickEmpireFinances(next: GameState, empire: Empire, dt: number):
             // Shortfall is recorded in the ledger entry itself (entry.shortfall)
             colony.happiness = Math.max(0, colony.happiness - 1 * days);
         }
+
+        // Auto-allocate 10% of collected taxes back to education
+        const eduAllocation = settled * 0.1;
+        colony.educationBudget = Math.max(0, (colony.educationBudget ?? 0) + eduAllocation / days);
 
         // Happiness impact of empire bankruptcy (unchanged behavior)
         if (empire.treasury < 0) {

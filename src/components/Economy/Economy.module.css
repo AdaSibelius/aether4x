@@ -559,3 +559,30 @@
 .lobbySection {
     margin-top: 12px;
 }
+
+/* ── Audit & Ledger Tables (Cashflow) ────────────────────────── */
+.statusBadge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.statusSettled {
+    background: rgba(46, 204, 113, 0.1);
+    color: var(--accent-green);
+    border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.statusPartial {
+    background: rgba(241, 196, 15, 0.1);
+    color: #f1c40f;
+    border: 1px solid rgba(241, 196, 15, 0.2);
+}
+
+.statusDebtRecorded {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--accent-red);
+    border: 1px solid rgba(231, 76, 60, 0.2);
+}
