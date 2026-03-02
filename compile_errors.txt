@@ -1,0 +1,57 @@
+src/components/ColonyManager/ColonyManager.tsx(29,7): error TS2741: Property 'Orbital' is missing in type '{ Core: string; Mining: string; Research: string; Military: string; Agricultural: string; }' but required in type 'Record<ColonyType, string>'.
+src/components/ColonyManager/ColonyManager.tsx(32,7): error TS2741: Property 'Orbital' is missing in type '{ Core: string; Mining: string; Research: string; Military: string; Agricultural: string; }' but required in type 'Record<ColonyType, string>'.
+src/components/ColonyManager/ColonyManager.tsx(48,7): error TS2322: Type '"AethericSiphon"' is not assignable to type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(49,7): error TS2322: Type '"DeepCoreExtractor"' is not assignable to type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(50,7): error TS2322: Type '"ReclamationPlant"' is not assignable to type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(53,14): error TS2741: Property 'Orbital' is missing in type '{ Core: { industry: number; mining: number; research: number; }; Mining: { industry: number; mining: number; research: number; }; Research: { industry: number; mining: number; research: number; }; Military: { ...; }; Agricultural: { ...; }; }' but required in type 'Record<ColonyType, Record<string, number>>'.
+src/components/ColonyManager/ColonyManager.tsx(83,33): error TS2339: Property 'commercialCenters' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(83,80): error TS2339: Property 'WORKER_REQUIREMENT_COMMERCIAL_CENTER' does not exist on type '{ WORKER_REQUIREMENT_FACTORY: number; WORKER_REQUIREMENT_MINE: number; WORKER_REQUIREMENT_RESEARCH_LAB: number; WORKER_REQUIREMENT_SHIPYARD: number; WORKER_REQUIREMENT_SPACEPORT: number; ... 10 more ...; CONSTRUCTION_BP_PER_OFFICE: number; }'.
+src/components/ColonyManager/ColonyManager.tsx(797,34): error TS18048: 'colony.aethericDistillery' is possibly 'undefined'.
+src/components/ColonyManager/ColonyManager.tsx(803,109): error TS18048: 'colony.aethericDistillery' is possibly 'undefined'.
+src/components/ColonyManager/ColonyManager.tsx(836,111): error TS2339: Property 'commercialCenters' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(837,113): error TS2339: Property 'commercialCenters' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(837,160): error TS2339: Property 'WORKER_REQUIREMENT_COMMERCIAL_CENTER' does not exist on type '{ WORKER_REQUIREMENT_FACTORY: number; WORKER_REQUIREMENT_MINE: number; WORKER_REQUIREMENT_RESEARCH_LAB: number; WORKER_REQUIREMENT_SHIPYARD: number; WORKER_REQUIREMENT_SPACEPORT: number; ... 10 more ...; CONSTRUCTION_BP_PER_OFFICE: number; }'.
+src/components/ColonyManager/ColonyManager.tsx(845,54): error TS2345: Argument of type '"CommercialCenter"' is not assignable to parameter of type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(851,111): error TS2339: Property 'logisticsHubs' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(852,113): error TS2339: Property 'logisticsHubs' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(852,156): error TS2339: Property 'WORKER_REQUIREMENT_LOGISTICS_HUB' does not exist on type '{ WORKER_REQUIREMENT_FACTORY: number; WORKER_REQUIREMENT_MINE: number; WORKER_REQUIREMENT_RESEARCH_LAB: number; WORKER_REQUIREMENT_SHIPYARD: number; WORKER_REQUIREMENT_SPACEPORT: number; ... 10 more ...; CONSTRUCTION_BP_PER_OFFICE: number; }'.
+src/components/ColonyManager/ColonyManager.tsx(859,142): error TS2339: Property 'logisticsHubs' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(860,54): error TS2345: Argument of type '"LogisticsHub"' is not assignable to parameter of type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(873,123): error TS2339: Property 'aethericSiphons' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(874,125): error TS2339: Property 'aethericSiphons' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(874,171): error TS2551: Property 'WORKER_REQUIREMENT_SIPHON' does not exist on type '{ WORKER_REQUIREMENT_FACTORY: number; WORKER_REQUIREMENT_MINE: number; WORKER_REQUIREMENT_RESEARCH_LAB: number; WORKER_REQUIREMENT_SHIPYARD: number; WORKER_REQUIREMENT_SPACEPORT: number; ... 10 more ...; CONSTRUCTION_BP_PER_OFFICE: number; }'. Did you mean 'WORKER_REQUIREMENT_MINE'?
+src/components/ColonyManager/ColonyManager.tsx(881,163): error TS2339: Property 'aethericSiphons' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(882,66): error TS2345: Argument of type '"AethericSiphon"' is not assignable to parameter of type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(893,123): error TS2339: Property 'deepCoreExtractors' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(894,125): error TS2339: Property 'deepCoreExtractors' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(894,174): error TS2551: Property 'WORKER_REQUIREMENT_EXTRACTOR' does not exist on type '{ WORKER_REQUIREMENT_FACTORY: number; WORKER_REQUIREMENT_MINE: number; WORKER_REQUIREMENT_RESEARCH_LAB: number; WORKER_REQUIREMENT_SHIPYARD: number; WORKER_REQUIREMENT_SPACEPORT: number; ... 10 more ...; CONSTRUCTION_BP_PER_OFFICE: number; }'. Did you mean 'WORKER_REQUIREMENT_FACTORY'?
+src/components/ColonyManager/ColonyManager.tsx(901,166): error TS2339: Property 'deepCoreExtractors' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(902,66): error TS2345: Argument of type '"DeepCoreExtractor"' is not assignable to parameter of type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(913,123): error TS2339: Property 'reclamationPlants' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(914,125): error TS2339: Property 'reclamationPlants' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(914,173): error TS2551: Property 'WORKER_REQUIREMENT_RECLAMATION' does not exist on type '{ WORKER_REQUIREMENT_FACTORY: number; WORKER_REQUIREMENT_MINE: number; WORKER_REQUIREMENT_RESEARCH_LAB: number; WORKER_REQUIREMENT_SHIPYARD: number; WORKER_REQUIREMENT_SPACEPORT: number; ... 10 more ...; CONSTRUCTION_BP_PER_OFFICE: number; }'. Did you mean 'WORKER_REQUIREMENT_MINE'?
+src/components/ColonyManager/ColonyManager.tsx(921,167): error TS2339: Property 'reclamationPlants' does not exist on type 'Colony'.
+src/components/ColonyManager/ColonyManager.tsx(922,66): error TS2345: Argument of type '"ReclamationPlant"' is not assignable to parameter of type 'ProductionItemType'.
+src/components/ColonyManager/ColonyManager.tsx(1195,80): error TS2339: Property 'commercialCenters' does not exist on type 'Colony'.
+src/components/Economy/CorporateManager.tsx(16,5): error TS2353: Object literal may only specify known properties, and ''AethericSiphon'' does not exist in type 'Record<CompanyType, string>'.
+src/components/Economy/CorporateManager.tsx(27,5): error TS2353: Object literal may only specify known properties, and ''AethericSiphon'' does not exist in type 'Record<CompanyType, string>'.
+src/components/Economy/CorporateManager.tsx(43,111): error TS2322: Type '"AethericSiphon"' is not assignable to type 'CompanyType'.
+src/components/Economy/CorporateManager.tsx(43,129): error TS2322: Type '"DeepCoreMining"' is not assignable to type 'CompanyType'.
+src/components/Economy/CorporateManager.tsx(43,147): error TS2322: Type '"Reclamation"' is not assignable to type 'CompanyType'.
+src/engine/finances.ts(59,32): error TS2339: Property 'logisticsHubs' does not exist on type 'Colony'.
+src/engine/finances.ts(59,76): error TS2339: Property 'LOGISTICS_HUB' does not exist on type '{ FACTORY: number; MINE: number; RESEARCH_LAB: number; GROUND_DEFENSE: number; SHIPYARD: number; SPACEPORT: number; DISTILLERY: number; OFFICE_BASE: number; SHIP_BASE: number; CORP_LICENSE_FEE: number; }'.
+src/engine/fleets.ts(436,97): error TS2304: Cannot find name 'createExternalAccount'.
+src/scenarios/Economy50YearRun.ts(43,178): error TS2353: Object literal may only specify known properties, and 'commercialCenters' does not exist in type 'Colony'.
+src/scenarios/ExpansionTest.ts(38,176): error TS2353: Object literal may only specify known properties, and 'commercialCenters' does not exist in type 'Colony'.
+src/scenarios/LogisticsValidation.ts(39,180): error TS2353: Object literal may only specify known properties, and 'commercialCenters' does not exist in type 'Colony'.
+src/scenarios/SectorHealthAudit.ts(45,15): error TS2339: Property 'commercialCenters' does not exist on type 'Colony'.
+src/scenarios/SectorHealthAudit.ts(48,15): error TS2339: Property 'logisticsHubs' does not exist on type 'Colony'.
+src/scenarios/SectorHealthAudit.ts(90,17): error TS2322: Type 'Record<string, any>' is not assignable to type 'string | number | boolean'.
+src/scripts/simulate-economy.ts(88,21): error TS2353: Object literal may only specify known properties, and 'commercialCenters' does not exist in type 'Colony'.
+src/scripts/simulate_tech_impact.ts(44,33): error TS2339: Property 'aethericSiphons' does not exist on type 'Colony'.
+src/scripts/simulate_tech_impact.ts(45,36): error TS2339: Property 'deepCoreExtractors' does not exist on type 'Colony'.
+src/scripts/simulate_tech_impact.ts(46,37): error TS2339: Property 'reclamationPlants' does not exist on type 'Colony'.
+src/scripts/test-economy.ts(31,50): error TS2304: Cannot find name 'RNG'.
+src/simulate_expansion.ts(65,13): error TS2353: Object literal may only specify known properties, and 'commercialCenters' does not exist in type 'Colony'.
+src/simulate_expansion.ts(142,105): error TS2339: Property 'commercialCenters' does not exist on type 'Colony'.
+src/store/gameStore.ts(414,21): error TS2353: Object literal may only specify known properties, and 'commercialCenters' does not exist in type 'Colony'.

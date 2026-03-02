@@ -19,7 +19,7 @@ interface UIStore extends UIState {
     addNotification: (msg: string) => void;
     clearNotification: (index: number) => void;
     clearNotifications: () => void;
-    setContextMenu: (menu: { x: number, y: number, targets: { id: string, name: string, type: 'Planet' | 'Fleet' }[] } | null) => void;
+    setContextMenu: (menu: { x: number, y: number, targets: { id: string, name: string, type: 'Planet' | 'Fleet' | 'Star' }[] } | null) => void;
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({

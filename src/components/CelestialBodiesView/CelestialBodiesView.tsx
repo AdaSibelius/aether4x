@@ -3,6 +3,7 @@ import { useGameStore } from '@/store/gameStore';
 import { useUIStore } from '@/store/uiStore';
 import { BALANCING } from '@/engine/constants';
 import { SurfaceTab, AtmosphereTab, PlanetVisualizer } from '@/components/SharedTabs/SharedTabs';
+import { CelestialThumbnail } from './CelestialThumbnail';
 import { RosterShell, SidebarSection, RosterGroup, RosterItem, MainArea, NestedList } from '@/components/Roster/Roster';
 import type { Planet } from '@/types';
 import styles from './CelestialBodiesView.module.css';
@@ -115,17 +116,7 @@ export default function CelestialBodiesView() {
                         active={isStarSelected}
                         onClick={() => selectPlanet(`star_${star.id}`)}
                         thumbnail={
-                            <PlanetVisualizer
-                                planet={{
-                                    id: star.id,
-                                    name: star.name,
-                                    type: 'Star',
-                                    subtype: 'MainSequence',
-                                    bodyType: 'MainSequence',
-                                    atmosphere: 'None',
-                                } as Planet}
-                                compact
-                            />
+                            <CelestialThumbnail bodyType="MainSequence" isStar={true} spectralType={star.spectralType} />
                         }
                     />
                 </RosterGroup>
@@ -140,7 +131,7 @@ export default function CelestialBodiesView() {
                                     subtitle={planet.subtype || planet.bodyType}
                                     active={planet.id === selectedPlanetId}
                                     onClick={() => selectPlanet(planet.id)}
-                                    thumbnail={<PlanetVisualizer planet={planet} compact />}
+                                    thumbnail={<CelestialThumbnail bodyType={planet.bodyType} />}
                                 />
                                 {planet.moons && planet.moons.length > 0 && (
                                     <NestedList>
@@ -152,7 +143,7 @@ export default function CelestialBodiesView() {
                                                 active={moon.id === selectedPlanetId}
                                                 onClick={() => selectPlanet(moon.id)}
                                                 nested
-                                                thumbnail={<PlanetVisualizer planet={moon} compact />}
+                                                thumbnail={<CelestialThumbnail bodyType={moon.bodyType} />}
                                             />
                                         ))}
                                     </NestedList>
@@ -172,7 +163,7 @@ export default function CelestialBodiesView() {
                                 subtitle={asteroid.subtype || asteroid.bodyType}
                                 active={asteroid.id === selectedPlanetId}
                                 onClick={() => selectPlanet(asteroid.id)}
-                                thumbnail={<PlanetVisualizer planet={asteroid} compact />}
+                                thumbnail={<CelestialThumbnail bodyType={asteroid.bodyType} />}
                             />
                         ))}
                     </RosterGroup>
@@ -188,7 +179,7 @@ export default function CelestialBodiesView() {
                                 subtitle={comet.subtype || comet.bodyType}
                                 active={comet.id === selectedPlanetId}
                                 onClick={() => selectPlanet(comet.id)}
-                                thumbnail={<PlanetVisualizer planet={comet} compact />}
+                                thumbnail={<CelestialThumbnail bodyType={comet.bodyType} />}
                             />
                         ))}
                     </RosterGroup>
@@ -236,10 +227,11 @@ export default function CelestialBodiesView() {
                                 id: star.id,
                                 name: star.name,
                                 type: 'Star',
+                                spectralType: star.spectralType,
                                 subtype: 'MainSequence',
                                 bodyType: 'MainSequence',
                                 atmosphere: 'None',
-                            } as Planet}
+                            } as any}
                         />
                     </div>
                 ) : (

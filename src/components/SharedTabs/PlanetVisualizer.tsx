@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useEffect } from 'react';
-import type { Planet, Colony, AtmosphereType, BodyType, CelestialType, CelestialSubtype } from '@/types';
+import type { Planet, Colony, AtmosphereType, BodyType, CelestialType, CelestialSubtype, Star } from '@/types';
 import styles from './SharedTabs.module.css';
 
 // ─── Seeded RNG ──────────────────────────────────────────────────────────────
@@ -842,7 +842,7 @@ function drawLegend(
 // ─── Main React component ─────────────────────────────────────────────────────
 
 interface Props {
-    planet: Planet | null;
+    planet: Planet | Star | null;
     colony?: Colony | null;
     compact?: boolean;
 }
@@ -852,6 +852,12 @@ export default function PlanetVisualizer({ planet, colony, compact }: Props) {
     const rafRef = useRef<number>(0);
     const rotRef = useRef<number>(0);
     const earthTexRef = useRef<HTMLImageElement | null>(null);
+
+    const isStarObj = planet && 'spectralType' in planet;
+    const type: CelestialType = isStarObj ? 'Star' : ((planet as Planet)?.type ?? 'Planet');
+    const subtype: CelestialSubtype = isStarObj ? 'MainSequence' : ((planet as Planet)?.subtype ?? 'Terrestrial');
+    const atmo: AtmosphereType = isStarObj ? 'None' : ((planet as Planet)?.atmosphere ?? 'None');
+    const isEarth = planet?.name === 'Earth';
 
     // Load Earth texture once
     useEffect(() => {
@@ -870,10 +876,6 @@ export default function PlanetVisualizer({ planet, colony, compact }: Props) {
         if (!ctx) return;
 
         const seed = planet ? strHash(planet.id) : 12345;
-        const type: CelestialType = planet?.type ?? 'Planet';
-        const subtype: CelestialSubtype = planet?.subtype ?? 'Terrestrial';
-        const atmo: AtmosphereType = planet?.atmosphere ?? 'None';
-        const isEarth = planet?.name === 'Earth';
 
         const draw = () => {
             const W = canvas.width;
@@ -940,9 +942,27 @@ export default function PlanetVisualizer({ planet, colony, compact }: Props) {
     }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
-            className={styles.visualizerCanvas}
-        />
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {planet && <PlanetVisualizerBabylon body={planet} />}
+
+            {!compact && planet && (
+                <div style={{ position: 'absolute', top: 15, left: 18, pointerEvents: 'none', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                    <div style={{ color: '#8ab4d4', fontWeight: 'bold', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{planet.name}</div>
+                    <div style={{ color: 'rgba(140,160,190,0.8)', fontSize: 11, marginTop: 4 }}>
+                        {isStarObj ? 'MainSequence Star' : `${(planet as Planet).subtype} ${(planet as Planet).type}`} · {atmo} Atmosphere
+                    </div>
+                    {colony && (
+                        <div style={{ marginTop: 15, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ color: 'rgba(120,140,170,0.7)', fontSize: 11 }}>Population: {colony.population?.toFixed(1) ?? '?'}M</div>
+                            <div style={{ color: 'rgba(120,140,170,0.7)', fontSize: 11 }}>
+                                Factories: {colony.factories ?? 0} · Mines: {colony.mines ?? 0}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }
+
+import PlanetVisualizerBabylon from './PlanetVisualizerBabylon';
