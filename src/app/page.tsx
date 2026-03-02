@@ -179,7 +179,7 @@ function ViewContent() {
   }
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ─── Main App (Build Trigger: 2026-03-01) ────────────────────────────────────
 export default function Home() {
   const game = useGameStore(s => s.game);
 

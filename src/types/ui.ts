@@ -14,6 +14,6 @@ export interface UIState {
     showTradeOverlay: boolean;
     showDebugConsole: boolean;
     notifications: string[];
-    contextMenu: { x: number, y: number, targets: { id: string, name: string, type: 'Planet' | 'Fleet' }[] } | null;
+    contextMenu: { x: number, y: number, targets: { id: string, name: string, type: 'Planet' | 'Fleet' | 'Star' }[] } | null;
     showDebugOverlay: boolean;
 }
