@@ -18,6 +18,7 @@ import { Starfield } from '../SharedBabylon/Components/Starfield';
 import { OrbitMesh } from './BabylonComponents/OrbitMesh';
 import { FleetMesh } from './BabylonComponents/FleetMesh';
 import { EntityLabel } from './BabylonComponents/EntityLabel';
+import { CombatLine } from './BabylonComponents/CombatLine';
 
 export interface ClickTarget {
     id: string;
@@ -148,6 +149,22 @@ export default function SystemMapBabylon({ onContextMenu }: SystemMapBabylonProp
             .flatMap(e => e.fleets)
             .filter(f => f.currentStarId === star.id);
     }, [game, star]);
+
+    // Build a list of active combat engagement pairs (attacker → target)
+    // Only include pairs where both fleets are currently in this system
+    const combatPairs = useMemo(() => {
+        if (!game || !star) return [];
+        const fleetMap = new Map(fleetsInSystem.map(f => [f.id, f]));
+        const pairs: Array<{ id: string; attacker: typeof fleetsInSystem[0]; target: typeof fleetsInSystem[0] }> = [];
+        for (const fleet of fleetsInSystem) {
+            if (!fleet.combatTargetFleetId) continue;
+            const target = fleetMap.get(fleet.combatTargetFleetId);
+            if (target) {
+                pairs.push({ id: `${fleet.id}->${target.id}`, attacker: fleet, target });
+            }
+        }
+        return pairs;
+    }, [game, star, fleetsInSystem]);
 
     const maxZoomRadius = useMemo(() => {
         if (!star || star.planets.length === 0) return 200;
@@ -308,6 +325,16 @@ export default function SystemMapBabylon({ onContextMenu }: SystemMapBabylonProp
                         isPlayer={fleet.empireId === game.playerEmpireId}
                         isSelected={fleet.id === selectedFleetId}
                         onMeshCreated={(m) => registerMesh(fleet.id, m)}
+                    />
+                ))}
+
+                {/* Combat firing lines between engaged fleets */}
+                {combatPairs.map(({ id, attacker, target }) => (
+                    <CombatLine
+                        key={id}
+                        id={id}
+                        from={new Vector3(attacker.position.x * ORBIT_SCALE, 3, attacker.position.y * ORBIT_SCALE)}
+                        to={new Vector3(target.position.x * ORBIT_SCALE, 3, target.position.y * ORBIT_SCALE)}
                     />
                 ))}
             </Scene>

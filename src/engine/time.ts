@@ -6,6 +6,7 @@ import { RNG } from '../utils/rng';
 import { tickEmpire } from './empire_logic';
 import { tickAetherHarvesting } from './colonies';
 import { tickFleets, getPlanetPosition } from './fleets';
+import { updateVisibility } from './detection';
 import { AuditService } from './debug/AuditService';
 
 import SimLogger from '../utils/logger';
@@ -64,8 +65,14 @@ export function advanceTick(state: GameState): GameState {
     // Ships and fleets move based on their orders and physics.
     const shipEvents = tickFleets(next, dt, rng);
 
+    // 5.5 Phase: Aetheric Detection (Fog of War)
+    // Must run after all movement so we detect based on final positions this tick.
+    updateVisibility(next);
+
     // 6. Phase: Event Distribution
     // Distribute ship events to the correct empire logs.
+    // Combat events are ALSO mirrored to the player so they always see battles in their space.
+    const COMBAT_EVENT_TYPES = new Set(['CombatEngagement', 'ShipDestroyed', 'CombatResult']);
     for (const evt of shipEvents) {
         evt.turn = next.turn;
         evt.date = next.date.toISOString().split('T')[0];
@@ -77,6 +84,16 @@ export function advanceTick(state: GameState): GameState {
                 evt,
                 ...next.empires[targetEmpireId].events.slice(0, 99)
             ];
+        }
+
+        // Mirror combat events to the player empire (they need to know they're being attacked!)
+        if (COMBAT_EVENT_TYPES.has(evt.type) && targetEmpireId !== next.playerEmpireId) {
+            if (next.empires[next.playerEmpireId]) {
+                next.empires[next.playerEmpireId].events = [
+                    evt,
+                    ...next.empires[next.playerEmpireId].events.slice(0, 99)
+                ];
+            }
         }
     }
 

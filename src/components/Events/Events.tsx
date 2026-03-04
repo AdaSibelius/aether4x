@@ -8,6 +8,8 @@ const EVENT_ICONS: Record<string, string> = {
     ShipBuilt: '🚀',
     ContactMade: '📡',
     CombatResult: '⚔️',
+    CombatEngagement: '💥',
+    ShipDestroyed: '💀',
     MineralsFound: '⛏️',
     JumpPointFound: '🌀',
     SystemExplored: '🌟',
