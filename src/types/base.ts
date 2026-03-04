@@ -16,6 +16,8 @@ export type EventType =
     | 'ShipBuilt'
     | 'ContactMade'
     | 'CombatResult'
+    | 'CombatEngagement'
+    | 'ShipDestroyed'
     | 'MineralsFound'
     | 'JumpPointFound'
     | 'SystemExplored'
@@ -38,6 +40,8 @@ export interface GameEvent {
     starId?: string;
     planetId?: string;
     empireId?: string;
+    fleetId?: string;
+    targetFleetId?: string;
     important: boolean;
 }
 

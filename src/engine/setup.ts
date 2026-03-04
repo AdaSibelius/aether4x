@@ -3,7 +3,7 @@ import { generateGalaxy } from './galaxy';
 import { generateRealSpaceGalaxy } from './realspace';
 import { createOfficer, generateCompanyName } from './officers';
 import { getPlanetPosition } from './fleets';
-import { createStartingDesigns } from './ships';
+import { createStartingDesigns, createDesign } from './ships';
 import { getEmpireTechBonuses } from './research';
 import { generateId } from '../utils/id';
 import { RNG } from '../utils/rng';
@@ -203,6 +203,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
                     empireId: playerEmpireId,
                     hullPoints: design.maxHullPoints,
                     maxHullPoints: design.maxHullPoints,
+                    shieldPoints: 0, // No shields on freighters at start
                     fuel: design.fuelCapacity,
                     experience: 0,
                     cargo: {},
@@ -288,6 +289,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
             empireId: playerEmpireId,
             hullPoints: design.maxHullPoints,
             maxHullPoints: design.maxHullPoints,
+            shieldPoints: 0,
             fuel: design.fuelCapacity,
             experience: 0,
             cargo: {},
@@ -313,7 +315,93 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         }
     }
 
-    // 9. Final Assemble
+    // 9. Pirate Faction: Corsair Brotherhood
+    // A hostile faction that spawns raiders in Sol space to immediately threaten the player.
+    // Their ships are placed near the player's home planet at the start.
+    const pirateEmpireId = 'empire_pirates';
+
+    // Pirate designs: fast and lightly armed Corsairs
+    const pirateCorvette = createDesign('design_pirate_corsair', 'Corsair Raider', 'Corvette',
+        ['reactor_dynamo', 'engine_ambergris_md', 'engine_ambergris_sm', 'tank_phlogiston_md',
+            'scanner_optic_sm', 'emitter_aetheric_sm', 'emitter_aetheric_sm', 'plating_bessemer']);
+    const pirateFighter = createDesign('design_pirate_fighter', 'Corsair Interceptor', 'Fighter',
+        ['reactor_dynamo', 'engine_ambergris_sm', 'tank_phlogiston_sm',
+            'scanner_optic_sm', 'emitter_aetheric_sm']);
+
+    // Find the player's first military fleet to target
+    const playerMilitaryFleet = playerEmpire.fleets.find(f => !f.isCivilian);
+
+    // Pirate spawn position: Venus, so they are immediately visible on the inner system map
+    let piratePos = { x: pos.x + 3, y: pos.y + 3 };
+    const venus = homeStar?.planets.find(p => p.name === 'Venus' || p.name === 'Sol II') || homeStar?.planets[1];
+    if (venus) {
+        piratePos = getPlanetPosition(venus, 0);
+    }
+
+    // Spawn 1 corsair ship + 1 fighter as the raider fleet
+    const pirateRaiderShipIds: string[] = [];
+    const pirateDesigns = [pirateCorvette, pirateFighter];
+    pirateDesigns.forEach((design, i) => {
+        const shipId = generateId('ship', rng);
+        ships[shipId] = {
+            id: shipId,
+            name: `Corsair ${design.name} ${i + 1}`,
+            designId: design.id,
+            empireId: pirateEmpireId,
+            hullPoints: design.maxHullPoints,
+            maxHullPoints: design.maxHullPoints,
+            shieldPoints: 0,
+            fuel: design.fuelCapacity,
+            experience: 0,
+            cargo: {},
+            inventory: [],
+        };
+        pirateRaiderShipIds.push(shipId);
+    });
+
+    const pirateFleetId = generateId('fleet', rng);
+    const pirateFleet: Fleet = {
+        id: pirateFleetId,
+        name: 'Corsair Raider Pack',
+        empireId: pirateEmpireId,
+        shipIds: pirateRaiderShipIds,
+        currentStarId: homeStarId,
+        position: piratePos,
+        orders: playerMilitaryFleet ? [{
+            id: generateId('order', rng),
+            type: 'Attack',
+            targetFleetId: playerMilitaryFleet.id,
+        }] : [],
+    };
+
+    const pirateEmpire: Empire = {
+        id: pirateEmpireId,
+        name: 'Corsair Brotherhood',
+        color: '#cc3333',
+        isPlayer: false,
+        homeSystemId: homeStarId,
+        homePlanetId: '',
+        minerals: {},
+        research: { activeProjects: [], completedTechs: ['analytical_engine', 'aetheric_discharge'] },
+        officers: [],
+        fleets: [pirateFleet],
+        designLibrary: [pirateCorvette, pirateFighter],
+        treasury: 0,
+        privateWealth: 0,
+        tradeRoutes: [],
+        companies: [],
+        events: [{
+            id: 'evt_pirate_spawn',
+            turn: 0,
+            date: '1920-03-20',
+            type: 'CombatResult',
+            message: 'The Corsair Brotherhood has been spotted in Sol space! A raider pack has locked onto your fleets.',
+            important: true,
+        }],
+        history: [],
+    };
+
+    // 10. Final Assemble
     return {
         id: `game_${seed}`,
         phase: 'Playing',
@@ -322,7 +410,10 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         seed,
         initialSeed: seed,
         galaxy,
-        empires: { [playerEmpireId]: playerEmpire },
+        empires: {
+            [playerEmpireId]: playerEmpire,
+            [pirateEmpireId]: pirateEmpire,
+        },
         ships,
         colonies: { [homeColony.id]: homeColony },
         playerEmpireId,

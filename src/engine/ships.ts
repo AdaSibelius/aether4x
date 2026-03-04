@@ -39,7 +39,8 @@ export const COMPONENT_LIBRARY: ShipComponent[] = [
     { id: 'tank_phlogiston_lg', name: 'Phlogiston Tank (Lg)', type: 'FuelTank', size: 400, powerDraw: 0, stats: { capacity: 6000 } },
 
     // Weapons
-    { id: 'emitter_aetheric_sm', name: 'Aetheric Discharge Emitter (Class 1)', type: 'Weapon', size: 80, powerDraw: 80, stats: { damage: 8, range: 5, rof: 2 }, requiredTech: 'aetheric_discharge' },
+    // Range set to 0.3 AU for testing — visible chase distance, still requires intercept
+    { id: 'emitter_aetheric_sm', name: 'Aetheric Discharge Emitter (Class 1)', type: 'Weapon', size: 80, powerDraw: 80, stats: { damage: 8, range: 0.3, rof: 2 }, requiredTech: 'aetheric_discharge' },
     { id: 'emitter_aetheric_md', name: 'Aetheric Discharge Emitter (Class 3)', type: 'Weapon', size: 180, powerDraw: 180, stats: { damage: 20, range: 8, rof: 1.5 }, requiredTech: 'aetheric_discharge' },
     { id: 'battery_magnetic_sm', name: 'Magnetic Accelerator Battery I', type: 'Weapon', size: 100, powerDraw: 60, stats: { damage: 12, range: 10, rof: 1 }, requiredTech: 'analytical_ballistics' },
     { id: 'battery_magnetic_md', name: 'Magnetic Accelerator Battery II', type: 'Weapon', size: 220, powerDraw: 130, stats: { damage: 30, range: 15, rof: 0.8 }, requiredTech: 'analytical_ballistics' },

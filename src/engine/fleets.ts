@@ -13,6 +13,7 @@ import {
     MonetaryAccount,
     createExternalAccount,
 } from './economy_ledger';
+import { resolveFleetCombat, rechargeShields } from './combat';
 
 type FeeCategory = 'MigrationFee' | 'TransportFee';
 type FeePayerAccount = MonetaryAccount;
@@ -166,7 +167,7 @@ export function getFleetSpeed(fleet: Fleet, state: GameState): number {
             if (design && design.speed < minSpeed) {
                 minSpeed = design.speed;
             }
-            if (s.fuel <= 0) outOfFuel = true;
+            if (s.fuel <= 0 && fleet.empireId !== 'empire_pirates') outOfFuel = true;
         }
         if (minSpeed !== Infinity && minSpeed > 0) baseSpeed = minSpeed / 100;
     }
@@ -186,8 +187,57 @@ export function calculateInterceptPosition(fleetPos: Vec2, fleetSpeedAuPerDay: n
     // Iterate to find intercept. Maximum 5 iterations is plenty for orbital mechanics scale.
     for (let i = 0; i < 5; i++) {
         const dist = distance(fleetPos, targetPos);
-        timeToInterceptDays = dist / fleetSpeedAuPerDay;
+        timeToInterceptDays = Math.min(dist / fleetSpeedAuPerDay, 14);
         targetPos = getPlanetPosition(planet, currentTurn + timeToInterceptDays * 86400);
+    }
+
+    return targetPos;
+}
+
+export function calculateFleetInterceptPosition(fleetPos: Vec2, fleetSpeedAuPerDay: number, targetFleet: Fleet, state: GameState): Vec2 {
+    let targetPos = targetFleet.position;
+    if (fleetSpeedAuPerDay <= 0) return targetPos;
+
+    if (!targetFleet.destination && !targetFleet.orbitingPlanetId) {
+        return targetPos; // Target is completely stationary
+    }
+
+    const maxIterations = 5;
+    let timeToInterceptDays = 0;
+
+    for (let i = 0; i < maxIterations; i++) {
+        const dist = distance(fleetPos, targetPos);
+        timeToInterceptDays = Math.min(dist / fleetSpeedAuPerDay, 14);
+
+        if (targetFleet.orbitingPlanetId) {
+            // Target is orbiting a moving planet, use planetary orbit prediction
+            const star = state.galaxy.stars[targetFleet.currentStarId];
+            if (star) {
+                const planet = star.planets.find(p => p.id === targetFleet.orbitingPlanetId);
+                if (planet) {
+                    targetPos = getPlanetPosition(planet, state.turn + (timeToInterceptDays * 86400));
+                }
+            }
+        } else if (targetFleet.destination) {
+            // Target is moving in a straight line to a system destination
+            const targetSpeedAuPerDay = getFleetSpeed(targetFleet, state);
+            if (targetSpeedAuPerDay <= 0) return targetPos;
+
+            const targetDistToDest = distance(targetFleet.position, targetFleet.destination);
+            const targetTravelDist = targetSpeedAuPerDay * timeToInterceptDays;
+
+            if (targetDistToDest <= targetTravelDist) {
+                targetPos = targetFleet.destination; // Target will reach its destination before we intercept
+            } else {
+                const ratio = targetTravelDist / targetDistToDest;
+                const dx = targetFleet.destination.x - targetFleet.position.x;
+                const dy = targetFleet.destination.y - targetFleet.position.y;
+                targetPos = {
+                    x: targetFleet.position.x + dx * ratio,
+                    y: targetFleet.position.y + dy * ratio
+                };
+            }
+        }
     }
 
     return targetPos;
@@ -225,12 +275,24 @@ function handleFleetOrbit(fleet: Fleet, state: GameState) {
 }
 
 /**
- * Processes the current order for a fleet if it's idle.
+ * Processes the current order for a fleet.
+ * Most orders only process when idle (no active destination).
+ * Attack orders are special: they run every tick to continuously update their intercept course.
  */
 function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
-    if (fleet.destination || !fleet.orders || fleet.orders.length === 0) return;
+    if (!fleet.orders || fleet.orders.length === 0) return;
 
     const order = fleet.orders[0];
+
+    // Attack orders must run every tick to continuously recalculate the intercept course.
+    // All other orders only trigger when the fleet is idle (no active destination).
+    if (order.type === 'Attack') {
+        processAttackOrder(fleet, order, state, empire, events, rng);
+        return;
+    }
+
+    if (fleet.destination) return; // Other orders wait until fleet arrives
+
     switch (order.type) {
         case 'MoveTo':
             processMoveOrder(fleet, order, state);
@@ -251,6 +313,112 @@ function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, even
             fleet.orders.shift(); // Invalid/unimplemented
             break;
     }
+}
+
+/**
+ * Handles an Attack order: move to intercept the target fleet and engage at range.
+ * The fleet will pursue the target until it is destroyed or the order is cancelled.
+ */
+function processAttackOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
+    if (!order.targetFleetId) {
+        fleet.orders.shift();
+        return;
+    }
+
+    // Find target fleet across all empires
+    let targetFleet = Object.values(state.empires)
+        .flatMap(e => e.fleets)
+        .find(f => f.id === order.targetFleetId);
+
+    if (!targetFleet || targetFleet.shipIds.length === 0) {
+        // Target destroyed or gone — find the next enemy in this star system
+        fleet.combatTargetFleetId = undefined;
+
+        const nextTarget = Object.values(state.empires)
+            .filter(e => e.id !== fleet.empireId)
+            .flatMap(e => e.fleets)
+            .filter(f => f.currentStarId === fleet.currentStarId && f.shipIds.length > 0)
+            .sort((a, b) => {
+                const da = Math.hypot(a.position.x - fleet.position.x, a.position.y - fleet.position.y);
+                const db = Math.hypot(b.position.x - fleet.position.x, b.position.y - fleet.position.y);
+                return da - db;
+            })[0];
+
+        if (nextTarget) {
+            // Re-use the same Attack order slot, just swap the target
+            order.targetFleetId = nextTarget.id;
+            targetFleet = nextTarget;
+            events.push(makeEvent(state.turn, state.date, 'CombatEngagement',
+                `Fleet "${fleet.name}" re-targeting ${nextTarget.name}.`,
+                rng, { fleetId: fleet.id, empireId: fleet.empireId }
+            ));
+        } else {
+            fleet.orders.shift();
+            events.push(makeEvent(state.turn, state.date, 'CombatResult',
+                `Fleet "${fleet.name}" has no remaining targets. Engagement complete.`,
+                rng, { fleetId: fleet.id, empireId: fleet.empireId, important: true }
+            ));
+        }
+        return;
+    }
+
+    // Can only engage fleets in the same star system
+    if (targetFleet.currentStarId !== fleet.currentStarId) {
+        fleet.orders.shift();
+        return;
+    }
+
+    // Calculate max weapon range from this fleet
+    let maxRange = 0;
+    for (const shipId of fleet.shipIds) {
+        const ship = state.ships[shipId];
+        if (!ship) continue;
+        const design = empire.designLibrary.find(d => d.id === ship.designId);
+        if (!design) continue;
+        for (const weapon of design.weaponSystems) {
+            maxRange = Math.max(maxRange, weapon.stats.range ?? 0);
+        }
+    }
+
+    const dx = targetFleet.position.x - fleet.position.x;
+    const dy = targetFleet.position.y - fleet.position.y;
+    const currentDist = Math.sqrt(dx * dx + dy * dy);
+
+    // Only mark as active combat target when actually within weapon range.
+    // This prevents the combat line appearing during transit.
+    if (currentDist <= maxRange) {
+        fleet.combatTargetFleetId = targetFleet.id;
+    } else {
+        fleet.combatTargetFleetId = undefined;
+    }
+
+    // Speed and intercept calculations
+    const speed = getFleetSpeed(fleet, state);
+    const interceptPos = calculateFleetInterceptPosition(fleet.position, speed, targetFleet, state);
+
+    const dxIntercept = interceptPos.x - fleet.position.x;
+    const dyIntercept = interceptPos.y - fleet.position.y;
+    const interceptDist = Math.sqrt(dxIntercept * dxIntercept + dyIntercept * dyIntercept);
+
+    // Follow at 80% of maxRange distance to ensure the fleet stays within weapon range
+    // even if the target moves slightly away during the same tick.
+    const followDist = Math.max(0.001, (order.engagementRange ?? maxRange) * 0.8);
+
+    if (interceptDist > followDist) {
+        // Move to intercept continuously tracking projected target position
+        const ratio = (interceptDist - followDist) / interceptDist;
+        fleet.destination = {
+            x: fleet.position.x + dxIntercept * ratio,
+            y: fleet.position.y + dyIntercept * ratio,
+            etaSeconds: ((interceptDist - followDist) / speed) * 86400
+        };
+        fleet.orbitingPlanetId = undefined;
+    } else {
+        // Within weapon range — clear destination, hold position and let combat resolve
+        fleet.destination = undefined;
+        fleet.orbitingPlanetId = undefined;
+    }
+    // Combat resolution happens in the separate combat pass in tickFleets (below)
 }
 
 function processMoveOrder(fleet: Fleet, order: ShipOrder, state: GameState) {
@@ -719,10 +887,11 @@ function handleFleetMovement(fleet: Fleet, state: GameState, empire: Empire, dt:
     const days = dt / 86400;
     const fuelConsumed = fuelPerTick * days;
 
-    const outOfFuel = fleet.shipIds.some(sid => state.ships[sid]?.fuel <= 0);
+    const isPirate = fleet.empireId === 'empire_pirates';
+    const outOfFuel = !isPirate && fleet.shipIds.some(sid => state.ships[sid]?.fuel <= 0);
     for (const sid of fleet.shipIds) {
         const s = state.ships[sid];
-        if (s) {
+        if (s && !isPirate) {
             const actualConsumed = Math.min(s.fuel, fuelConsumed);
             s.fuel = Math.max(0, s.fuel - actualConsumed);
             state.stats.totalConsumed['Fuel'] = (state.stats.totalConsumed['Fuel'] || 0) + actualConsumed;
@@ -794,6 +963,7 @@ export function tickFleets(state: GameState, dt: number, rng: RNG): GameEvent[] 
     const events: GameEvent[] = [];
     const allFleets = Object.values(state.empires).flatMap(e => e.fleets);
 
+    // ── Phase 1: Orders & Movement ──
     for (const fleet of allFleets) {
         const empire = state.empires[fleet.empireId];
         if (!empire) continue;
@@ -804,6 +974,42 @@ export function tickFleets(state: GameState, dt: number, rng: RNG): GameEvent[] 
         processFleetOrders(fleet, state, empire, events, rng);
         handleFleetMovement(fleet, state, empire, dt);
         checkFleetRefueling(fleet, state, empire);
+
+        // Shield recharge each tick
+        rechargeShields(fleet, state, dt);
+    }
+
+    // ── Phase 2: Combat Resolution ──
+    // Performance: bucket by star system to avoid O(N²) across all fleets
+    const fleetsByStar: Record<string, Fleet[]> = {};
+    for (const fleet of allFleets) {
+        if (fleet.shipIds.length === 0) continue;
+        if (!fleetsByStar[fleet.currentStarId]) fleetsByStar[fleet.currentStarId] = [];
+        fleetsByStar[fleet.currentStarId].push(fleet);
+    }
+
+    for (const starFleets of Object.values(fleetsByStar)) {
+        if (starFleets.length < 2) continue;
+
+        // Only resolve combat for fleets that have an active Attack order targeting a fleet in this star
+        for (const fleet of starFleets) {
+            if (!fleet.combatTargetFleetId) continue;
+
+            const targetFleet = starFleets.find(f => f.id === fleet.combatTargetFleetId);
+            if (!targetFleet) {
+                fleet.combatTargetFleetId = undefined;
+                continue;
+            }
+
+            // Only empires that are not the same empire fight
+            if (fleet.empireId === targetFleet.empireId) continue;
+
+            const dx = targetFleet.position.x - fleet.position.x;
+            const dy = targetFleet.position.y - fleet.position.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            resolveFleetCombat(fleet, targetFleet, dist, state, dt, rng, events);
+        }
     }
 
     return events;

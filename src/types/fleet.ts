@@ -44,11 +44,15 @@ export interface Ship {
     empireId: string;
     hullPoints: number;
     maxHullPoints: number;
+    /** Current shield points, recharged over time. Max is from ShipDesign. */
+    shieldPoints: number;
     fuel: number;
     experience: number;
     cargo: Record<string, number>; // Summary amounts for quick access
     inventory: CargoItem[]; // Detailed tracking
     sourceCompanyId?: string;
+    /** Cooldown per weapon, keyed by component id. Counts down to 0 before weapon can fire again. */
+    weaponCooldowns?: Record<string, number>;
 }
 
 export interface Fleet {
@@ -72,9 +76,18 @@ export interface Fleet {
     civilianType?: 'freighter' | 'transport';
     cargoLabel?: string;
     ownerCompanyId?: string;
+    /** IDs of empires that currently have this fleet on their sensors. Updated each tick by detection.ts. */
+    detectedByEmpireIds?: string[];
+    /** Cached Aetheric Flux signature. Updated each tick. Higher = easier to detect. */
+    signature?: number;
+    /** The fleet this fleet is currently engaging. Set by Attack order. */
+    combatTargetFleetId?: string;
 }
 
 export type ShipOrderType = 'MoveTo' | 'Jump' | 'Survey' | 'Attack' | 'Mine' | 'Patrol' | 'Transport' | 'Migrate';
+
+/** Combat engagement preferences. */
+export type EngagementStance = 'Aggressive' | 'Defensive' | 'Standoff';
 export interface ShipOrder {
     id: string;
     type: ShipOrderType;
@@ -87,4 +100,8 @@ export interface ShipOrder {
     amount?: number;
     originId?: string;
     targetId?: string;
+    /** For Attack orders: preferred range to maintain (AU). Defaults to max weapon range. */
+    engagementRange?: number;
+    /** For Attack orders: determines how aggressively the fleet pursues. */
+    stance?: EngagementStance;
 }

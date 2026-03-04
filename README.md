@@ -14,6 +14,7 @@ High-level map:
 - **Domain types (`src/types`)**: Shared contracts for game entities and simulation data.
 - **Scenario + script harnesses (`src/scenarios`, `src/scripts`)**: Determinism checks and regression-style simulation probes.
 - **Docs (`docs`)**: Simulation contract and validation expectations.
+- **AI Skills (`agent/skills`)**: Specialized documentation, constraints, and mechanics references exclusively for autonomous AI agents.
 
 ## Deterministic simulation rules
 
