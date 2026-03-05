@@ -7,10 +7,11 @@ import styles from './DebugConsole.module.css';
 import SimLogger from '@/utils/logger';
 import { runStressTest, StressTestReport } from '@/engine/stressTest';
 import { runHealthAudit } from '@/engine/health';
+import BattleSimulator from './BattleSimulator';
 
 export default function DebugConsole() {
     const { showDebugConsole, toggleDebugConsole } = useUIStore();
-    const [activeTab, setActiveTab] = useState<'Cheats' | 'Snapshots' | 'Differentiator' | 'Market Debug' | 'Scenarios' | 'Testing'>('Cheats');
+    const [activeTab, setActiveTab] = useState<'Cheats' | 'Snapshots' | 'Differentiator' | 'Market Debug' | 'Scenarios' | 'Testing' | 'Combat Sim'>('Cheats');
     const [showState, setShowState] = useState(false);
     const [report, setReport] = useState<StressTestReport | null>(null);
     const [snapshotName, setSnapshotName] = useState('');
@@ -66,7 +67,7 @@ export default function DebugConsole() {
                 </div>
 
                 <div className={styles.tabs}>
-                    {(['Cheats', 'Snapshots', 'Differentiator', 'Market Debug', 'Scenarios', 'Testing'] as const).map(tab => (
+                    {(['Cheats', 'Snapshots', 'Differentiator', 'Market Debug', 'Scenarios', 'Testing', 'Combat Sim'] as const).map(tab => (
                         <button
                             key={tab}
                             className={`${styles.tabBtn} ${activeTab === tab ? styles.active : ''}`}
@@ -380,6 +381,8 @@ export default function DebugConsole() {
                         </section>
                     </div>
                 )}
+
+                {activeTab === 'Combat Sim' && <BattleSimulator />}
 
                 <section className={styles.section} style={{ marginTop: 'auto' }}>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>

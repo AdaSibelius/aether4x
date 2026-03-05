@@ -5,10 +5,16 @@ export type HullClass = 'Fighter' | 'Corvette' | 'Destroyer' | 'Cruiser' | 'Batt
 export interface ShipComponent {
     id: string;
     name: string;
-    type: 'Engine' | 'Weapon' | 'Armor' | 'Shield' | 'Sensor' | 'FuelTank' | 'Cargo' | 'ColonizationModule' | 'SurveyModule' | 'Reactor';
+    type: 'Engine' | 'Weapon' | 'Armor' | 'Shield' | 'Sensor' | 'FuelTank' | 'Cargo' | 'ColonizationModule' | 'SurveyModule' | 'Reactor' | 'Bombardment' | 'StealthHull' | 'ActiveSensor';
     size: number;
     powerDraw: number;
-    stats: Record<string, number>;
+    stats: Record<string, number> & {
+        groundDefensesDamage?: number;
+        /** 0.0–1.0 multiplier: reduces fleet signature (e.g., 0.3 = 70% reduction). StealthHull only. */
+        signatureReduction?: number;
+        /** Multiplier applied to sensor resolution when Active Scan is on. ActiveSensor only. */
+        activeScanBoost?: number;
+    };
     requiredTech?: string;
 }
 
@@ -82,9 +88,14 @@ export interface Fleet {
     signature?: number;
     /** The fleet this fleet is currently engaging. Set by Attack order. */
     combatTargetFleetId?: string;
+    /**
+     * When true, the fleet's ActiveSensor components broadcast at full power:
+     * sensor resolution is doubled but fleet signature increases by 50%.
+     */
+    isActiveScanning?: boolean;
 }
 
-export type ShipOrderType = 'MoveTo' | 'Jump' | 'Survey' | 'Attack' | 'Mine' | 'Patrol' | 'Transport' | 'Migrate';
+export type ShipOrderType = 'MoveTo' | 'Jump' | 'Survey' | 'Attack' | 'Mine' | 'Patrol' | 'Transport' | 'Migrate' | 'Bombard' | 'Invade';
 
 /** Combat engagement preferences. */
 export type EngagementStance = 'Aggressive' | 'Defensive' | 'Standoff';

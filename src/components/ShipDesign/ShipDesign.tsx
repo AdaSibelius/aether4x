@@ -99,6 +99,15 @@ export default function ShipDesign() {
         });
 
         const sensorRange = Math.max(2, ...selectedComponents.filter(c => c.type === 'Sensor').map(c => c.stats.range || 0));
+        const activeScanBoost = Math.max(1, ...selectedComponents.filter(c => c.type === 'ActiveSensor').map(c => c.stats.activeScanBoost || 1));
+        const signatureReduction = selectedComponents.filter(c => c.type === 'StealthHull').reduce((acc, c) => acc * (c.stats.signatureReduction ?? 1), 1);
+
+        let groundDps = 0;
+        selectedComponents.filter(c => c.type === 'Bombardment').forEach(b => {
+            if (b.stats.groundDefensesDamage && b.stats.rof) {
+                groundDps += b.stats.groundDefensesDamage * b.stats.rof;
+            }
+        });
 
         const armorRating = selectedComponents.reduce((a, c) => a + (c.stats.armorRating ?? 0), 0);
         const hullBonus = selectedComponents.reduce((a, c) => a + (c.stats.hullBonus ?? 0), 0);
@@ -112,7 +121,10 @@ export default function ShipDesign() {
             powerSupply,
             powerDraw,
             totalDps,
+            groundDps,
             sensorRange,
+            activeScanBoost,
+            signatureReduction,
             defenseRating,
             opRange: fuelPerTick > 0 ? (fuelCapacity / fuelPerTick) * speed : 0,
             isValid: usedSize <= hullSpec.maxSize && powerSupply >= powerDraw && (totalThrust > 0 || hullSpec.maxSize < 100)
@@ -120,7 +132,7 @@ export default function ShipDesign() {
     }, [selectedComponents, hullSpec, usedSize]);
 
     const groupedLibrary = useMemo(() => {
-        const order = ['Reactor', 'Engine', 'FuelTank', 'Weapon', 'Shield', 'Armor', 'Sensor', 'Cargo', 'ColonizationModule', 'SurveyModule'];
+        const order = ['Reactor', 'Engine', 'FuelTank', 'Weapon', 'Bombardment', 'Shield', 'Armor', 'Sensor', 'ActiveSensor', 'StealthHull', 'Cargo', 'ColonizationModule', 'SurveyModule'];
         const groups: Record<string, ShipComponent[]> = {};
         COMPONENT_LIBRARY.forEach(c => {
             if (!groups[c.type]) groups[c.type] = [];
@@ -260,7 +272,7 @@ export default function ShipDesign() {
                     )}
 
                     {/* Expanded Metrics Panel */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16, padding: 12, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-med)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginBottom: 16, padding: 12, background: 'var(--bg-panel-alt)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-med)' }}>
                         <div>
                             <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Build Cost</div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
@@ -269,17 +281,20 @@ export default function ShipDesign() {
                         </div>
                         <div>
                             <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Power Flux</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: stats.powerSupply < stats.powerDraw ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: (selectedDesign ? selectedDesign.powerSupply < selectedDesign.powerDraw : stats.powerSupply < stats.powerDraw) ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>
                                 {selectedDesign ? `${selectedDesign.powerSupply}/${selectedDesign.powerDraw}` : `${stats.powerSupply}/${stats.powerDraw}`} GW
                             </div>
                         </div>
                         <div>
-                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Op. Range</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-orange)', fontFamily: 'var(--font-mono)' }}>
-                                {selectedDesign ?
-                                    (selectedDesign.components.filter((c: ShipComponent) => c.type === 'Engine').reduce((a: number, c: ShipComponent) => a + (c.stats.fuelPerTick || 0), 0) > 0 ?
-                                        Math.floor((selectedDesign.fuelCapacity / selectedDesign.components.filter((c: ShipComponent) => c.type === 'Engine').reduce((a: number, c: ShipComponent) => a + (c.stats.fuelPerTick || 0), 0)) * selectedDesign.speed) : 0) :
-                                    Math.floor(stats.opRange)} Bkm
+                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Signature</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-blue)', fontFamily: 'var(--font-mono)' }}>
+                                {((selectedDesign ? selectedDesign.components.filter((c: any) => c.type === 'StealthHull').reduce((acc: number, c: any) => acc * (c.stats.signatureReduction ?? 1), 1) : stats.signatureReduction) * 100).toFixed(0)}%
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Sensor Res</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>
+                                ×{(selectedDesign ? Math.max(1, ...selectedDesign.components.filter((c: any) => c.type === 'ActiveSensor').map((c: any) => c.stats.activeScanBoost || 1)) : stats.activeScanBoost).toFixed(1)}
                             </div>
                         </div>
                         <div>
@@ -289,9 +304,24 @@ export default function ShipDesign() {
                             </div>
                         </div>
                         <div>
-                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Defense Rating</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>
+                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ground DPS</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-orange)', fontFamily: 'var(--font-mono)' }}>
+                                {(selectedDesign ? selectedDesign.components.filter((c: any) => c.type === 'Bombardment').reduce((acc: number, c: any) => acc + (c.stats.groundDefensesDamage || 0) * (c.stats.rof || 0), 0) : stats.groundDps).toFixed(1)}
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Defense</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>
                                 {(selectedDesign ? (selectedDesign.maxHullPoints + selectedDesign.components.reduce((a: number, c: ShipComponent) => a + (c.stats.armorRating || 0) + (c.stats.shieldPoints || 0), 0)) : stats.defenseRating).toLocaleString()}
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Op. Range</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-orange)', fontFamily: 'var(--font-mono)' }}>
+                                {selectedDesign ?
+                                    (selectedDesign.components.filter((c: ShipComponent) => c.type === 'Engine').reduce((a: number, c: ShipComponent) => a + (c.stats.fuelPerTick || 0), 0) > 0 ?
+                                        Math.floor((selectedDesign.fuelCapacity / selectedDesign.components.filter((c: ShipComponent) => c.type === 'Engine').reduce((a: number, c: ShipComponent) => a + (c.stats.fuelPerTick || 0), 0)) * selectedDesign.speed) : 0) :
+                                    Math.floor(stats.opRange)} Bkm
                             </div>
                         </div>
                     </div>

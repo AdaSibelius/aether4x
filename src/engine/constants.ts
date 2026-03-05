@@ -32,6 +32,10 @@ export const BALANCING = {
     FOOD_PRICE_SURGE_THRESHOLD: 30, // Days supply at current consumption before price skyrockets
     FOOD_PRICE_MAX: 3.0,       // Max multiplier for food price during famine
 
+    // --- Combat & Blockades ---
+    BOMBARDMENT_COLLATERAL_RATE: 0.1, // 10% of population lost per 1.0 day of unshielded bombardment
+    BASE_GROUND_DEFENSES_PER_MILLION_POP: 5, // Default defense rating 
+
     // --- Wealth & Taxes ---
     CONSUMER_GOOD_VALUE: 8,    // Base Wealth generated per 1 unit of Consumer Goods consumed
     TAX_INCOME_BASE: 0.1,      // Wealth tax per 1M population per day (scaled by happiness)

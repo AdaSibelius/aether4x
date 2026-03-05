@@ -3,6 +3,7 @@ import { useGameStore } from '@/store/gameStore';
 import { getPlanetPosition } from '@/engine/fleets';
 import { useUIStore } from '@/store/uiStore';
 import { RosterShell, SidebarSection, RosterGroup, RosterItem, MainArea } from '@/components/Roster/Roster';
+import { calculateFleetSignature, getFleetSensorRange, toggleActiveScan, getSignatureTier } from '@/engine/detection';
 import styles from './FleetManager.module.css';
 
 export default function FleetManager() {
@@ -11,7 +12,7 @@ export default function FleetManager() {
     const [selectedShipId, setSelectedShipId] = useState<string | null>(null);
     const [showCivilian, setShowCivilian] = useState(false);
 
-    const [orderType, setOrderType] = useState<'MoveTo' | 'Survey' | 'Transport'>('MoveTo');
+    const [orderType, setOrderType] = useState<'MoveTo' | 'Survey' | 'Transport' | 'Bombard' | 'Invade'>('MoveTo');
     const [targetPlanetId, setTargetPlanetId] = useState<string>('');
     const [cargoAction, setCargoAction] = useState<'Load' | 'Unload'>('Load');
     const [resourceName, setResourceName] = useState<string>('Iron');
@@ -199,6 +200,54 @@ export default function FleetManager() {
                             )}
                         </div>
 
+                        {/* Aetheric Detection Panel */}
+                        {(() => {
+                            const sig = calculateFleetSignature(selectedFleet, game);
+                            const sensorRange = getFleetSensorRange(selectedFleet, game);
+                            const sigTier = getSignatureTier(sig);
+                            const tierColor = sigTier === 'Low' ? 'var(--accent-green)' : sigTier === 'Medium' ? 'var(--accent-gold)' : 'var(--accent-red)';
+                            return (
+                                <div className="panel" style={{ marginBottom: 24 }}>
+                                    <div className="panel-header"><h3>⚡ Aetheric Detection</h3></div>
+                                    <div className="panel-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                            <div>
+                                                <label>Aetheric Signature</label>
+                                                <div className="value" style={{ color: tierColor }}>
+                                                    {sig.toFixed(1)} <span style={{ fontSize: 10, opacity: 0.7 }}>({sigTier})</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label>Sensor Range</label>
+                                                <div className="value" style={{ color: 'var(--accent-blue)' }}>
+                                                    {sensorRange.toFixed(1)} AU
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: 12 }}>
+                                            <button
+                                                className={selectedFleet.isActiveScanning ? 'btn btn-danger' : 'btn btn-secondary'}
+                                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                                onClick={() => {
+                                                    const nowScanning = !selectedFleet.isActiveScanning;
+                                                    useGameStore.getState().updateFleet(empire.id, selectedFleet.id, { isActiveScanning: nowScanning });
+                                                }}
+                                            >
+                                                {selectedFleet.isActiveScanning
+                                                    ? '🔊 Active Scan ON — Deactivate'
+                                                    : '📡 Activate Active Scan'}
+                                            </button>
+                                            {selectedFleet.isActiveScanning && (
+                                                <div style={{ fontSize: 10, color: 'var(--accent-red)', marginTop: 6, textAlign: 'center' }}>
+                                                    ⚠ Active scan doubles sensor resolution but increases your signature by 50%
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {/* Order Issuance */}
                         <div className="panel" style={{ marginBottom: 24 }}>
                             <div className="panel-header"><h3>Navigation & Missions</h3></div>
@@ -214,6 +263,8 @@ export default function FleetManager() {
                                             <option value="MoveTo">Move To Planet</option>
                                             <option value="Survey">Survey Planet</option>
                                             <option value="Transport">Trade / Transport Cargo</option>
+                                            <option value="Bombard">Bombard Colony</option>
+                                            <option value="Invade">Invade Colony</option>
                                         </select>
 
                                         <select

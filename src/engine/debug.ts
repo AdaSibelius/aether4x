@@ -1,4 +1,5 @@
 import { GameState, Colony } from '../types';
+import { simulateBattle, BattleReport } from './combat';
 
 /**
  * Returns a condensed summary of global logistics health.
@@ -112,3 +113,22 @@ export function exportTelemetrySnapshot(state: GameState) {
         )
     };
 }
+
+/**
+ * Runs a deterministic dry-run battle between two fleets and returns a full BattleReport.
+ * Uses simulateBattle() internally — does NOT mutate game state.
+ *
+ * @param fleetAId - ID of the first fleet.
+ * @param fleetBId - ID of the second fleet.
+ * @param state    - Live game state.
+ * @param maxRounds - Maximum simulation rounds (default 200).
+ */
+export function runBattleSim(
+    fleetAId: string,
+    fleetBId: string,
+    state: GameState,
+    maxRounds = 200
+): BattleReport {
+    return simulateBattle(fleetAId, fleetBId, state, maxRounds);
+}
+

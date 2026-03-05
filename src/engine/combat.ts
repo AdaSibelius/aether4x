@@ -1,8 +1,44 @@
-import type { GameState, GameEvent, Fleet, Ship, Empire } from '../types';
-import type { ShipComponent } from '../types/fleet';
+import type { GameState, GameEvent, Fleet, Ship, Empire, Colony } from '../types';
+import type { ShipComponent, ShipDesign } from '../types/fleet';
 import { RNG } from '../utils/rng';
 import { makeEvent } from './events';
 import { generateId } from '../utils/id';
+import { BALANCING } from './constants';
+
+// ─── Battle Simulation Types ──────────────────────────────────────────────────
+
+export interface BattleShipSnapshot {
+    shipId: string;
+    shipName: string;
+    hullPct: number;   // 0–100
+    shieldPct: number; // 0–100
+    destroyed: boolean;
+}
+
+export interface BattleRound {
+    round: number;
+    /** Hull damage dealt by side A to side B this round. */
+    damageAtoB: number;
+    /** Hull damage dealt by side B to side A this round. */
+    damageBtoA: number;
+    /** Snapshot of side A ship health at end of round. */
+    sideA: BattleShipSnapshot[];
+    /** Snapshot of side B ship health at end of round. */
+    sideB: BattleShipSnapshot[];
+    /** Names of ships destroyed this round. */
+    destroyedThisRound: string[];
+}
+
+export interface BattleReport {
+    winner: 'A' | 'B' | 'Draw';
+    fleetAName: string;
+    fleetBName: string;
+    rounds: BattleRound[];
+    totalDamageAtoB: number;
+    totalDamageBtoA: number;
+    survivorsA: number;
+    survivorsB: number;
+}
 
 // ─── Damage Resolution ────────────────────────────────────────────────────────
 
@@ -182,6 +218,77 @@ export function resolveFleetCombat(
     }
 }
 
+// ─── Orbital Bombardment ──────────────────────────────────────────────────────
+
+/**
+ * Resolves orbital bombardment from a hostile fleet against a colony.
+ * Focuses on lowering ground defenses first, then causes collateral damage to population.
+ */
+export function resolveOrbitalBombardment(
+    fleet: Fleet,
+    colony: Colony,
+    state: GameState,
+    dt: number,
+    rng: RNG,
+    events: GameEvent[]
+): void {
+    const empire = state.empires[fleet.empireId];
+    if (!empire) return;
+
+    let totalBombardmentDamage = 0;
+
+    // Calculate total bombardment damage this tick
+    for (const shipId of fleet.shipIds) {
+        const ship = state.ships[shipId];
+        if (!ship || ship.hullPoints <= 0) continue;
+
+        const design = empire.designLibrary.find(d => d.id === ship.designId);
+        if (!design) continue;
+
+        for (const comp of design.components) {
+            if (comp.type === 'Bombardment') {
+                const dmg = comp.stats.groundDefensesDamage ?? 0;
+                const rof = comp.stats.rof ?? 1;
+                const shotsThisTick = rof * (dt / 86400); // shots scaled to dt
+                totalBombardmentDamage += dmg * shotsThisTick;
+            }
+        }
+    }
+
+    if (totalBombardmentDamage <= 0) return;
+
+    // Apply damage to ground defenses first
+    if (colony.groundDefenses > 0) {
+        const dmgToDefenses = Math.min(colony.groundDefenses, totalBombardmentDamage);
+        colony.groundDefenses -= dmgToDefenses;
+        totalBombardmentDamage -= dmgToDefenses;
+
+        // Only log significantly large instance hits to avoid spam, or combine it.
+        // We'll emit one event per bombard tick.
+        events.push(makeEvent(state.turn, state.date, 'ColonyBombarded',
+            `Colony ${colony.name} was bombarded by ${fleet.name}. Ground defenses took ${Math.floor(dmgToDefenses)} damage.`,
+            rng, { colonyId: colony.id, fleetId: fleet.id, empireId: colony.empireId }
+        ));
+    }
+
+    // Any remaining damage acts as collateral damage directly on population
+    if (totalBombardmentDamage > 0 && colony.groundDefenses <= 0) {
+        // popLossPercentage per day per 100 dmg
+        const popLossPercentage = BALANCING.BOMBARDMENT_COLLATERAL_RATE * (totalBombardmentDamage / 100);
+        const popLost = colony.population * popLossPercentage * (dt / 86400);
+
+        if (popLost > 0) {
+            colony.population = Math.max(0, colony.population - popLost);
+            colony.happiness = Math.max(0, colony.happiness - 10);
+
+            events.push(makeEvent(state.turn, state.date, 'ColonyBombarded',
+                `Colony ${colony.name} defenses have fallen! Bombardment by ${fleet.name} killed ${(popLost).toFixed(2)}M population.`,
+                rng, { colonyId: colony.id, fleetId: fleet.id, empireId: colony.empireId }
+            ));
+        }
+    }
+}
+
 // ─── Max Shield Initialisation ────────────────────────────────────────────────
 
 /**
@@ -198,4 +305,152 @@ export function initShipShields(ship: Ship, state: GameState): void {
         .reduce((s, c) => s + (c.stats.shieldPoints ?? 0), 0);
 
     ship.shieldPoints = maxShields; // Start at full shields
+}
+
+// ─── Dry-Run Battle Simulator ─────────────────────────────────────────────────
+
+function snapshotSide(
+    fleet: Fleet,
+    ships: Record<string, Ship>,
+    designs: ShipDesign[]
+): BattleShipSnapshot[] {
+    return fleet.shipIds.map(id => {
+        const ship = ships[id];
+        if (!ship) return { shipId: id, shipName: '(destroyed)', hullPct: 0, shieldPct: 0, destroyed: true };
+        const design = designs.find(d => d.id === ship.designId);
+        const maxShields = design?.components
+            .filter(c => c.type === 'Shield')
+            .reduce((s, c) => s + (c.stats.shieldPoints ?? 0), 0) ?? 0;
+        return {
+            shipId: id,
+            shipName: ship.name,
+            hullPct: Math.round((ship.hullPoints / ship.maxHullPoints) * 100),
+            shieldPct: maxShields > 0 ? Math.round((ship.shieldPoints / maxShields) * 100) : -1,
+            destroyed: false,
+        };
+    });
+}
+
+/**
+ * Runs a deterministic dry-run battle between two fleets.
+ * Does NOT mutate the real game state — works on deep-cloned state slices.
+ *
+ * @param fleetAId - ID of fleet A (attacker perspective).
+ * @param fleetBId - ID of fleet B.
+ * @param state - Live game state (will NOT be mutated).
+ * @param maxRounds - Safety cap on rounds (default 200).
+ * @param tickSeconds - Simulated seconds per round (default 86400 = 1 day).
+ * @returns A full BattleReport.
+ */
+export function simulateBattle(
+    fleetAId: string,
+    fleetBId: string,
+    state: GameState,
+    maxRounds = 200,
+    tickSeconds = 86400
+): BattleReport {
+    // Deep-clone only what we need: relevant ships and empire design libraries.
+    // Avoids O(N) clone of entire galaxy.
+    const allFleets = Object.values(state.empires).flatMap(e => e.fleets);
+    const origFleetA = allFleets.find(f => f.id === fleetAId);
+    const origFleetB = allFleets.find(f => f.id === fleetBId);
+
+    if (!origFleetA || !origFleetB) {
+        return { winner: 'Draw', fleetAName: '?', fleetBName: '?', rounds: [], totalDamageAtoB: 0, totalDamageBtoA: 0, survivorsA: 0, survivorsB: 0 };
+    }
+
+    // Clone fleets and ships into a mini-state
+    const fleetA: Fleet = JSON.parse(JSON.stringify(origFleetA));
+    const fleetB: Fleet = JSON.parse(JSON.stringify(origFleetB));
+
+    const simShips: Record<string, Ship> = {};
+    for (const id of [...fleetA.shipIds, ...fleetB.shipIds]) {
+        if (state.ships[id]) simShips[id] = JSON.parse(JSON.stringify(state.ships[id]));
+    }
+
+    const empireA = state.empires[fleetA.empireId];
+    const empireB = state.empires[fleetB.empireId];
+
+    // Build a minimal GameState stub for combat resolution
+    const simState: GameState = {
+        ...state,
+        ships: simShips,
+        empires: {
+            [fleetA.empireId]: { ...empireA, fleets: [fleetA] },
+            [fleetB.empireId]: { ...empireB, fleets: [fleetB] },
+        },
+    };
+
+    // Both fleets fight at point-blank (0.0 AU) so range is never the limiting factor
+    const COMBAT_DIST = 0.0;
+    const rng = new RNG(state.seed + 9999);
+    const dummyEvents: GameEvent[] = [];
+
+    const rounds: BattleRound[] = [];
+    let totalDamageAtoB = 0;
+    let totalDamageBtoA = 0;
+
+    for (let round = 1; round <= maxRounds; round++) {
+        const aAlive = fleetA.shipIds.filter(id => simShips[id] && simShips[id].hullPoints > 0);
+        const bAlive = fleetB.shipIds.filter(id => simShips[id] && simShips[id].hullPoints > 0);
+
+        if (aAlive.length === 0 || bAlive.length === 0) break;
+
+        // Track HP before the round
+        const bHullBefore = bAlive.reduce((s, id) => s + (simShips[id]?.hullPoints ?? 0), 0);
+        const aHullBefore = aAlive.reduce((s, id) => s + (simShips[id]?.hullPoints ?? 0), 0);
+
+        // A fires at B, B fires at A
+        resolveFleetCombat(fleetA, fleetB, COMBAT_DIST, simState, tickSeconds, rng, dummyEvents);
+        resolveFleetCombat(fleetB, fleetA, COMBAT_DIST, simState, tickSeconds, rng, dummyEvents);
+
+        // Recharge shields for survivors
+        rechargeShields(fleetA, simState, tickSeconds);
+        rechargeShields(fleetB, simState, tickSeconds);
+
+        const bHullAfter = bAlive.reduce((s, id) => s + (simShips[id]?.hullPoints ?? 0), 0);
+        const aHullAfter = aAlive.reduce((s, id) => s + (simShips[id]?.hullPoints ?? 0), 0);
+
+        const damageAtoB = Math.max(0, bHullBefore - bHullAfter);
+        const damageBtoA = Math.max(0, aHullBefore - aHullAfter);
+        totalDamageAtoB += damageAtoB;
+        totalDamageBtoA += damageBtoA;
+
+        // Collect destroyed ship names this round
+        const destroyedThisRound: string[] = [];
+        for (const id of [...fleetA.shipIds, ...fleetB.shipIds]) {
+            const s = simShips[id];
+            if (s && s.hullPoints <= 0 && !rounds.some(r => r.destroyedThisRound.some(n => n === s.name))) {
+                destroyedThisRound.push(s.name);
+            }
+        }
+
+        rounds.push({
+            round,
+            damageAtoB,
+            damageBtoA,
+            sideA: snapshotSide(fleetA, simShips, empireA.designLibrary),
+            sideB: snapshotSide(fleetB, simShips, empireB.designLibrary),
+            destroyedThisRound,
+        });
+    }
+
+    const survivorsA = fleetA.shipIds.filter(id => simShips[id] && simShips[id].hullPoints > 0).length;
+    const survivorsB = fleetB.shipIds.filter(id => simShips[id] && simShips[id].hullPoints > 0).length;
+
+    let winner: BattleReport['winner'];
+    if (survivorsA > 0 && survivorsB === 0) winner = 'A';
+    else if (survivorsB > 0 && survivorsA === 0) winner = 'B';
+    else winner = 'Draw';
+
+    return {
+        winner,
+        fleetAName: fleetA.name,
+        fleetBName: fleetB.name,
+        rounds,
+        totalDamageAtoB,
+        totalDamageBtoA,
+        survivorsA,
+        survivorsB,
+    };
 }

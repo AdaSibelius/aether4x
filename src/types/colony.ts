@@ -40,6 +40,7 @@ export interface Colony {
     researchLabs: number;
     spaceport: number;
     groundDefenses: number;
+    isUnderBlockade?: boolean;
     shipyards: Shipyard[];
     aethericDistillery?: number;
     aethericHarvesters?: number;

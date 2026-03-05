@@ -69,6 +69,26 @@ export const COMPONENT_LIBRARY: ShipComponent[] = [
     { id: 'module_cryo', name: 'Cryo-Suspension Module', type: 'ColonizationModule', size: 800, powerDraw: 50, stats: { colonistCapacity: 250000 } },
     { id: 'bore_geological', name: 'Geological Bore', type: 'SurveyModule', size: 150, powerDraw: 40, stats: { surveySpeed: 1 } },
     { id: 'scoop_aether', name: 'Aetheric Scoop', type: 'Cargo', size: 300, powerDraw: 100, stats: { harvestRate: 100 }, requiredTech: 'aetheric_distillation' },
+
+    // Stealth & Active Sensors
+    /**
+     * Aetheric Damper Plating — coats the hull in resonance-absorbing alloys that
+     * attenuate the ship's Aetheric Flux signature by 70%.
+     * signatureReduction: 0.30 means the fleet emits only 30% of its natural signature.
+     */
+    { id: 'hull_stealth_sm', name: 'Aetheric Damper Plating (Sm)', type: 'StealthHull', size: 150, powerDraw: 10, stats: { signatureReduction: 0.30 }, requiredTech: 'aetheric_dampeners' },
+    { id: 'hull_stealth_md', name: 'Aetheric Damper Plating (Md)', type: 'StealthHull', size: 300, powerDraw: 20, stats: { signatureReduction: 0.15 }, requiredTech: 'aetheric_dampeners' },
+
+    /**
+     * Resonance Pulse Emitter — when Active Scan is enabled, this device blasts a
+     * wide-band Aetheric pulse that dramatically extends detection resolution (3×)
+     * but also triples the fleet's own signature while active.
+     */
+    { id: 'sensor_active_pulse', name: 'Resonance Pulse Emitter', type: 'ActiveSensor', size: 120, powerDraw: 200, stats: { activeScanBoost: 3.0 }, requiredTech: 'enhanced_resonance_sensors' },
+
+    // Bombardment
+    { id: 'bombard_slug_sm', name: 'Kinetic Mass Driver (Class I)', type: 'Bombardment', size: 150, powerDraw: 100, stats: { groundDefensesDamage: 5, rof: 1 }, requiredTech: 'orbital_fire_control' },
+    { id: 'bombard_lance_md', name: 'Resonant Orbital Lance', type: 'Bombardment', size: 350, powerDraw: 800, stats: { groundDefensesDamage: 25, rof: 0.5 }, requiredTech: 'seismic_resonance_yield' },
 ];
 
 export const COMPONENTS_BY_ID: Record<string, ShipComponent> = Object.fromEntries(COMPONENT_LIBRARY.map(c => [c.id, c]));
