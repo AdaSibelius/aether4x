@@ -1,4 +1,5 @@
 import type { GameState, Fleet, Empire } from '../types';
+import { getEmpireTechBonuses } from './research';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 /**
@@ -26,6 +27,9 @@ export function calculateFleetSignature(fleet: Fleet, state: GameState): number 
     if (!empire || fleet.shipIds.length === 0) return 0;
 
     let totalSignature = 0;
+    // Collect the best signatureReduction multiplier from any StealthHull component.
+    // Multiple stealth hulls use the minimum (best) reduction among them.
+    let bestSigReduction = 1.0; // 1.0 = no reduction
 
     for (const shipId of fleet.shipIds) {
         const ship = state.ships[shipId];
@@ -37,6 +41,22 @@ export function calculateFleetSignature(fleet: Fleet, state: GameState): number 
         const powerSignature = design.powerDraw * SIGNATURE_POWER_FACTOR;
         const sizeSignature = design.maxHullPoints * SIGNATURE_SIZE_FACTOR;
         totalSignature += Math.max(1, powerSignature + sizeSignature);
+
+        // Stealth hulls — find the best (lowest) reduction factor
+        for (const comp of design.components) {
+            if (comp.type === 'StealthHull' && comp.stats.signatureReduction !== undefined) {
+                const reduction = comp.stats.signatureReduction; // 0.0-1.0
+                if (reduction < bestSigReduction) bestSigReduction = reduction;
+            }
+        }
+    }
+
+    // Apply stealth hull signature reduction
+    totalSignature *= bestSigReduction;
+
+    // Active Scanning: broadcasts a strong active pulse — +50% signature
+    if (fleet.isActiveScanning) {
+        totalSignature *= 1.5;
     }
 
     return totalSignature;
@@ -99,6 +119,7 @@ function getBestSensorStats(fleet: Fleet, state: GameState): { range: number; re
 
     let bestRange = 1; // Minimum visual range (eyeshot)
     let bestResolution = 10; // Minimum passive resolution
+    let activeScanBoost = 1.0; // Best multiplier from ActiveSensor components
 
     for (const shipId of fleet.shipIds) {
         const ship = state.ships[shipId];
@@ -110,8 +131,24 @@ function getBestSensorStats(fleet: Fleet, state: GameState): { range: number; re
                 if ((comp.stats.range ?? 0) > bestRange) bestRange = comp.stats.range ?? 0;
                 if ((comp.stats.resolution ?? 0) > bestResolution) bestResolution = comp.stats.resolution ?? 0;
             }
+            // Active sensor modules improve active-scan performance
+            if (comp.type === 'ActiveSensor' && (comp.stats.activeScanBoost ?? 1) > activeScanBoost) {
+                activeScanBoost = comp.stats.activeScanBoost ?? 1;
+            }
         }
     }
+
+    // Tech bonus: sensor_resolution multiplies sensor resolution
+    const techBonuses = getEmpireTechBonuses(empire.research.completedTechs);
+    const techResBonus = 1 + (techBonuses['sensor_resolution'] ?? 0);
+    bestResolution *= techResBonus;
+
+    // Active scanning doubles effective sensor resolution (or uses activeScanBoost if higher)
+    if (fleet.isActiveScanning) {
+        const scanMultiplier = Math.max(2.0, activeScanBoost);
+        bestResolution *= scanMultiplier;
+    }
+
     return { range: bestRange, resolution: bestResolution };
 }
 
@@ -170,4 +207,35 @@ export function updateVisibility(state: GameState): void {
             }
         }
     }
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+/**
+ * Toggles a fleet's Active Scan mode.
+ * When active scanning is ON:
+ *   - Sensor resolution is multiplied (2× baseline, or higher with ActiveSensor modules)
+ *   - Fleet signature increases by 50% (making the fleet easier to detect)
+ * Call updateVisibility() on the same tick for the effect to take hold.
+ */
+export function toggleActiveScan(fleetId: string, state: GameState): boolean {
+    for (const empire of Object.values(state.empires)) {
+        const fleet = empire.fleets.find(f => f.id === fleetId);
+        if (fleet) {
+            fleet.isActiveScanning = !fleet.isActiveScanning;
+            return fleet.isActiveScanning;
+        }
+    }
+    return false;
+}
+
+/**
+ * Returns a human-readable signature tier for a fleet's current signature:
+ *   Low (<5), Medium (5–20), or High (>20).
+ * Useful for UI tooltips on detected enemy fleets.
+ */
+export function getSignatureTier(signature: number): 'Low' | 'Medium' | 'High' {
+    if (signature < 5) return 'Low';
+    if (signature <= 20) return 'Medium';
+    return 'High';
 }

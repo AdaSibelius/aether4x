@@ -29,7 +29,9 @@ export type EventType =
     | 'OfficerRetired'
     | 'TenderBid'
     | 'TenderResolved'
-    | 'ProductionComplete';
+    | 'ProductionComplete'
+    | 'ColonyBombarded'
+    | 'ColonyFallen';
 
 export interface GameEvent {
     id: string;
@@ -39,6 +41,7 @@ export interface GameEvent {
     message: string;
     starId?: string;
     planetId?: string;
+    colonyId?: string;
     empireId?: string;
     fleetId?: string;
     targetFleetId?: string;

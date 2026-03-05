@@ -48,3 +48,25 @@ If you are modifying fleet behavior or debugging why a fleet is "not attacking,"
 **The Problem**: When a fleet destroys its primary target, `processAttackOrder` automatically searches for the next closest enemy (`nextTarget`). Initially, it updated the `order.targetFleetId` in the order queue, but then immediately `return;`'d. Because the engine clears the visual `combatTargetFleetId` when a ship dies, this created a 1-tick delay (1 in-game day) where the pirate appeared to have no target, and the red combat laser line drawn by BabylonJS disappeared, confusing the player.
 **The Fix**: When jumping to the next target, we update the local `targetFleet` variable instead of returning, allowing the rest of the tick (range calculations, engagement flag setting) to execute seamlessly on the new target in the *exact same tick*.
 **Takeaway**: Ensure that state machine transitions (like target switching) completely update all localized scoped variables in the engine loop so the tick resolves comprehensively, preventing 1-frame visual or mechanical glitches. Furthermore, AI agents should note that weapons have long cool-downs (e.g., *Aetheric Discharge Emitters* fire once every 12 hours). If a ship looks like it "isn't attacking," but the target line is drawn, it is merely waiting for its weapon ROF cooldown.
+
+
+---
+
+## 6. Colony Bombardment & Planetary Assault
+
+**The System**: The engine supports orbital strikes on colonies using the `Bombardment` ShipComponentType. When a fleet has the `Bombard` order, it calls `resolveOrbitalBombardment` every tick, reducing the colony's `groundDefenses`. Once defenses hit 0, the invasion can proceed or the colony suffers collateral damage.
+**Takeaway for AI**: Do not rely on weapon DPS to take a planet. Regular weapons (`Weapon` type) only damage ships. You MUST equip ships with specific `Bombardment` weapons (like the Kinetic Mass Driver) to reduce planetary defenses. Use the `getVulnerableColonies` helper in `ai_utils.ts` to evaluate soft targets.
+
+---
+
+## 7. Aetheric Signatures, Stealth, and Active Scanning
+
+**The System**: Fleets are no longer universally visible. The `detection.ts` system calculates a fleet's `signature` based on its total Hull Size and Power Draw. `StealthHull` components deeply reduce this signature. To see a stealth fleet, the viewing fleet must have sufficient `sensorRange` and `sensorResolution` relative to the distance and the target's signature. Activating a fleet's `isActiveScanning` toggle doubles resolution but increases its own signature by 50%.
+**Takeaway for AI**: Fleets cannot attack what they cannot see. `processAttackOrder` strictly checks `fleet.detectedByEmpireIds`. AI logic must query `getDetectedHostileFleets(empireId, starId, state)` from `ai_utils.ts` to build their "known board state."
+
+---
+
+## 8. AI Ergonomics & Combat Power
+
+**The System**: Complex calculations for win probability, detectability, and system value have been abstracted into `src/engine/ai_utils.ts`. 
+**Takeaway for AI**: Do not parse the `ShipComponent` arrays manually to figure out who wins a fight. Use `calculateFleetCombatPower(fleet, state)` to get a flat numerical value of a fleet's strength, and `estimateBattleOutcome(fleetA, fleetB, state)` to run a heuristic before committing to an attack.

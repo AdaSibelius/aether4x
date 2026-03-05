@@ -44,7 +44,12 @@ export interface EmpireBudget {
 }
 
 export function calculateColonyBudget(colony: Colony, days: number): BudgetBreakdown {
-    const revenue = (colony.privateWealthIncome || 0) * BALANCING.CONSUMER_GOOD_VALUE;
+    let revenue = (colony.privateWealthIncome || 0) * BALANCING.CONSUMER_GOOD_VALUE;
+
+    if (colony.isUnderBlockade) {
+        revenue *= 0.5; // Blockade halves private wealth generation and corresponding trade tax
+    }
+
     const taxes = (revenue * BALANCING.TRADE_TAX_RATE) + (colony.population * BALANCING.TAX_INCOME_BASE * (colony.happiness / 50) * days);
 
     // Maintenance

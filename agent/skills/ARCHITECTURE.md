@@ -23,6 +23,7 @@ A core design tenet of Nebula4X is strict separation of concerns. Future develop
 - **`corporations.ts` & `finances.ts` (The Private Sector):** Simulates independent corporate AI, dynamic company formation, fleet logistics, revenue pooling, and state treasury taxation.
 - **`fleets.ts` & `realspace.ts` (Physics):** Manages Newtonian-style transit, fuel consumption, orbit synchronization, and jump point mechanics.
 - **`constants.ts` (The Balancer):** Centralized tuning parameters. If an economic output feels wrong, adjust the constants here rather than hardcoding multipliers in logic processing logic.
+- **`ai_utils.ts` (AI Ergonomics):** A read-only utility layer that abstracts complex systems (combat power evaluation, stealth visibility, planetary defense vulnerability) into flat heuristics for AI agents to easily evaluate the board state without recalculating physics or parsing component arrays.
 
 ### 2. State Management (`src/store/`)
 **Owner of:** The serializable object tree (`GameState`) and application views (`UIState`).

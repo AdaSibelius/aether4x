@@ -20,6 +20,7 @@ import EconomyView from '@/components/Economy/Economy';
 import CorporateManager from '@/components/Economy/CorporateManager';
 import CompanyDetailsView from '@/components/Economy/CompanyDetails';
 import Toaster from '@/components/Notifications/Toaster';
+import CombatEventMonitor from '@/components/Notifications/CombatEventMonitor';
 import styles from './page.module.css';
 
 // ─── Main Menu ───────────────────────────────────────────────────────────────
@@ -190,6 +191,7 @@ export default function Home() {
   return (
     <div className={styles.shell}>
       <Toaster />
+      <CombatEventMonitor />
       <div className={styles.starfield} />
       <Sidebar />
       <div className={styles.main}>

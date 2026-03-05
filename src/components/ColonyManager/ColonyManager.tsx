@@ -219,6 +219,16 @@ function OverviewTab({ colony, rates, planet, updateColony, governor }: {
                 <div className={styles.colonyBadge}>{COLONY_TYPE_ICON[colony.colonyType]} {colony.colonyType}</div>
             </div>
 
+            {colony.isUnderBlockade && (
+                <div className="alert alert-danger" style={{ margin: '0 20px 20px 20px', display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--accent-red)', background: 'rgba(239, 68, 68, 0.1)' }}>
+                    <span style={{ fontSize: 24 }}>🚨</span>
+                    <div>
+                        <strong style={{ color: 'var(--accent-red)' }}>UNDER BLOCKADE / BOMBARDMENT</strong><br />
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Hostile forces are in orbit. Trade revenue is suppressed and planetary defenses may be engaged.</span>
+                    </div>
+                </div>
+            )}
+
             {planet && !canHostBuildings(planet) && (
                 <div className="alert alert-warning" style={{ margin: '0 20px 20px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span>⚠️</span>
@@ -1315,7 +1325,12 @@ export default function ColonyManager() {
                                     name={c.name}
                                     active={c.id === colony.id}
                                     onClick={() => { selectColony(c.id); setActiveTab('Overview'); }}
-                                    subtitle={`${c.population.toFixed(1)}M · ${r?.bpPerDay.toFixed(0) ?? 0} BP/d`}
+                                    subtitle={
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            {c.isUnderBlockade && <span style={{ color: 'var(--accent-red)', fontSize: 10, fontWeight: 600 }}>⚠️ BLOCKADE</span>}
+                                            <span style={{ color: 'var(--text-muted)' }}>{c.population.toFixed(1)}M · {r?.bpPerDay.toFixed(0) ?? 0} BP/d</span>
+                                        </div>
+                                    }
                                     thumbnail={<div style={{ fontSize: 20 }}>{COLONY_TYPE_ICON[c.colonyType ?? 'Core'] ?? '🏛️'}</div>}
                                 />
                             );

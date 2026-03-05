@@ -13,7 +13,7 @@ import {
     MonetaryAccount,
     createExternalAccount,
 } from './economy_ledger';
-import { resolveFleetCombat, rechargeShields } from './combat';
+import { resolveFleetCombat, rechargeShields, resolveOrbitalBombardment } from './combat';
 
 type FeeCategory = 'MigrationFee' | 'TransportFee';
 type FeePayerAccount = MonetaryAccount;
@@ -279,7 +279,7 @@ function handleFleetOrbit(fleet: Fleet, state: GameState) {
  * Most orders only process when idle (no active destination).
  * Attack orders are special: they run every tick to continuously update their intercept course.
  */
-function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, events: GameEvent[], rng: RNG) {
+function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, events: GameEvent[], rng: RNG, dt: number) {
     if (!fleet.orders || fleet.orders.length === 0) return;
 
     const order = fleet.orders[0];
@@ -308,6 +308,12 @@ function processFleetOrders(fleet: Fleet, state: GameState, empire: Empire, even
             break;
         case 'Migrate':
             processMigrateOrder(fleet, order, state, empire, events, rng);
+            break;
+        case 'Bombard':
+            processBombardOrder(fleet, order, state, empire, events, rng, dt);
+            break;
+        case 'Invade':
+            processInvadeOrder(fleet, order, state, empire, events, rng, dt);
             break;
         default:
             fleet.orders.shift(); // Invalid/unimplemented
@@ -961,6 +967,12 @@ function checkFleetRefueling(fleet: Fleet, state: GameState, empire: Empire) {
  */
 export function tickFleets(state: GameState, dt: number, rng: RNG): GameEvent[] {
     const events: GameEvent[] = [];
+
+    // Clear blockades at the start of the tick
+    for (const colony of Object.values(state.colonies)) {
+        colony.isUnderBlockade = false;
+    }
+
     const allFleets = Object.values(state.empires).flatMap(e => e.fleets);
 
     // ── Phase 1: Orders & Movement ──
@@ -971,7 +983,7 @@ export function tickFleets(state: GameState, dt: number, rng: RNG): GameEvent[] 
         if (handleFleetMaintenance(fleet, empire)) continue;
         handleFleetOrbit(fleet, state);
         handleFleetLogistics(fleet, state);
-        processFleetOrders(fleet, state, empire, events, rng);
+        processFleetOrders(fleet, state, empire, events, rng, dt);
         handleFleetMovement(fleet, state, empire, dt);
         checkFleetRefueling(fleet, state, empire);
 
@@ -1036,5 +1048,98 @@ function handleFleetLogistics(fleet: Fleet, state: GameState) {
                 ship.inventory = ship.inventory.filter(i => i.res !== 'Aether');
             }
         }
+    }
+}
+
+function processBombardOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG, dt: number) {
+    const star = state.galaxy.stars[fleet.currentStarId];
+    if (!star || !order.targetPlanetId) {
+        fleet.orders.shift();
+        return;
+    }
+
+    const targetPlanet = star.planets.find(p => p.id === order.targetPlanetId);
+    if (!targetPlanet) {
+        fleet.orders.shift();
+        return;
+    }
+
+    const colony = Object.values(state.colonies).find(c => c.planetId === order.targetPlanetId);
+    if (!colony || colony.empireId === fleet.empireId) {
+        // No hostile colony to bombard
+        fleet.orders.shift();
+        return;
+    }
+
+    const pPos = getPlanetPosition(targetPlanet, state.turn);
+    if (distance(fleet.position, pPos) < 0.2) {
+        // In orbit, commence bombardment
+        fleet.orbitingPlanetId = targetPlanet.id;
+        fleet.destination = undefined;
+        colony.isUnderBlockade = true; // Mark as blockaded this tick
+
+        resolveOrbitalBombardment(fleet, colony, state, dt, rng, events);
+
+        // Order never completes automatically unless the colony dies completely
+        if (colony.population === 0 && colony.groundDefenses <= 0) {
+            fleet.orders.shift(); // Nothing left to bombard
+        }
+    } else {
+        const speed = getFleetSpeed(fleet, state);
+        const interceptPos = calculateInterceptPosition(fleet.position, speed, targetPlanet, state.turn);
+        fleet.destination = { x: interceptPos.x, y: interceptPos.y, etaSeconds: 0 };
+        fleet.orbitingPlanetId = undefined;
+    }
+}
+
+function processInvadeOrder(fleet: Fleet, order: ShipOrder, state: GameState, empire: Empire, events: GameEvent[], rng: RNG, dt: number) {
+    const star = state.galaxy.stars[fleet.currentStarId];
+    if (!star || !order.targetPlanetId) {
+        fleet.orders.shift();
+        return;
+    }
+
+    const targetPlanet = star.planets.find(p => p.id === order.targetPlanetId);
+    if (!targetPlanet) {
+        fleet.orders.shift();
+        return;
+    }
+
+    const colony = Object.values(state.colonies).find(c => c.planetId === order.targetPlanetId);
+    if (!colony || colony.empireId === fleet.empireId) {
+        // No hostile colony to invade
+        fleet.orders.shift();
+        return;
+    }
+
+    const pPos = getPlanetPosition(targetPlanet, state.turn);
+    if (distance(fleet.position, pPos) < 0.2) {
+        fleet.orbitingPlanetId = targetPlanet.id;
+        fleet.destination = undefined;
+
+        // Check if defenses are down
+        if (colony.groundDefenses <= 0) {
+            colony.empireId = fleet.empireId; // Ownership transfers
+
+            // clear isUnderBlockade when conquered
+            colony.isUnderBlockade = false;
+
+            events.push(makeEvent(state.turn, state.date, 'ColonyFallen',
+                `Colony ${colony.name} has been successfully invaded and annexed by ${empire.name}!`,
+                rng, { colonyId: colony.id, fleetId: fleet.id, empireId: colony.empireId, important: true }
+            ));
+
+            // Finished order
+            fleet.orders.shift();
+        } else {
+            // Wait in orbit until defenses fall
+            colony.isUnderBlockade = true;
+            resolveOrbitalBombardment(fleet, colony, state, dt, rng, events); // Auto bombards while waiting
+        }
+    } else {
+        const speed = getFleetSpeed(fleet, state);
+        const interceptPos = calculateInterceptPosition(fleet.position, speed, targetPlanet, state.turn);
+        fleet.destination = { x: interceptPos.x, y: interceptPos.y, etaSeconds: 0 };
+        fleet.orbitingPlanetId = undefined;
     }
 }
