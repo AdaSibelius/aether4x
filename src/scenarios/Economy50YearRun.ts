@@ -85,6 +85,23 @@ export const Economy50YearRun: Scenario = {
             (ship as any).history = [];
         }
 
+        for (const empire of Object.values(saveableState.empires)) {
+            empire.history = [];
+            empire.events = empire.events.slice(-10); // Keep only last 10 events
+            for (const company of empire.companies) {
+                company.history = [];
+                company.transactions = [];
+            }
+        }
+
+        // Prune logs
+        saveableState.monetaryLedger = [];
+        if (saveableState.stats) {
+            saveableState.stats.monetaryLedger = [];
+            saveableState.stats.cashflowLedger = [];
+        }
+        saveableState.cashflowLedger = [];
+
         const outputPath = path.resolve(__dirname, '../../public/sim_output.json');
         fs.writeFileSync(outputPath, JSON.stringify(saveableState));
 
