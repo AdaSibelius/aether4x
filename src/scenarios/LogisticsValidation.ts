@@ -2,7 +2,7 @@ import { Scenario, ScenarioResult } from './types';
 import { setupNewGame } from '../engine/setup';
 import { advanceTick } from '../engine/time';
 import { GameState, Colony } from '../types';
-import { getLogisticHealthSnapshot, getGlobalMineralInventory } from '../engine/debug';
+import { getLogisticHealthSnapshot, getGlobalMineralInventory } from './utils';
 
 export const LogisticsValidation: Scenario = {
     name: 'Logistics Validation',

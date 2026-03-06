@@ -1,8 +1,7 @@
 'use client';
 import React, { useState, useMemo } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { runBattleSim } from '@/engine/debug';
-import { BattleReport, BattleRound } from '@/engine/combat';
+import { simulateBattle, BattleReport, BattleRound } from '@/engine/combat';
 import styles from './DebugConsole.module.css';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -155,7 +154,7 @@ export default function BattleSimulator() {
     const handleRun = () => {
         if (!game || !canRun) return;
         setShowAllRounds(false);
-        const result = runBattleSim(fleetAId, fleetBId, game);
+        const result = simulateBattle(fleetAId, fleetBId, game);
         setReport(result);
     };
 

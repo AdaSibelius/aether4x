@@ -24,6 +24,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         isPlayer: true,
         homeSystemId: homeStarId,
         homePlanetId: '', // Set below
+        relations: {},
         minerals: {
             Iron: 500000,
             Copper: 200000,
@@ -381,6 +382,7 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         isPlayer: false,
         homeSystemId: homeStarId,
         homePlanetId: '',
+        relations: {},
         minerals: {},
         research: { activeProjects: [], completedTechs: ['analytical_engine', 'aetheric_discharge'] },
         officers: [],
@@ -401,6 +403,189 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         history: [],
     };
 
+    // 9.5 AI Empire (Competitor)
+    const aiEmpireId = 'empire_ai_1';
+
+    // Find a somewhat distant star for the AI home
+    const possibleAiStars = Object.values(galaxy.stars).filter(s => s.id !== homeStarId && s.planets.some(p => p.atmosphere === 'Breathable'));
+    const aiHomeStar = possibleAiStars.length > 5 ? possibleAiStars[5] : possibleAiStars[0];
+    const aiHomePlanet = aiHomeStar?.planets.find(p => p.atmosphere === 'Breathable') || aiHomeStar?.planets[0];
+
+    const aiEmpire: Empire = {
+        id: aiEmpireId,
+        name: 'The Centauri Republic',
+        color: '#3366cc',
+        isPlayer: false,
+        relations: {},
+        homeSystemId: aiHomeStar?.id || '',
+        homePlanetId: aiHomePlanet?.id || '',
+        minerals: {},
+        research: { activeProjects: [], completedTechs: [...playerEmpire.research.completedTechs] },
+        officers: [],
+        fleets: [],
+        designLibrary: playerEmpire.designLibrary.map(d => ({ ...d })),
+        treasury: 50000,
+        privateWealth: 20000,
+        tradeRoutes: [],
+        companies: [],
+        events: [],
+        history: [],
+        aiState: {
+            posture: 'Expansion',
+            targetSystems: [],
+            lastEvaluationTick: 0
+        }
+    };
+
+    const initColonies: Record<string, Colony> = { [homeColony.id]: homeColony };
+
+    if (aiHomePlanet) {
+        const aiColony: Colony = {
+            id: generateId('colony', rng),
+            empireId: aiEmpireId,
+            planetId: aiHomePlanet.id,
+            name: 'Centauri Prime',
+            population: 1000,
+            populationSegments: [{
+                speciesId: 'human',
+                count: 1000,
+                happiness: 60,
+                habitability: 1.0,
+            }],
+            maxPopulation: 20000,
+            populationGrowthRate: 0.02,
+            policy: 'Normal',
+            happiness: 60,
+            minerals: { ...homeColony.minerals },
+            demand: {},
+            privateWealth: 5000,
+            infrastructure: 1000,
+            colonyType: 'Core',
+            laborAllocation: { ...homeColony.laborAllocation },
+            governorId: undefined,
+            productionQueue: [],
+            factories: 20,
+            mines: 10,
+            civilianFactories: 10,
+            civilianMines: 5,
+            researchLabs: 2,
+            spaceport: 1,
+            groundDefenses: 10,
+            shipyards: [{ id: generateId('sy', rng), name: 'Centauri Prime Yards', slipways: 1, maxTonnage: 100000, activeBuilds: [] }],
+            constructionOffices: 5,
+            farms: 100,
+            stores: 10,
+            terraformProgress: 100,
+            migrationMode: 'Stable',
+            history: [],
+            aethericDistillery: 2,
+            electronicsPlants: 2,
+            civilianElectronicsPlants: 0,
+            machineryPlants: 2,
+            civilianMachineryPlants: 0,
+            educationIndex: 50,
+            educationBudget: 0,
+            resourcePrices: {},
+        };
+        aiHomePlanet.colonies = [aiColony];
+        aiHomeStar.surveyedByEmpires = [aiEmpireId];
+        initColonies[aiColony.id] = aiColony;
+
+        // --- AI Empire Starting Personnel & Corporations ---
+        const aiStartBonuses = getEmpireTechBonuses(aiEmpire.research.completedTechs);
+        const aiGovernor = createOfficer('Governor', aiStartBonuses, rng.next() * 1000000);
+        const aiScientists = [
+            createOfficer('Scientist', aiStartBonuses, rng.next() * 1000000),
+            createOfficer('Scientist', aiStartBonuses, rng.next() * 1000000),
+            createOfficer('Scientist', aiStartBonuses, rng.next() * 1000000),
+        ];
+        const aiEngineers = [
+            createOfficer('Engineer', aiStartBonuses, rng.next() * 1000000),
+            createOfficer('Engineer', aiStartBonuses, rng.next() * 1000000),
+        ];
+        const aiAdmiral = createOfficer('Admiral', aiStartBonuses, rng.next() * 1000000);
+        const aiCEOs = Array.from({ length: 5 }, () => createOfficer('CEO', aiStartBonuses, rng.next() * 1000000));
+
+        aiGovernor.assignedTo = aiColony.id;
+        aiColony.governorId = aiGovernor.id;
+        aiEmpire.officers = [aiGovernor, ...aiScientists, ...aiEngineers, aiAdmiral, ...aiCEOs];
+
+        aiEmpire.research.activeProjects = [
+            {
+                id: generateId('prj', rng),
+                techId: 'rocket_propulsion',
+                scientistId: aiScientists[0].id,
+                labs: 2,
+                investedPoints: 0,
+                priority: 1
+            }
+        ];
+        aiScientists[0].assignedTo = aiEmpire.research.activeProjects[0].id;
+
+        const aiPos = aiHomePlanet ? getPlanetPosition(aiHomePlanet, 0) : { x: 0, y: 0 };
+        const aiCompanies: Company[] = aiCEOs.map((ceo, i) => {
+            const types: CompanyType[] = ['Transport', 'Extraction', 'Manufacturing', 'Agricultural', 'Commercial'];
+            const type = types[i];
+            const name = generateCompanyName(rng, type);
+            ceo.assignedTo = `company_${name}`;
+            const corpId = generateId('corp', rng);
+
+            if (type === 'Transport') {
+                const design = aiEmpire.designLibrary.find(d => d.id === 'design_freighter');
+                if (design) {
+                    const shipId = generateId('ship', rng);
+                    const ship: Ship = {
+                        id: shipId,
+                        name: `CIV ${design.name} AI`,
+                        designId: design.id,
+                        empireId: aiEmpireId,
+                        hullPoints: design.maxHullPoints,
+                        maxHullPoints: design.maxHullPoints,
+                        shieldPoints: 0,
+                        fuel: design.fuelCapacity,
+                        experience: 0,
+                        cargo: {},
+                        inventory: [],
+                        sourceCompanyId: corpId,
+                    };
+                    ships[shipId] = ship;
+
+                    const fleetId = generateId('fleet', rng);
+                    const fleet: Fleet = {
+                        id: fleetId,
+                        name: `${name} Fleet #1`,
+                        empireId: aiEmpireId,
+                        shipIds: [shipId],
+                        currentStarId: aiHomeStar.id,
+                        position: aiPos,
+                        orbitingPlanetId: aiHomePlanet?.id,
+                        orders: [],
+                        isCivilian: true,
+                        ownerCompanyId: corpId
+                    };
+                    aiEmpire.fleets.push(fleet);
+                }
+            }
+
+            return {
+                id: corpId,
+                name,
+                type,
+                homeColonyId: aiColony.id,
+                wealth: 10000,
+                valuation: 10000,
+                activeFreighters: type === 'Transport' ? 1 : 0,
+                ceoId: ceo.id,
+                strategy: rng.pick(['Expansionist', 'Optimized', 'Vanguard']),
+                designBias: rng.pick(['Speed', 'Efficiency', 'Capacity']),
+                explorationLicenseIds: [],
+                history: [],
+                transactions: []
+            };
+        });
+        aiEmpire.companies = aiCompanies;
+    }
+
     // 10. Final Assemble
     return {
         id: `game_${seed}`,
@@ -413,9 +598,10 @@ export function setupNewGame(playerName: string, seed: number, realSpace?: boole
         empires: {
             [playerEmpireId]: playerEmpire,
             [pirateEmpireId]: pirateEmpire,
+            [aiEmpireId]: aiEmpire,
         },
         ships,
-        colonies: { [homeColony.id]: homeColony },
+        colonies: initColonies,
         playerEmpireId,
         tickLength: 86400 as TickLength,
         tenders: [],

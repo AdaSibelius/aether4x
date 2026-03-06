@@ -77,6 +77,28 @@ export default function GalaxyMap() {
                 ctx.strokeStyle = 'rgba(79,195,247,0.12)';
                 ctx.lineWidth = 1;
                 ctx.stroke();
+
+                // Border Tension overlay
+                const claim1 = star.claimedByEmpireId;
+                const claim2 = target.claimedByEmpireId;
+                if (claim1 && claim2 && claim1 !== claim2) {
+                    const emp1 = game.empires[claim1];
+                    const tension = emp1?.relations?.[claim2]?.tension || 0;
+                    if (tension > 10 && zoom > 0.5) {
+                        const mx = (from.cx + to.cx) / 2;
+                        const my = (from.cy + to.cy) / 2;
+
+                        // Draw small tension meter
+                        const w = 24 * zoom;
+                        const h = 4 * zoom;
+                        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                        ctx.fillRect(mx - w / 2, my - h / 2, w, h);
+                        ctx.fillStyle = tension > 75 ? '#ff3333' : tension > 40 ? '#ffaa33' : '#33cc33';
+                        ctx.fillRect(mx - w / 2, my - h / 2, w * (Math.min(100, tension) / 100), h);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                        ctx.strokeRect(mx - w / 2, my - h / 2, w, h);
+                    }
+                }
             }
         }
 
@@ -139,6 +161,22 @@ export default function GalaxyMap() {
             const radius = (SPECTRAL_SIZES[star.spectralType] ?? 4) * Math.max(0.5, zoom * 0.8);
             const isSelected = star.id === selectedStarId;
             const isExplored = star.explored;
+
+            // Territory Claims
+            const controllerId = star.claimedByEmpireId;
+            if (controllerId && game.empires[controllerId]) {
+                const emp = game.empires[controllerId];
+                const tr = radius * 4.5;
+                ctx.beginPath();
+                ctx.arc(cx, cy, tr, 0, Math.PI * 2);
+                ctx.fillStyle = `${emp.color}15`; // ~8% opacity hex string concatenation
+                ctx.fill();
+                ctx.strokeStyle = `${emp.color}66`; // ~40% opacity
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
 
             // Glow effect
             if (isExplored || isSelected) {

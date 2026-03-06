@@ -8,6 +8,7 @@ import { setupNewGame } from '@/engine/setup';
 import { advanceTick } from '@/engine/time';
 import { useUIStore } from './uiStore';
 import SimLogger from '@/utils/logger';
+import { idbStorage } from './storage';
 
 interface GameStore {
     game: GameState | null;
@@ -44,6 +45,8 @@ interface GameStore {
         teleportFleet: (fleetId: string, starId: string, planetId?: string) => void;
     };
     openMiningTender: (systemId: string) => void;
+    switchPlayerEmpire: (empireId: string) => void;
+    loadExternalState: (state: GameState) => void;
     establishColony: (planetId: string, name: string) => void;
 }
 
@@ -462,6 +465,22 @@ export const useGameStore = create<GameStore>()(
                 useUIStore.getState().addNotification(`New colony established on ${name}. Construction of Planetary Spaceport initiated.`);
             },
 
+            switchPlayerEmpire: (empireId: string) => {
+                const { game } = get();
+                if (!game) return;
+                const empire = game.empires[empireId];
+                if (empire) {
+                    set({ game: { ...game, playerEmpireId: empireId } });
+                    useUIStore.getState().addNotification(`Switched viewpoint to ${empire.name}.`);
+                    SimLogger.info('SYSTEM', `Switched player view to empire: ${empireId}`);
+                }
+            },
+
+            loadExternalState: (state: GameState) => {
+                set({ game: state, isRunning: false });
+                SimLogger.info('SYSTEM', 'Loaded external game state');
+            },
+
             diffSnapshots: (idA: string, idB: string): DiffReport | null => {
                 const { snapshots } = get();
                 const snapA = snapshots.find(s => s.id === idA);
@@ -500,7 +519,7 @@ export const useGameStore = create<GameStore>()(
         }),
         {
             name: 'aether-4x-game',
-            storage: createJSONStorage(() => localStorage),
+            storage: createJSONStorage(() => idbStorage),
             partialize: (state) => ({ game: state.game, snapshots: state.snapshots }),
         }
     )

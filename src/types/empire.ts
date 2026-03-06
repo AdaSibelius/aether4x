@@ -21,7 +21,15 @@ export interface Empire {
     companies: Company[];
     events: GameEvent[];
     history: EmpireSnapshot[];
+    relations: Record<string, { treaty: TreatyType, tension: number }>;
+    aiState?: {
+        posture: 'Expansion' | 'Consolidation' | 'Aggression';
+        targetSystems: string[];
+        lastEvaluationTick: number;
+    };
 }
+
+export type TreatyType = 'None' | 'NonAggression' | 'TradeAgreement' | 'ResearchAlliance' | 'War';
 
 export interface EmpireSnapshot {
     turn: number;

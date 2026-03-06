@@ -1,4 +1,4 @@
-import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent, Planet, GameStats } from '../types';
+import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent, Planet, GameStats, Ship, Fleet } from '../types';
 import { getGovernorBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
 import { BALANCING } from './constants';
@@ -89,7 +89,7 @@ function updateColonyPopulation(colony: Colony, policyMod: number, agriMod: numb
     }
 
     if (colony.population > 0) {
-        let annualGrowth = colony.population * 0.05 * policyMod * agriMod * happyMod;
+        const annualGrowth = colony.population * 0.05 * policyMod * agriMod * happyMod;
         const capacity = BALANCING.BASE_HABITABLE_POP + (colony.infrastructure * BALANCING.INFRA_POP_SUPPORT / 100);
         const capacityMod = 1 - (colony.population / capacity);
 
@@ -143,8 +143,8 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     const publicWorkersM = ((colony as any).publicWorkers || 0) * staffingLevel;
     const privateWorkersM = ((colony as any).privateWorkers || 0) * staffingLevel;
 
-    let totalPublicWages = publicWorkersM * colonyWage * days;
-    let totalPrivateWages = privateWorkersM * colonyWage * days;
+    const totalPublicWages = publicWorkersM * colonyWage * days;
+    const totalPrivateWages = privateWorkersM * colonyWage * days;
 
     colony.privateWealth = (colony.privateWealth || 0) + totalPublicWages + totalPrivateWages;
 
@@ -563,6 +563,70 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
                 }
                 item.progress = Math.min(100, item.progress + fractionOfJob * 100);
             }
+
+            // Process completed ships
+            sy.activeBuilds = sy.activeBuilds.filter(item => {
+                if (item.progress >= 99.99) {
+                    for (let q = 0; q < item.quantity; q++) {
+                        const shipId = generateId('ship', rng);
+                        const design = empire?.designLibrary.find(d => d.id === item.designId);
+                        if (!design || !empire) continue;
+
+                        const ship: Ship = {
+                            id: shipId,
+                            name: `${design.name} ${generateId('', rng).slice(0, 4).toUpperCase()}`,
+                            designId: design.id,
+                            empireId: empire.id,
+                            hullPoints: design.maxHullPoints,
+                            maxHullPoints: design.maxHullPoints,
+                            shieldPoints: 0,
+                            fuel: design.fuelCapacity,
+                            experience: 0,
+                            cargo: {},
+                            inventory: [],
+                            sourceCompanyId: item.sourceCompanyId,
+                        };
+                        state.ships[shipId] = ship;
+
+                        const starId = Object.values(state.galaxy.stars).find(s => s.planets.some(p => p.id === colony.planetId))?.id || '';
+                        let targetFleet = empire.fleets.find(f =>
+                            f.orbitingPlanetId === colony.planetId &&
+                            f.currentStarId === starId &&
+                            f.ownerCompanyId === item.sourceCompanyId &&
+                            (item.sourceCompanyId ? f.isCivilian : !f.isCivilian)
+                        );
+
+                        if (!targetFleet) {
+                            const fleetId = generateId('fleet', rng);
+                            const pos = planet ? getPlanetPosition(planet, state.turn) : { x: 0, y: 0 };
+                            let fleetName = item.sourceCompanyId ? 'Corporate Fleet' : `${colony.name} Defense Fleet`;
+                            if (item.sourceCompanyId) {
+                                const corp = empire.companies.find(c => c.id === item.sourceCompanyId);
+                                if (corp) fleetName = `${corp.name} Fleet`;
+                            }
+
+                            targetFleet = {
+                                id: fleetId,
+                                name: fleetName,
+                                empireId: empire.id,
+                                shipIds: [],
+                                currentStarId: starId,
+                                position: pos,
+                                orbitingPlanetId: colony.planetId,
+                                orders: [],
+                                isCivilian: !!item.sourceCompanyId,
+                                ownerCompanyId: item.sourceCompanyId
+                            };
+                            empire.fleets.push(targetFleet);
+                        }
+                        targetFleet.shipIds.push(shipId);
+
+                        events.push(makeEvent(state.turn, state.date, 'ProductionComplete', `${colony.name}: Constructed ${design.name}`, rng, { important: true, targetId: shipId, empireId: empire.id }));
+                    }
+                    return false;
+                }
+                return true;
+            });
         }
     }
 
@@ -627,7 +691,7 @@ export function tickAetherHarvesting(state: GameState, dt: number) {
             }
 
             if (totalHarvestRate > 0) {
-                let amount = Math.min(totalHarvestRate * aetherDeposit.accessibility * days, aetherDeposit.amount);
+                const amount = Math.min(totalHarvestRate * aetherDeposit.accessibility * days, aetherDeposit.amount);
                 let remainingToStore = amount;
                 for (const sid of fleet.shipIds) {
                     const ship = state.ships[sid];

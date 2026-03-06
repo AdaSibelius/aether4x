@@ -16,6 +16,7 @@ const NAV_ITEMS: { view: UIView; label: string; icon: string }[] = [
     { view: 'Colonies', label: 'Colonies', icon: '🏙️' },
     { view: 'Planets', label: 'Celestial Bodies', icon: '🌍' },
     { view: 'Officers', label: 'Officers', icon: '👨‍✈️' },
+    { view: 'Diplomacy', label: 'Diplomacy', icon: '🤝' },
     { view: 'Events', label: 'Events', icon: '📡' },
 ];
 

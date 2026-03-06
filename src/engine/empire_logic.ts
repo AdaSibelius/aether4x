@@ -1,4 +1,5 @@
 import type { GameState, Empire, GameEvent } from '../types';
+import { tickAIEmpire } from './ai_empire';
 import { tickResearch } from './research';
 import { tickColony } from './colonies';
 import { tickCivilianEconomy, tickCivilianMigration } from './economy';
@@ -39,6 +40,11 @@ export function tickEmpire(state: GameState, empire: Empire, rng: RNG, dt: numbe
 
     // 6. State Treasury & Maintenance
     tickEmpireFinances(state, empire, dt, rng);
+
+    // 7. AI Operations
+    if (!empire.isPlayer) {
+        events.push(...tickAIEmpire(state, empire, rng, dt));
+    }
 
     return events;
 }

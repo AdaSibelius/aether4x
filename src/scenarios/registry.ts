@@ -1,6 +1,8 @@
 import { LogisticsValidation } from './LogisticsValidation';
 import { MarsIsolation, ManufacturingCrash, KnowledgeDesert, GrandArmada } from './StressTests';
 import { SectorHealthAudit } from './SectorHealthAudit';
+import { Economy50YearRun } from './Economy50YearRun';
+import { CombatStressTest } from './CombatStressTest';
 import { Scenario } from './types';
 
 export const SCENARIO_REGISTRY: Record<string, Scenario> = {
@@ -9,5 +11,7 @@ export const SCENARIO_REGISTRY: Record<string, Scenario> = {
     ManufacturingCrash,
     KnowledgeDesert,
     GrandArmada,
-    SectorHealthAudit
+    SectorHealthAudit,
+    Economy50YearRun,
+    CombatStressTest
 };

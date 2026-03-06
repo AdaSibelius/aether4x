@@ -21,6 +21,7 @@ import CorporateManager from '@/components/Economy/CorporateManager';
 import CompanyDetailsView from '@/components/Economy/CompanyDetails';
 import Toaster from '@/components/Notifications/Toaster';
 import CombatEventMonitor from '@/components/Notifications/CombatEventMonitor';
+import DiplomacyPanel from '@/components/DiplomacyPanel/DiplomacyPanel';
 import styles from './page.module.css';
 
 // ─── Main Menu ───────────────────────────────────────────────────────────────
@@ -176,6 +177,7 @@ function ViewContent() {
     case 'Economy': return <EconomyView />;
     case 'Companies': return <CorporateManager />;
     case 'CompanyDetails': return <CompanyDetailsView />;
+    case 'Diplomacy': return <DiplomacyPanel />;
     default: return <GalaxyMap />;
   }
 }

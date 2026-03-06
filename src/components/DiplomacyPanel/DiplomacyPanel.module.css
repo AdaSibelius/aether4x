@@ -1,0 +1,150 @@
+.container {
+    padding: 24px;
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--bg-default);
+}
+
+.header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--text-default);
+    margin: 0 0 4px 0;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 14px;
+}
+
+.empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    border-radius: 8px;
+    border: 1px dashed var(--border-default);
+}
+
+.empireGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+}
+
+.empireCard {
+    background: var(--bg-surface);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.cardHeader h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-default);
+}
+
+.postureLabel {
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: var(--bg-surface-hover);
+    color: var(--text-muted);
+}
+.postureLabel[data-posture="Expansion"] { color: var(--colors-primary); background: rgba(0, 150, 255, 0.1); }
+.postureLabel[data-posture="Aggression"] { color: var(--colors-danger); background: rgba(255, 50, 50, 0.1); }
+.postureLabel[data-posture="Consolidation"] { color: var(--colors-success); background: rgba(50, 255, 100, 0.1); }
+
+.metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: auto;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.metric label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.treatyValue {
+    font-size: 15px;
+    font-weight: 500;
+}
+.treatyValue[data-treaty="None"] { color: var(--text-muted); }
+.treatyValue[data-treaty="War"] { color: var(--colors-danger); font-weight: 700; }
+.treatyValue[data-treaty="NonAggression"] { color: var(--colors-success); }
+
+.tensionBarBg {
+    height: 6px;
+    background: var(--bg-default);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.tensionBarFill {
+    height: 100%;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 16px;
+}
+
+.actionBtn {
+    flex: 1;
+    background: var(--bg-surface-hover);
+    border: 1px solid var(--border-default);
+    color: var(--text-default);
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.actionBtn:hover:not(:disabled) {
+    background: var(--bg-highlight);
+    border-color: var(--border-focus);
+}
+
+.actionBtnDanger:hover:not(:disabled) {
+    background: rgba(255, 50, 50, 0.1);
+    border-color: var(--colors-danger);
+    color: var(--colors-danger);
+}
+
+.actionBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
