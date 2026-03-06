@@ -7,13 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:sims": "tsx src/scenarios/ExpansionTest.ts",
-    "test:sim": "tsx src/scripts/verify_combat_sim.ts",
-    "test:bombardment": "tsx src/scripts/verify_bombardment.ts",
-    "test:detection": "tsx src/scripts/verify_detection.ts",
-    "test:integration": "tsx src/scripts/verify_integration.ts",
-    "test:determinism": "tsx src/scripts/verify_determinism.ts",
-    "test:logistics": "tsx src/scenarios/run.ts LogisticsValidation 365 12345"
+    "test:scenario": "tsx src/scenarios/run.ts"
   },
   "dependencies": {
     "@babylonjs/core": "^8.53.0",

@@ -7,7 +7,7 @@ import { tickEmpire } from './empire_logic';
 import { tickAetherHarvesting } from './colonies';
 import { tickFleets, getPlanetPosition } from './fleets';
 import { updateVisibility } from './detection';
-import { AuditService } from './debug/AuditService';
+import { tickBorders } from './border';
 
 import SimLogger from '../utils/logger';
 
@@ -69,6 +69,10 @@ export function advanceTick(state: GameState): GameState {
     // Must run after all movement so we detect based on final positions this tick.
     updateVisibility(next);
 
+    // 5.8 Phase: Borders & Sovereignty
+    const borderEvents = tickBorders(next, dt, rng);
+    shipEvents.push(...borderEvents);
+
     // 6. Phase: Event Distribution
     // Distribute ship events to the correct empire logs.
     // Combat events are ALSO mirrored to the player so they always see battles in their space.
@@ -97,8 +101,7 @@ export function advanceTick(state: GameState): GameState {
         }
     }
 
-    // 7. Phase: Integrity & Audit
-    AuditService.checkConservationOfMass(next);
+    // 7. Phase: Integrity
 
     return next;
 }

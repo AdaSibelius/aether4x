@@ -1,7 +1,7 @@
 import { setupNewGame } from '../engine/setup';
 import { advanceTick } from '../engine/time';
 import { GameState, Colony } from '../types';
-import { getLogisticHealthSnapshot, getGlobalMineralInventory } from '../engine/debug';
+import { getLogisticHealthSnapshot, getGlobalMineralInventory } from './utils';
 
 async function runScenario() {
     console.log("--- Scenario: Frontier Expansion & Physical Trade (Rigor Edition) ---");

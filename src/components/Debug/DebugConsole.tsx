@@ -5,22 +5,17 @@ import { useUIStore } from '@/store/uiStore';
 import styles from './DebugConsole.module.css';
 
 import SimLogger from '@/utils/logger';
-import { runStressTest, StressTestReport } from '@/engine/stressTest';
-import { runHealthAudit } from '@/engine/health';
 import BattleSimulator from './BattleSimulator';
 
 export default function DebugConsole() {
     const { showDebugConsole, toggleDebugConsole } = useUIStore();
-    const [activeTab, setActiveTab] = useState<'Cheats' | 'Snapshots' | 'Differentiator' | 'Market Debug' | 'Scenarios' | 'Testing' | 'Combat Sim'>('Cheats');
+    const [activeTab, setActiveTab] = useState<'Game Master' | 'State Management' | 'Entity Inspector' | 'Combat Sim'>('Game Master');
     const [showState, setShowState] = useState(false);
-    const [report, setReport] = useState<StressTestReport | null>(null);
     const [snapshotName, setSnapshotName] = useState('');
     const [isTracing, setIsTracing] = useState(false);
     const [selectedEntity, setSelectedEntity] = useState<{ type: 'Colony' | 'Company' | 'Fleet' | 'Empire' | 'Full', id: string }>({ type: 'Full', id: '' });
-    const [diffIds, setDiffIds] = useState<{ a: string, b: string }>({ a: '', b: '' });
-    const [diffResult, setDiffResult] = useState<any>(null);
 
-    const { game, debug, snapshots, createSnapshot, loadSnapshot, deleteSnapshot, diffSnapshots } = useGameStore();
+    const { game, debug, snapshots, createSnapshot, loadSnapshot, deleteSnapshot, switchPlayerEmpire } = useGameStore();
     const { selectedColonyId } = useUIStore();
 
     useEffect(() => {
@@ -36,8 +31,6 @@ export default function DebugConsole() {
                     return null;
                 },
                 snapshot: (name: string) => useGameStore.getState().createSnapshot(name),
-                diff: (a: string, b: string) => useGameStore.getState().diffSnapshots(a, b),
-                healthAudit: () => game ? runHealthAudit(game) : null,
                 advance: () => useGameStore.getState().advanceTurn(),
                 warp: (days: number) => useGameStore.getState().debug.timeWarp(days)
             };
@@ -52,12 +45,6 @@ export default function DebugConsole() {
         SimLogger.setTrace(next);
     };
 
-    const handleRunStressTest = (turns: number) => {
-        const result = runStressTest(game, turns);
-        setReport(result);
-        setActiveTab('Testing');
-    };
-
     return (
         <div className={styles.container}>
             <div className={styles.content}>
@@ -67,7 +54,7 @@ export default function DebugConsole() {
                 </div>
 
                 <div className={styles.tabs}>
-                    {(['Cheats', 'Snapshots', 'Differentiator', 'Market Debug', 'Scenarios', 'Testing', 'Combat Sim'] as const).map(tab => (
+                    {(['Game Master', 'State Management', 'Entity Inspector', 'Combat Sim'] as const).map(tab => (
                         <button
                             key={tab}
                             className={`${styles.tabBtn} ${activeTab === tab ? styles.active : ''}`}
@@ -78,10 +65,10 @@ export default function DebugConsole() {
                     ))}
                 </div>
 
-                {activeTab === 'Cheats' && (
+                {activeTab === 'Game Master' && (
                     <>
                         <section className={styles.section}>
-                            <div className={styles.sectionTitle}>Logging</div>
+                            <div className={styles.sectionTitle}>Logging & UI</div>
                             <button
                                 onClick={handleToggleTrace}
                                 style={{ color: isTracing ? 'var(--accent-green)' : 'var(--text-muted)' }}
@@ -97,7 +84,7 @@ export default function DebugConsole() {
                         </section>
 
                         <section className={styles.section}>
-                            <div className={styles.sectionTitle}>Quick Cheats</div>
+                            <div className={styles.sectionTitle}>Resource Injection</div>
                             <div className={styles.buttonGrid}>
                                 <button onClick={() => debug.addWealth(1000000)}>+1M Wealth</button>
                                 <button onClick={() => debug.addResearchPoints(1000)}>+1k RP</button>
@@ -111,181 +98,32 @@ export default function DebugConsole() {
                         </section>
 
                         <section className={styles.section}>
-                            <div className={styles.sectionTitle}>Time Control</div>
+                            <div className={styles.sectionTitle}>Switch Player View</div>
                             <div className={styles.buttonGrid}>
-                                <button onClick={() => debug.timeWarp(30)}>Warp 1 Month</button>
-                                <button onClick={() => debug.timeWarp(365)}>Warp 1 Year</button>
-                            </div>
-                        </section>
-
-                        <section className={styles.section}>
-                            <div className={styles.sectionTitle}>Automation</div>
-                            <button onClick={() => selectedColonyId && debug.instantQueue(selectedColonyId)} disabled={!selectedColonyId}>
-                                Instant Build (Top)
-                            </button>
-                        </section>
-                    </>
-                )}
-
-                {activeTab === 'Snapshots' && (
-                    <div className={styles.snapshotsArea}>
-                        <div className={styles.saveForm}>
-                            <input
-                                type="text"
-                                placeholder="Snapshot Name"
-                                value={snapshotName}
-                                onChange={e => setSnapshotName(e.target.value)}
-                            />
-                            <button onClick={() => { createSnapshot(snapshotName || 'Manual Save'); setSnapshotName(''); }}>
-                                Save
-                            </button>
-                        </div>
-                        <div className={styles.snapList}>
-                            {snapshots.map((s: any) => (
-                                <div key={s.id} className={styles.snapItem}>
-                                    <div className={styles.snapInfo}>
-                                        <div className={styles.snapName}>{s.name}</div>
-                                        <div className={styles.snapMeta}>Turn {s.turn} · {new Date(s.date).toLocaleTimeString()}</div>
-                                    </div>
-                                    <div className={styles.snapActions}>
-                                        <button onClick={() => loadSnapshot(s.id)}>Load</button>
-                                        <button onClick={() => deleteSnapshot(s.id)} style={{ color: 'var(--accent-red)' }}>×</button>
-                                    </div>
-                                </div>
-                            ))}
-                            {snapshots.length === 0 && <div className={styles.empty}>No snapshots saved</div>}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'Differentiator' && (
-                    <div className={styles.testingArea}>
-                        <section className={styles.section}>
-                            <div className={styles.sectionTitle}>State Comparison</div>
-                            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                                <select
-                                    className="form-control"
-                                    style={{ background: 'var(--bg-card)', fontSize: 11 }}
-                                    value={diffIds.a}
-                                    onChange={e => setDiffIds({ ...diffIds, a: e.target.value })}
-                                >
-                                    <option value="">Select Base...</option>
-                                    {snapshots.map(s => <option key={s.id} value={s.id}>{s.name} (T{s.turn})</option>)}
-                                </select>
-                                <select
-                                    className="form-control"
-                                    style={{ background: 'var(--bg-card)', fontSize: 11 }}
-                                    value={diffIds.b}
-                                    onChange={e => setDiffIds({ ...diffIds, b: e.target.value })}
-                                >
-                                    <option value="">Select Target...</option>
-                                    {snapshots.map(s => <option key={s.id} value={s.id}>{s.name} (T{s.turn})</option>)}
-                                </select>
-                                <button
-                                    disabled={!diffIds.a || !diffIds.b}
-                                    onClick={() => setDiffResult(diffSnapshots(diffIds.a, diffIds.b))}
-                                >
-                                    Diff
-                                </button>
-                            </div>
-
-                            {diffResult && (
-                                <div className={styles.report} style={{ border: '1px solid var(--border-dim)' }}>
-                                    <div style={{ fontSize: 11, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                                        <div>Turns Elapsed:</div>
-                                        <div style={{ textAlign: 'right', color: 'var(--accent-blue)' }}>+{diffResult.turnDelta}</div>
-                                        <div>Treasury Δ:</div>
-                                        <div style={{ textAlign: 'right', color: diffResult.treasury >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                            {diffResult.treasury >= 0 ? '+' : ''}{diffResult.treasury.toLocaleString()}
-                                        </div>
-                                        <div>Private Wealth Δ:</div>
-                                        <div style={{ textAlign: 'right', color: diffResult.privateWealth >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                            {diffResult.privateWealth >= 0 ? '+' : ''}{diffResult.privateWealth.toLocaleString()}
-                                        </div>
-                                        <div>Population Δ:</div>
-                                        <div style={{ textAlign: 'right', color: diffResult.popDelta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                            {diffResult.popDelta >= 0 ? '+' : ''}{diffResult.popDelta.toFixed(2)}M
-                                        </div>
-                                        <div>Minerals Δ:</div>
-                                        <div style={{ textAlign: 'right', color: diffResult.mineralDelta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                            {diffResult.mineralDelta >= 0 ? '+' : ''}{diffResult.mineralDelta.toLocaleString()}
-                                        </div>
-                                        <div>Fleet/Ship Δ:</div>
-                                        <div style={{ textAlign: 'right', color: diffResult.fleetDelta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                            {diffResult.fleetDelta >= 0 ? '+' : ''}{diffResult.fleetDelta} / {diffResult.shipDelta}
-                                        </div>
-                                        <div>Corp Valuation Δ:</div>
-                                        <div style={{ textAlign: 'right', color: diffResult.valuationDelta >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                            {diffResult.valuationDelta >= 0 ? '+' : ''}{diffResult.valuationDelta.toLocaleString()}
-                                        </div>
-                                    </div>
-                                    <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-muted)' }}>
-                                        Full structural diff available in window.aetherAPI.diff(a, b)
-                                    </div>
-                                </div>
-                            )}
-                        </section>
-                    </div>
-                )}
-
-                {activeTab === 'Market Debug' && (
-                    <div className={styles.testingArea}>
-                        <section className={styles.section}>
-                            <div className={styles.sectionTitle}>Tender Stress-Tester</div>
-                            <div className={styles.buttonGrid}>
-                                <button onClick={() => {
-                                    if (game.tenders.length > 0) {
-                                        const tender = game.tenders[0];
-                                        // Mock 5 bids
-                                        for (let i = 0; i < 5; i++) {
-                                            const bid = tender.highestBid + 500 + Math.floor(Math.random() * 1000);
-                                            tender.highestBid = bid;
-                                            tender.highestBidderId = 'MOCK_CORP';
-                                        }
-                                        useGameStore.setState({ game: { ...game } });
-                                    }
-                                }}>
-                                    Simulate 5 Bids (Current Tender)
-                                </button>
-                                <button onClick={() => {
-                                    const next = structuredClone(game);
-                                    for (const corp of next.empires[next.playerEmpireId].companies) {
-                                        // Seed 10 days of history
-                                        for (let d = 0; d < 10; d++) {
-                                            corp.history.push({
-                                                date: `2040-01-${10 + d}`,
-                                                wealth: corp.wealth + (Math.random() * 1000),
-                                                valuation: corp.valuation + (Math.random() * 2000),
-                                                revenue: Math.random() * 500,
-                                                expenses: Math.random() * 200
-                                            });
-                                        }
-                                    }
-                                    useGameStore.setState({ game: next });
-                                }}>
-                                    Seed Valuation History
-                                </button>
-                            </div>
-                        </section>
-
-                        <section className={styles.section}>
-                            <div className={styles.sectionTitle}>Corporate Ledger</div>
-                            <div className={styles.buttonGrid}>
-                                {game.empires[game.playerEmpireId].companies.map(corp => (
-                                    <button key={corp.id} style={{ fontSize: 10 }} onClick={() => {
-                                        console.table(corp.transactions);
-                                        useUIStore.getState().addNotification(`Transaction ledger for ${corp.name} printed to browser console.`);
-                                    }}>
-                                        Log {corp.name} Ledger
+                                {Object.values(game.empires).map(emp => (
+                                    <button
+                                        key={emp.id}
+                                        onClick={() => switchPlayerEmpire(emp.id)}
+                                        className={game.playerEmpireId === emp.id ? styles.active : ''}
+                                        style={{ borderLeft: `4px solid ${emp.color}` }}
+                                    >
+                                        {emp.name} {emp.isPlayer ? '(P)' : '(AI)'}
                                     </button>
                                 ))}
                             </div>
                         </section>
-                    </div>
-                )}
 
-                {activeTab === 'Scenarios' && (
-                    <div className={styles.testingArea}>
+                        <section className={styles.section}>
+                            <div className={styles.sectionTitle}>Time & Automation</div>
+                            <div className={styles.buttonGrid}>
+                                <button onClick={() => debug.timeWarp(30)}>Warp 1 Month</button>
+                                <button onClick={() => debug.timeWarp(365)}>Warp 1 Year</button>
+                                <button onClick={() => selectedColonyId && debug.instantQueue(selectedColonyId)} disabled={!selectedColonyId}>
+                                    Instant Build (Top)
+                                </button>
+                            </div>
+                        </section>
+
                         <section className={styles.section}>
                             <div className={styles.sectionTitle}>Injection Scenarios</div>
                             <div className={styles.buttonGrid}>
@@ -317,35 +155,100 @@ export default function DebugConsole() {
                                 </button>
                             </div>
                         </section>
+                    </>
+                )}
+
+                {activeTab === 'State Management' && (
+                    <div className={styles.snapshotsArea}>
+                        <div className={styles.saveForm}>
+                            <input
+                                type="text"
+                                placeholder="Snapshot Name"
+                                value={snapshotName}
+                                onChange={e => setSnapshotName(e.target.value)}
+                            />
+                            <button onClick={() => { createSnapshot(snapshotName || 'Manual Save'); setSnapshotName(''); }}>
+                                Save Memory Snapshot
+                            </button>
+                        </div>
+                        <div className={styles.snapList}>
+                            {snapshots.map((s: any) => (
+                                <div key={s.id} className={styles.snapItem}>
+                                    <div className={styles.snapInfo}>
+                                        <div className={styles.snapName}>{s.name}</div>
+                                        <div className={styles.snapMeta}>Turn {s.turn} · {new Date(s.date).toLocaleTimeString()}</div>
+                                    </div>
+                                    <div className={styles.snapActions}>
+                                        <button onClick={() => loadSnapshot(s.id)}>Load</button>
+                                        <button onClick={() => deleteSnapshot(s.id)} style={{ color: 'var(--accent-red)' }}>×</button>
+                                    </div>
+                                </div>
+                            ))}
+                            {snapshots.length === 0 && <div className={styles.empty}>No snapshots saved</div>}
+                        </div>
+
+                        <div className={styles.debugSection} style={{ marginTop: 16 }}>
+                            <h4>Headless Simulation Result</h4>
+                            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Imports the 'sim_output.json' file generated by headless scenarios.</p>
+                            <button onClick={async () => {
+                                try {
+                                    const response = await fetch('/sim_output.json');
+                                    if (!response.ok) throw new Error('Failed to fetch sim_output.json');
+                                    const state = await response.json();
+                                    useGameStore.getState().loadExternalState(state);
+                                } catch (err) {
+                                    console.error(err);
+                                    alert('Could not load simulation result. Make sure the script was run and public/sim_output.json exists.');
+                                }
+                            }}>
+                                Import Last Headless Sim
+                            </button>
+                        </div>
                     </div>
                 )}
 
-                {activeTab === 'Testing' && (
+                {activeTab === 'Entity Inspector' && (
                     <div className={styles.testingArea}>
                         <section className={styles.section}>
-                            <div className={styles.sectionTitle}>Stress Testing</div>
-                            <div className={styles.buttonGrid}>
-                                <button onClick={() => handleRunStressTest(30)}>30 Turns</button>
-                                <button onClick={() => handleRunStressTest(100)}>100 Turns</button>
-                            </div>
+                            <div className={styles.sectionTitle}>Global Markets</div>
+                            <div className={styles.marketGrid}>
+                                <div className={styles.marketHeader}>Colony</div>
+                                <div className={styles.marketHeader}>Consumer Goods</div>
+                                <div className={styles.marketHeader}>Food</div>
+                                <div className={styles.marketHeader}>Durasteel</div>
 
-                            {report && (
-                                <div className={`${styles.report} ${report.isHealthy ? styles.healthy : styles.unhealthy}`}>
-                                    <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                                        {report.isHealthy ? '✅ Healthy' : '⚠️ Issues Found'}
-                                    </div>
-                                    <div className={styles.reportStats}>
-                                        <div>Turns: {report.turnsRun}</div>
-                                        <div>Wealth: {Math.floor(report.initialTreasury)} → {Math.floor(report.finalTreasury)}</div>
-                                        <div>Pops: {(report.initialPopulation).toFixed(1)}M → {(report.finalPopulation).toFixed(1)}M</div>
-                                    </div>
-                                    {report.issues.length > 0 && (
-                                        <div className={styles.issueList}>
-                                            {report.issues.map((iss, i) => <div key={i}>• {iss}</div>)}
+                                {Object.values(game.colonies).map(colony => (
+                                    <React.Fragment key={colony.id}>
+                                        <div className={styles.colonyName}>{colony.name}</div>
+                                        <div className={styles.priceData}>
+                                            <span className={styles.priceValue}>{colony.resourcePrices?.ConsumerGoods?.toFixed(2) || '0.00'} W</span>
+                                            <span className={styles.stockValue}>({Math.floor(colony.minerals.ConsumerGoods || 0)})</span>
                                         </div>
-                                    )}
-                                </div>
-                            )}
+                                        <div className={styles.priceData}>
+                                            <span className={styles.priceValue}>{colony.resourcePrices?.Food?.toFixed(2) || '0.00'} W</span>
+                                            <span className={styles.stockValue}>({Math.floor(colony.minerals.Food || 0)})</span>
+                                        </div>
+                                        <div className={styles.priceData}>
+                                            <span className={styles.priceValue}>{colony.resourcePrices?.Durasteel?.toFixed(2) || '0.00'} W</span>
+                                            <span className={styles.stockValue}>({Math.floor(colony.minerals.Durasteel || 0)})</span>
+                                        </div>
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className={styles.section}>
+                            <div className={styles.sectionTitle}>Corporate Ledger</div>
+                            <div className={styles.buttonGrid}>
+                                {game.empires[game.playerEmpireId].companies.map(corp => (
+                                    <button key={corp.id} style={{ fontSize: 10 }} onClick={() => {
+                                        console.table(corp.transactions);
+                                        useUIStore.getState().addNotification(`Transaction ledger for ${corp.name} printed to browser console.`);
+                                    }}>
+                                        Log {corp.name} Ledger
+                                    </button>
+                                ))}
+                            </div>
                         </section>
 
                         <section className={styles.section}>

@@ -1,4 +1,4 @@
-export type UIView = 'Galaxy' | 'System' | 'Dashboard' | 'Research' | 'ShipDesign' | 'Colonies' | 'Planets' | 'Production' | 'Officers' | 'Events' | 'Fleets' | 'Economy' | 'Companies' | 'CompanyDetails';
+export type UIView = 'Galaxy' | 'System' | 'Dashboard' | 'Research' | 'ShipDesign' | 'Colonies' | 'Planets' | 'Production' | 'Officers' | 'Events' | 'Fleets' | 'Economy' | 'Companies' | 'CompanyDetails' | 'Diplomacy';
 
 export interface UIState {
     activeView: UIView;

@@ -22,6 +22,8 @@ export interface Star {
     jumpPoints: JumpPoint[];
     explored: boolean;          // has any empire surveyed this system?
     surveyedByEmpires: string[]; // empire IDs
+    claimedByEmpireId?: string;
+    claimProgress?: { empireId: string, ticks: number }[];
 }
 
 export type BodyType = CelestialSubtype; // Legacy compatibility

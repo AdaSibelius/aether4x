@@ -31,7 +31,9 @@ export type EventType =
     | 'TenderResolved'
     | 'ProductionComplete'
     | 'ColonyBombarded'
-    | 'ColonyFallen';
+    | 'ColonyFallen'
+    | 'Diplomacy'
+    | 'ColonyEvent';
 
 export interface GameEvent {
     id: string;
