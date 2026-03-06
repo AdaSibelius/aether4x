@@ -1,3 +1,13 @@
+/**
+ * @module fleets
+ * @description
+ * Core simulation logic for fleets, movement, and orders.
+ * 
+ * **Architecture & State Mutations:**
+ * - Functions in this module (e.g., `processMoveOrder`, `processFleetOrders`) directly mutate the `GameState`.
+ * - `GameState.empires[id].fleets` and `GameState.ships` are frequently modified.
+ * - Freight and migration actions generate transactions via `economy_ledger.ts`.
+ */
 import type { GameState, GameEvent, Fleet, Ship, Vec2, Empire, Star, Planet, Colony, ShipOrder, ShipComponent } from '../types';
 import { RNG } from '../utils/rng';
 import { makeEvent } from './events';
@@ -178,7 +188,7 @@ export function getFleetSpeed(fleet: Fleet, state: GameState): number {
     return fleetSpeed;
 }
 
-export function calculateInterceptPosition(fleetPos: Vec2, fleetSpeedAuPerDay: number, planet: { orbitRadius: number, orbitAngle: number }, currentTurn: number): Vec2 {
+function calculateInterceptPosition(fleetPos: Vec2, fleetSpeedAuPerDay: number, planet: { orbitRadius: number, orbitAngle: number }, currentTurn: number): Vec2 {
     if (fleetSpeedAuPerDay <= 0) return getPlanetPosition(planet, currentTurn);
 
     let timeToInterceptDays = 0;

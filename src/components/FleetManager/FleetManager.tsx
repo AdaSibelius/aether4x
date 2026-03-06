@@ -25,16 +25,14 @@ export default function FleetManager() {
     const militaryFleets = fleets.filter(f => !f.isCivilian);
     const civilianFleets = fleets.filter(f => f.isCivilian);
 
-    console.log('[FleetManager] Total fleets:', fleets.length, 'Military:', militaryFleets.length, 'Civilian:', civilianFleets.length);
-    console.log('[FleetManager] showCivilian state:', showCivilian);
+
 
     const selectedFleet = fleets.find(f => f.id === selectedFleetId);
 
     // Diagnostic for transfer dropdown
     if (selectedFleet) {
         const matchingFleets = fleets.filter(f => f.id !== selectedFleet.id && f.currentStarId === selectedFleet.currentStarId);
-        console.log('[FleetManager] Selected Fleet:', selectedFleet.name, 'StarId:', selectedFleet.currentStarId);
-        console.log('[FleetManager] Matching fleets in system:', matchingFleets.map(f => `${f.name} (${f.currentStarId})`));
+
     }
 
     return (

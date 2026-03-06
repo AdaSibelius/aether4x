@@ -35,7 +35,7 @@ export interface TraitDefinition {
     roleAffinity: OfficerRole[];  // roles this trait is most likely for
 }
 
-export const TRAITS: TraitDefinition[] = [
+const TRAITS: TraitDefinition[] = [
     {
         id: 'industrious',
         name: 'Industrious',
@@ -131,7 +131,7 @@ export const TRAITS: TraitDefinition[] = [
 
 export const TRAIT_BY_ID: Record<string, TraitDefinition> = Object.fromEntries(TRAITS.map(t => [t.id, t]));
 
-export const ENGINEER_DOMAINS = ['Structural', 'Industrial', 'Aerospace', 'Aetheric'];
+const ENGINEER_DOMAINS = ['Structural', 'Industrial', 'Aerospace', 'Aetheric'];
 
 export const SPECIALIZATION_BONUSES: Record<string, Record<string, number>> = {
     // Scientist specializations are TechCategory ids
@@ -155,7 +155,7 @@ export const SPECIALIZATION_BONUSES: Record<string, Record<string, number>> = {
 
 let _officerCounter = 0;
 
-export function generateOfficerName(rng: RNG): string {
+function generateOfficerName(rng: RNG): string {
     const first = rng.pick(FIRST_NAMES);
     const last = rng.pick(LAST_NAMES);
     return `${first} ${last}`;

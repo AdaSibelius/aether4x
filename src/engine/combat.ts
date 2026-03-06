@@ -289,23 +289,6 @@ export function resolveOrbitalBombardment(
     }
 }
 
-// ─── Max Shield Initialisation ────────────────────────────────────────────────
-
-/**
- * Call once when a Ship is first created to set its initial shield points.
- */
-export function initShipShields(ship: Ship, state: GameState): void {
-    const empire = state.empires[ship.empireId];
-    if (!empire) return;
-    const design = empire.designLibrary.find(d => d.id === ship.designId);
-    if (!design) return;
-
-    const maxShields = design.components
-        .filter(c => c.type === 'Shield')
-        .reduce((s, c) => s + (c.stats.shieldPoints ?? 0), 0);
-
-    ship.shieldPoints = maxShields; // Start at full shields
-}
 
 // ─── Dry-Run Battle Simulator ─────────────────────────────────────────────────
 

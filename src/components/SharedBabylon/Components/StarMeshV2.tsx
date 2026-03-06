@@ -164,7 +164,7 @@ export function StarMeshV2({ id, spectralType, position, scale, onMeshCreated }:
         mat.setInt("spectralType", spectralTypeInt);
         mat.backFaceCulling = true;
 
-        console.log(`IMPERATIVE: Assigning shader to star ${id}`, { spectralType, spectralTypeInt, colorHex });
+
         coreRef.current.material = mat;
 
         let isDisposed = false;
