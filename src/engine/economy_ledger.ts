@@ -148,6 +148,9 @@ export function pruneMonetaryLedger(game: GameState): void {
     if (game.monetaryLedger.length > max) {
         game.monetaryLedger = game.monetaryLedger.slice(-max);
     }
+    if (game.stats.monetaryLedger && game.stats.monetaryLedger.length > max) {
+        game.stats.monetaryLedger = game.stats.monetaryLedger.slice(-max);
+    }
 }
 
 // ─── Debug / Export ───────────────────────────────────────────────────────────
