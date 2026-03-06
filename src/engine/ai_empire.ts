@@ -1,6 +1,20 @@
+/**
+ * @module ai_empire
+ * @description
+ * High-level orchestration for AI empires. 
+ * Includes colony management, fleet construction, and strategic posture changes.
+ * 
+ * **Architecture & State Mutations:**
+ * - `tickAIEmpire` drives the AI turn.
+ * - Mutates `GameState.colonies[id].productionQueue` to queue buildings.
+ * - Mutates `GameState.empires[id].fleets` and `GameState.ships` when ordering builds or colonizing.
+ */
 import type { GameState, Empire, Fleet, Planet, Colony, GameEvent } from '../types';
 import { RNG } from '../utils/rng';
 import { evaluateDiplomacy } from './diplomacy';
+import { generateId } from '../utils/id';
+import { getDetectedHostileFleets } from './ai_utils';
+
 
 /**
  * Orchestrates the autonomous behaviors of an AI empire.
@@ -43,8 +57,7 @@ function evaluateStrategicPosture(state: GameState, empire: Empire, rng: RNG, ev
     }
 }
 
-import { generateId } from '../utils/id';
-
+// @todo (Phase 4): Move these hardcoded AI building costs to `BALANCING` or a shared `Buildings` datatable.
 const AI_BUILDING_SPECS: Record<string, { name: string, cost: Record<string, number>, bp: number }> = {
     'Factory': { name: 'State Factory', cost: { Iron: 120, Copper: 40 }, bp: 1200 },
     'Mine': { name: 'State Mine', cost: { Iron: 80 }, bp: 800 },
@@ -127,8 +140,6 @@ function manageColonies(state: GameState, empire: Empire, rng: RNG, dt: number, 
         }
     }
 }
-
-import { getDetectedHostileFleets } from './ai_utils';
 
 function getDesignByClass(empire: Empire, hullClass: string) {
     return empire.designLibrary.find(d => d.hullClass === hullClass);

@@ -1,3 +1,12 @@
+/**
+ * @module diplomacy
+ * @description
+ * Evaluates diplomatic tension and automates basic state-level interactions between empires.
+ * 
+ * **Architecture & State Mutations:**
+ * - `evaluateDiplomacy` reads `GameState.empires[id].relations` and mutates them (e.g., tension decay).
+ * - `declareWar` forces a state change to `War` and dispatches `GameEvent` notifications.
+ */
 import { GameState, Empire, GameEvent } from '../types';
 import { RNG } from '../utils/rng';
 
@@ -34,6 +43,9 @@ export function evaluateDiplomacy(state: GameState, empire: Empire, rng: RNG, ev
     }
 }
 
+/**
+ * @pending AI treaty placeholder
+ */
 export function declareWar(attackerId: string, defenderId: string, state: GameState, events: GameEvent[]) {
     const attacker = state.empires[attackerId];
     const defender = state.empires[defenderId];

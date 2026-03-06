@@ -142,7 +142,7 @@ export function transferWithLedger(
 // ─── Pruning ──────────────────────────────────────────────────────────────────
 
 /** Keep only the most recent entries to prevent unbounded memory growth. */
-export function pruneMonetaryLedger(game: GameState): void {
+function pruneMonetaryLedger(game: GameState): void {
     if (!game.monetaryLedger) return;
     const max = BALANCING.MAX_MONETARY_LEDGER_ENTRIES;
     if (game.monetaryLedger.length > max) {
@@ -153,18 +153,3 @@ export function pruneMonetaryLedger(game: GameState): void {
     }
 }
 
-// ─── Debug / Export ───────────────────────────────────────────────────────────
-
-/** Returns all ledger entries for external audit. Safe to call in any context. */
-export function exportMonetaryLedger(game: GameState): MonetaryLedgerEntry[] {
-    return game.monetaryLedger ? [...game.monetaryLedger] : [];
-}
-
-/** Filter ledger by reason code for targeted analysis. */
-export function queryLedger(
-    game: GameState,
-    reasonCode: MonetaryReasonCode,
-): MonetaryLedgerEntry[] {
-    if (!game.monetaryLedger) return [];
-    return game.monetaryLedger.filter(e => e.reasonCode === reasonCode);
-}

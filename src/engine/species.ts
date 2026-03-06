@@ -124,16 +124,4 @@ export function getAtmosphereHabitabilityMod(planet: Planet): number {
     return 0.1;
 }
 
-/**
- * Get the species definition by id.
- */
-export function getSpecies(id: SpeciesId): SpeciesDefinition {
-    return SPECIES[id];
-}
 
-/**
- * Get all species definitions as an array.
- */
-export function getAllSpecies(): SpeciesDefinition[] {
-    return Object.values(SPECIES);
-}

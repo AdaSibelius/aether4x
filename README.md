@@ -32,8 +32,7 @@ Deterministic behavior is non-negotiable for simulation code paths.
 - `npm run build` — production build.
 - `npm run start` — run production server.
 - `npm run lint` — static lint checks.
-- `npm run test:sims` — run the current simulation scenario harness (`ExpansionTest.ts`).
-- `npx tsx src/scenarios/run.ts LogisticsValidation 3650 12345` — run a registered deterministic scenario.
+- `npm run test:scenario <ScenarioName> <Ticks> <Seed>` — run a registered deterministic scenario (e.g., `LogisticsValidation 3650 12345`).
 - `npx tsx src/scripts/verify_determinism.ts` — explicit determinism drift check.
 
 ## Validation expectations
@@ -51,6 +50,7 @@ See [`docs/validation.md`](docs/validation.md) for exact commands and pass/fail 
 Before opening a PR, AI agents should confirm:
 
 - [ ] Read and followed applicable `AGENTS.md` instructions.
+- [ ] Adhered to AI-readiness standards (use `@module` for state mutation docs, and `@pending` for stubs).
 - [ ] Updated documentation when behavior or workflows changed.
 - [ ] Kept simulation changes deterministic (seeded RNG only).
 - [ ] Ran lint + relevant deterministic/scenario checks.

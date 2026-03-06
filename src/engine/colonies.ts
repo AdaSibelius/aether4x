@@ -1,3 +1,13 @@
+/**
+ * @module colonies
+ * @description
+ * Core simulation logic for colony management, production, and population growth.
+ * 
+ * **Architecture & State Mutations:**
+ * - `tickColony` is the primary update loop for colonies, mutating `GameState.colonies`.
+ * - It handles population growth, resource generation, building construction, and economy interactions.
+ * - Heavily relies on `BALANCING` constants and mutates `GameState.stats.totalProduced`.
+ */
 import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent, Planet, GameStats, Ship, Fleet } from '../types';
 import { getGovernorBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
@@ -195,7 +205,7 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
             colony.minerals[good] = (colony.minerals[good] || 0) + finalOutput;
             state.stats.totalProduced[good] = (state.stats.totalProduced[good] || 0) + finalOutput;
             if (good === 'ConsumerGoods' && finalOutput > 0) {
-                console.log(`DEBUG: Produced ${finalOutput.toFixed(2)} units of ${good} on ${colony.name}. New total: ${colony.minerals[good].toFixed(2)}`);
+
             }
 
             if (!outputByOwner[good]) outputByOwner[good] = {};

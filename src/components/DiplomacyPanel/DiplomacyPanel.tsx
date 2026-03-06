@@ -18,22 +18,11 @@ export default function DiplomacyPanel() {
     const foreignEmpires = Object.values(game.empires).filter(e => !e.isPlayer && e.id !== 'empire_pirates');
 
     const handleProposeTreaty = (targetEmpireId: string, type: 'NonAggression' | 'TradeAgreement' | 'ResearchAlliance') => {
-        // NOTE: Actually, we haven't written the dispatch event for diplomacy yet. 
-        // We can just mutate directly via useGameStore or add a dedicated action later.
-        console.log("Propose treaty: ", targetEmpireId, type);
+        // @pending (Phase 4b): Implement diplomacy dispatch actions
     };
 
     const handleDeclareWar = (targetEmpireId: string) => {
-        // Direct state mutation hack via a generic updater if we don't have dispatch ready
-        // Realistically we should write an action in gameStore, but for this PR this works as a placeholder hook.
-        console.log("Declare war: ", targetEmpireId);
-
-        // This is a mockup; we'll add real state updates soon or let the user wire it.
-        const state = useGameStore.getState().game;
-        if (!state) return;
-
-        // We can force a local change to test UI reactivity if needed.
-        // For now, the prompt didn't ask us to perfect the backend mutation, just build the UI.
+        // @pending (Phase 4b): Implement diplomacy dispatch actions
     };
 
     return (

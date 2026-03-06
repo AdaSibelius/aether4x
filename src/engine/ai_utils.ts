@@ -1,3 +1,13 @@
+/**
+ * @module ai_utils
+ * @description
+ * Pure utility functions and heuristics used by AI routines to evaluate
+ * the game state without direct mutations. 
+ * 
+ * **Architecture & State Mutations:**
+ * - Functions in this file (e.g., `calculateFleetCombatPower`, `evaluateSystemValue`) are PURE.
+ * - They do not modify `GameState`, only read it to return scores, probabilities, or sorted lists.
+ */
 import type { GameState, Fleet, Empire, Colony } from '../types';
 import { getAdmiralBonuses } from './officers';
 import { BALANCING } from './constants';
@@ -12,6 +22,7 @@ import { canDetect } from './detection';
  * - Weapon DPS (highly weighted)
  * - Effective HP (Hull + Armor + Shields)
  * - Admiral Bonuses
+ * @pending AI Fleet combat heuristics placeholder
  */
 export function calculateFleetCombatPower(fleet: Fleet, state: GameState): number {
     const empire = state.empires[fleet.empireId];
@@ -56,6 +67,7 @@ export function calculateFleetCombatPower(fleet: Fleet, state: GameState): numbe
  * Fast heuristic to determine the likely winner between two fleets.
  * Returns probability of Fleet A winning (0.0 to 1.0).
  * Useful for AI deciding whether to engage or retreat.
+ * @pending AI combat prediction placeholder
  */
 export function estimateBattleOutcome(fleetA: Fleet, fleetB: Fleet, state: GameState): number {
     const powerA = calculateFleetCombatPower(fleetA, state);
@@ -84,8 +96,7 @@ export function getDetectedHostileFleets(empireId: string, starId: string, state
         // Must be in the right system and not own fleet
         if (fleet.currentStarId !== starId || fleet.empireId === empireId) return false;
 
-        // Are we at war? (For now, assume all other empires are hostile until diplomacy is added)
-        // TODO (Phase 4b): Check treaty status here
+        // @pending (Phase 4b): Check treaty status here
 
         // Can we see them?
         return fleet.detectedByEmpireIds?.includes(empireId);
@@ -95,6 +106,7 @@ export function getDetectedHostileFleets(empireId: string, starId: string, state
 /**
  * Returns true if ANY rival empire has detected this fleet.
  * Crucial for AI to know if a stealth insertion failed.
+ * @pending AI detection awareness placeholder
  */
 export function isFleetDetectedByEnemy(fleet: Fleet): boolean {
     if (!fleet.detectedByEmpireIds) return false;
@@ -109,6 +121,7 @@ export function isFleetDetectedByEnemy(fleet: Fleet): boolean {
 /**
  * Evaluates known enemy colonies and returns a sorted list of vulnerable targets.
  * Sorts by easiest to bombard/invade first (lowest groundDefenses relative to population).
+ * @pending AI invasion logic placeholder
  */
 export function getVulnerableColonies(empireId: string, state: GameState): Colony[] {
     // Only return colonies that are in systems where we have sensor coverage.
@@ -128,6 +141,7 @@ export function getVulnerableColonies(empireId: string, state: GameState): Colon
  * Evaluates a star system's strategic worth.
  * Used by AI to prioritize colonization and conquest.
  * Higher score = more valuable.
+ * @pending AI expansion logic placeholder
  */
 export function evaluateSystemValue(starId: string, state: GameState): number {
     const star = state.galaxy.stars[starId];

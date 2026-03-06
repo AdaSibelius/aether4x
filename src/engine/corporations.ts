@@ -1,3 +1,13 @@
+/**
+ * @module corporations
+ * @description
+ * Core simulation logic for AI-driven civilian companies and market dynamics.
+ * 
+ * **Architecture & State Mutations:**
+ * - `tickCorporations` mutates `GameState.empires[id].companies` and `GameState.colonies[id]` (for corporate buildings).
+ * - Companies generate revenue, pay wages, and autonomously queue construction projects via `processCompanyStrategy`.
+ * - Financial transactions are funneled through the `economy_ledger`.
+ */
 import type { GameState, Empire, Company, CompanyType, GameEvent, OfficerRole, Colony, Fleet } from '../types';
 import { generateId } from '../utils/id';
 import { RNG } from '../utils/rng';
