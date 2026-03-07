@@ -7,6 +7,7 @@ interface OrbitMeshProps {
 }
 
 export function OrbitMesh({ radius, color = 'rgba(79,195,247,0.15)' }: OrbitMeshProps) {
+    void color;
     // Generate points for a circle
     const points: Vector3[] = [];
     const segments = 128; // Smoother orbits

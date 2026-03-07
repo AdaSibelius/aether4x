@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:scenario": "tsx src/scenarios/run.ts"
+    "lint:agent": "eslint src/engine src/store src/scenarios src/utils",
+    "typecheck": "tsc --noEmit",
+    "test:scenario": "tsx src/scenarios/run.ts",
+    "test:determinism": "tsx src/scripts/verify_determinism.ts",
+    "agent:preflight": "npm run lint:agent && npm run typecheck && npm run test:scenario MarsIsolation 3650 12345 && npm run test:determinism"
   },
   "dependencies": {
     "@babylonjs/core": "^8.53.0",

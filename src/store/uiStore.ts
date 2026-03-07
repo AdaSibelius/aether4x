@@ -22,7 +22,7 @@ interface UIStore extends UIState {
     setContextMenu: (menu: { x: number, y: number, targets: { id: string, name: string, type: 'Planet' | 'Fleet' | 'Star' }[] } | null) => void;
 }
 
-export const useUIStore = create<UIStore>((set, get) => ({
+export const useUIStore = create<UIStore>((set) => ({
     activeView: 'Galaxy',
     selectedStarId: null,
     selectedPlanetId: null,

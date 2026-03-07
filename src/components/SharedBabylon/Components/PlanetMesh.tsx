@@ -1,4 +1,4 @@
-import { Vector3, Color3, StandardMaterial, Mesh, ShaderMaterial } from '@babylonjs/core';
+import { Vector3, Color3, StandardMaterial, Mesh } from '@babylonjs/core';
 import React, { useRef, useEffect } from 'react';
 import { useScene } from 'react-babylonjs';
 import { BodyType, AtmosphereType } from '@/types';
@@ -13,7 +13,6 @@ export interface PlanetMeshProps {
     isSelected: boolean;
     isSurveyed: boolean;
     hasRings?: boolean;
-    onClick?: (id: string, name: string, event: any) => void;
     onMeshCreated?: (mesh: Mesh) => void;
     sunPosition?: Vector3;
     atmosphereType?: AtmosphereType;
@@ -48,7 +47,6 @@ export function PlanetMesh({
     isSelected,
     isSurveyed,
     hasRings,
-    onClick,
     onMeshCreated,
     sunPosition = Vector3.Zero(),
     atmosphereType = 'None'
@@ -72,7 +70,7 @@ export function PlanetMesh({
         } else if (bodyType === 'Volcanic') {
             pType = 2;
             atmoColor = new Color3(1.0, 0.3, 0.1);
-        } else if (bodyType === 'Dwarf' || bodyType as any === 'S' || bodyType as any === 'C' || bodyType as any === 'M' || bodyType as any === 'D') {
+        } else if (bodyType === 'Dwarf' || ['S', 'C', 'M', 'D'].includes(bodyType as string)) {
             pType = 3;
             atmoColor = new Color3(0, 0, 0); // No atmosphere
         }

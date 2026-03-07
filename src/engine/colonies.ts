@@ -8,15 +8,14 @@
  * - It handles population growth, resource generation, building construction, and economy interactions.
  * - Heavily relies on `BALANCING` constants and mutates `GameState.stats.totalProduced`.
  */
-import type { GameState, Colony, GameEvent, EventType, SpeciesId, ColonySnapshot, Empire, ShipComponent, Planet, GameStats, Ship, Fleet } from '../types';
+import type { GameState, Colony, GameEvent, EventType, ShipComponent, GameStats, Ship } from '../types';
 import { getGovernorBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
 import { BALANCING } from './constants';
-import SimLogger from '../utils/logger';
 import { generateId } from '../utils/id';
 import { getPlanetPosition } from './fleets';
 import { RNG } from '../utils/rng';
-import { SPECIES, computeHabitability, getSpeciesGrowthMod, getAtmosphereHabitabilityMod } from './species';
+import { SPECIES, computeHabitability } from './species';
 import {
     transferWithLedger,
     createColonyPrivateWealthAccount,
@@ -83,6 +82,9 @@ export const STRUCTURE_MINERAL_COST: Record<string, Record<string, number>> = {
     ShipyardExpansion_Tonnage: { Iron: 800, Machinery: 40 },
 };
 
+type ColonyWorkforce = Colony & { publicWorkers?: number; privateWorkers?: number };
+type PlantRecipe = { time?: number; outputMultiplier?: number; inputs?: Record<string, number> };
+
 function updateColonyPopulation(colony: Colony, policyMod: number, agriMod: number, happyMod: number, days: number, habitability: number) {
     // Base survival threshold
     const popRequirementInfra = colony.population / BALANCING.INFRA_POP_SUPPORT;
@@ -123,7 +125,6 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     // 1. Education
     const educationGrowth = (colony.educationBudget / Math.max(1, colony.population)) * 0.1 * days;
     const educationDecay = BALANCING.EDUCATION_DECAY_RATE * days;
-    const oldEdu = colony.educationIndex || 0;
     colony.educationIndex = Math.max(0, Math.min(100, (colony.educationIndex || 0) + educationGrowth - educationDecay));
 
     if (days > 0.1) {
@@ -146,12 +147,12 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     }
 
     // 2. Wages & Private Wealth
-    const workerFactor = 1.0;
     const staffingLevel = colony.staffingLevel || 1.0;
     const colonyWage = 10.0 * staffingLevel * (1 + (colony.educationIndex / 100));
 
-    const publicWorkersM = ((colony as any).publicWorkers || 0) * staffingLevel;
-    const privateWorkersM = ((colony as any).privateWorkers || 0) * staffingLevel;
+    const workforce = colony as ColonyWorkforce;
+    const publicWorkersM = (workforce.publicWorkers || 0) * staffingLevel;
+    const privateWorkersM = (workforce.privateWorkers || 0) * staffingLevel;
 
     const totalPublicWages = publicWorkersM * colonyWage * days;
     const totalPrivateWages = privateWorkersM * colonyWage * days;
@@ -177,8 +178,9 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     // 3. Sectoral Production (Recipes)
     const outputByOwner: Record<string, Record<string, number>> = {};
 
-    const processPlant = (type: string, reqIndex: number, good: string, recipe: any) => {
-        const count = (colony as any)[type] || 0;
+    const processPlant = (type: string, reqIndex: number, good: string, recipe: PlantRecipe) => {
+        const colonyBuildings = colony as unknown as Record<string, number | undefined>;
+        const count = colonyBuildings[type] || 0;
         if (count <= 0) return;
 
         const eduFactor = Math.min(1.0, (colony.educationIndex || 0) / Math.max(1, reqIndex));
@@ -275,7 +277,6 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
         colony.minerals[good] -= purchasedAmt;
         state.stats.totalConsumed[good] = (state.stats.totalConsumed[good] || 0) + purchasedAmt;
 
-        const spendMult = 1.0 + retailMarkupPercent;
         const factoryRevenue = purchasedAmt * currentPrice;
         const retailMarkup = purchasedAmt * currentPrice * retailMarkupPercent;
 
@@ -347,7 +348,7 @@ function simulateSectoralEconomy(colony: Colony, state: GameState, infraEff: num
     if (totalElectronics > 0) processMarket('Electronics', totalElectronics, 0.25);
 
     const machineryNeeded = (colony.shipyards || []).reduce((sum, sy) => {
-        return sum + (sy.activeBuilds || []).reduce((s, _b) => s + (BALANCING.MACHINERY_PER_SHIPYARD_BP * days), 0);
+        return sum + (sy.activeBuilds || []).reduce((s) => s + (BALANCING.MACHINERY_PER_SHIPYARD_BP * days), 0);
     }, 0);
     if (machineryNeeded > 0) processMarket('Machinery', machineryNeeded, 1.0);
 
@@ -452,8 +453,9 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
 
     const totalRequiredLabor = requiredPublicLabor + requiredPrivateLabor + (colony.farms ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_FARM + (colony.stores ?? 0) * BALANCING.EMPLOYMENT.WORKER_REQUIREMENT_STORE;
 
-    (colony as any).publicWorkers = requiredPublicLabor;
-    (colony as any).privateWorkers = totalRequiredLabor - requiredPublicLabor;
+    const workforce = colony as ColonyWorkforce;
+    workforce.publicWorkers = requiredPublicLabor;
+    workforce.privateWorkers = totalRequiredLabor - requiredPublicLabor;
 
 
     const baselineStaffing = totalRequiredLabor > 0 ? Math.min(1.0, colony.population / totalRequiredLabor) : 1.0;
@@ -675,8 +677,16 @@ export function tickColony(colony: Colony, state: GameState, dt: number, rng: RN
     return events;
 }
 
-function makeEvent(turn: number, date: Date, type: EventType, message: string, rng: RNG, params?: any): GameEvent {
-    return { id: generateId('evt', rng), turn, date: date.toISOString().split('T')[0], type, message, ...params };
+function makeEvent(
+    turn: number,
+    date: Date,
+    type: EventType,
+    message: string,
+    rng: RNG,
+    params?: (Partial<Omit<GameEvent, 'id' | 'turn' | 'date' | 'type' | 'message'>> & { targetId?: string })
+): GameEvent {
+    const important = params?.important ?? false;
+    return { id: generateId('evt', rng), turn, date: date.toISOString().split('T')[0], type, message, ...params, important };
 }
 
 export function tickAetherHarvesting(state: GameState, dt: number) {

@@ -8,10 +8,8 @@
  * - Functions in this file (e.g., `calculateFleetCombatPower`, `evaluateSystemValue`) are PURE.
  * - They do not modify `GameState`, only read it to return scores, probabilities, or sorted lists.
  */
-import type { GameState, Fleet, Empire, Colony } from '../types';
+import type { GameState, Fleet, Colony } from '../types';
 import { getAdmiralBonuses } from './officers';
-import { BALANCING } from './constants';
-import { canDetect } from './detection';
 
 // ─── 1. Combat Evaluation ───────────────────────────────────────────────────
 

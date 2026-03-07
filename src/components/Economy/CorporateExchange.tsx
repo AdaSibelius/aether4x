@@ -1,11 +1,9 @@
 'use client';
 import React, { useMemo } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { Company, CompanyType } from '@/types';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend,
-    BarChart, Bar
 } from 'recharts';
 import styles from './Economy.module.css';
 
@@ -45,7 +43,7 @@ export default function CorporateExchange() {
         const allDates = Array.from(new Set(companies.flatMap(c => (c.history || []).map(h => h.date)))).sort();
 
         return allDates.map(date => {
-            const entry: any = { date };
+            const entry: Record<string, string | number | undefined> = { date };
             sortedCompanies.slice(0, 5).forEach(c => {
                 const history = c.history || [];
                 const snap = history.find(h => h.date === date);

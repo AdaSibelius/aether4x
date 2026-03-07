@@ -101,7 +101,7 @@ export function calculateEmpireBudget(game: GameState, empireId: string): Empire
     // Ship Maintenance
     const shipMaint = Object.values(game.ships)
         .filter(s => s.empireId === empireId)
-        .reduce((a, _s) => a + (BALANCING.MAINTENANCE.SHIP_BASE), 0);
+        .reduce((a) => a + (BALANCING.MAINTENANCE.SHIP_BASE), 0);
 
     // Office maintenance (Per company)
     const officeMaint = empire.companies.length * BALANCING.MAINTENANCE.OFFICE_BASE;
@@ -141,7 +141,6 @@ export function tickEmpireFinances(next: GameState, empire: Empire, dt: number, 
     const treasuryAccount = createTreasuryAccount(empire);
     const externalSink = createExternalAccount('maintenance_sink');
 
-    let totalSettledTax = 0;
     let totalMaint = 0;
 
     for (const colony of empireColonies) {
@@ -158,8 +157,6 @@ export function tickEmpireFinances(next: GameState, empire: Empire, dt: number, 
             { colonyId: colony.id, empireId: empire.id },
             rng,
         );
-        totalSettledTax += settled;
-
         // Log partial settlement for audit awareness (non-blocking)
         if (shortfall > 0.01) {
             // Colony couldn't fully pay taxes — privateWealth clamped at 0

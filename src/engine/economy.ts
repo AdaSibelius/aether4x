@@ -1,14 +1,13 @@
-import type { GameState, Empire, Colony, Fleet, GameEvent, SpeciesId } from '../types';
+import type { GameState, Empire, GameEvent } from '../types';
 import { generateId } from '../utils/id';
 import { RNG } from '../utils/rng';
-import { getPlanetPosition } from './fleets';
 
 /**
  * Handles civilian economy and trade demand generation.
  * @intent Orchestrates colony-level supply/demand signals to drive physical trade.
  */
 export function tickCivilianEconomy(next: GameState, empire: Empire, dt: number, rng: RNG): GameEvent[] {
-    const events: GameEvent[] = [];
+    void dt;
     const empireColonies = Object.values(next.colonies).filter(c => c.empireId === empire.id);
 
     // Physical Trade matching: for every demanded resource, find a colony with excess
@@ -63,10 +62,11 @@ export function tickCivilianEconomy(next: GameState, empire: Empire, dt: number,
         }
     }
 
-    return events;
+    return [];
 }
 
 export function tickCivilianMigration(next: GameState, empire: Empire, rng: RNG): void {
+    void rng;
     const empireColonies = Object.values(next.colonies).filter(c => c.empireId === empire.id);
     const overcrowdedColonies = empireColonies.filter(c => c.population > c.maxPopulation);
     const underdevelopedColonies = empireColonies.filter(c => c.population < c.maxPopulation * 0.5 && c.happiness > 40);
@@ -77,7 +77,7 @@ export function tickCivilianMigration(next: GameState, empire: Empire, rng: RNG)
     const sourceColonies = empireColonies.filter(c => c.migrationMode === 'Source' && c.population > 1.0);
 
     if (targetColonies.length > 0 && sourceColonies.length > 0) {
-        for (const target of targetColonies) {
+        targetColonies.forEach(() => {
             const source = sourceColonies.sort((a, b) => b.population - a.population)[0];
 
             // Commitment to move: 0.1% of source population per tick
@@ -91,7 +91,7 @@ export function tickCivilianMigration(next: GameState, empire: Empire, rng: RNG)
                     source.migrantsWaiting = currentWaiting + pullAmount;
                 }
             }
-        }
+        });
     }
 
     // --- Overcrowding Migration (Push Factor) ---

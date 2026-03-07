@@ -141,7 +141,7 @@ export function StarMeshV2({ id, spectralType, position, scale, onMeshCreated }:
     const colorHex = SPECTRAL_COLORS[spectralType] ?? '#fff4ea';
     const color = useMemo(() => Color3.FromHexString(colorHex), [colorHex]);
     const spectralTypeInt = useMemo(() => {
-        const typeMap: any = { 'O': 0, 'B': 1, 'A': 2, 'F': 3, 'G': 4, 'K': 5, 'M': 6, 'WhiteDwarf': 7, 'Neutron': 8, 'BlackHole': 9 };
+        const typeMap: Record<SpectralType, number> = { O: 0, B: 1, A: 2, F: 3, G: 4, K: 5, M: 6, WhiteDwarf: 7, Neutron: 8, BlackHole: 9 };
         return typeMap[spectralType] ?? 4;
     }, [spectralType]);
 

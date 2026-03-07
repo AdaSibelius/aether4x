@@ -1,7 +1,6 @@
 'use client';
 import { useRef, useEffect } from 'react';
-import type { Planet, Colony, AtmosphereType, BodyType, CelestialType, CelestialSubtype, Star } from '@/types';
-import styles from './SharedTabs.module.css';
+import type { Planet, Colony, AtmosphereType, CelestialType, CelestialSubtype, Star } from '@/types';
 
 // ─── Seeded RNG ──────────────────────────────────────────────────────────────
 
@@ -41,7 +40,7 @@ const ATMO_HALO: Record<AtmosphereType, { inner: string; outer: string; width: n
 
 // ─── Planet base colors ──────────────────────────────────────────────────────
 
-function getBaseColors(type: CelestialType, subtype: CelestialSubtype, rng: () => number) {
+function getBaseColors(type: CelestialType, subtype: CelestialSubtype, rng: () => number): Record<string, string> {
     if (type === 'Star') {
         switch (subtype) {
             case 'MainSequence': return { base: '#fff2a0', glow: 'rgba(255,200,50,0.8)', core: '#ffffff' };
@@ -318,7 +317,7 @@ function drawPlanetSphere(
     rng: () => number, rot: number, colony: Colony | null,
     earthTex?: HTMLImageElement | null
 ) {
-    const colors = getBaseColors(type, subtype, rng) as any;
+    const colors = getBaseColors(type, subtype, rng);
 
     if (type === 'Star') {
         drawStar(ctx, cx, cy, R, colors, rot);
@@ -807,8 +806,9 @@ function drawSurfaceStructures(
 function drawLegend(
     ctx: CanvasRenderingContext2D,
     x: number, y: number,
-    type: CelestialType, subtype: CelestialSubtype, colony: Colony | null
+    type: CelestialType, subtype: CelestialSubtype
 ) {
+    void type;
     ctx.font = "11px 'Outfit', sans-serif";
     const isGas = subtype === 'GasGiant' || subtype === 'IceGiant';
     const items: { color: string; label: string }[] = isGas
@@ -917,7 +917,7 @@ export default function PlanetVisualizer({ planet, colony, compact }: Props) {
                     ctx.fillText(`Factories: ${colony.factories ?? 0}  ·  Mines: ${colony.mines ?? 0}`, labelX, 90);
                 }
 
-                drawLegend(ctx, labelX, H - 70, type, subtype, colony ?? null);
+                drawLegend(ctx, labelX, H - 70, type, subtype);
             }
 
             rafRef.current = requestAnimationFrame(draw);

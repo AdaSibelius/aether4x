@@ -21,7 +21,6 @@ export default function ShipDesign() {
     const completedTechs = new Set(empire.research.completedTechs);
     const hullSpec = HULL_SPECS[selectedHull];
     const usedSize = selectedComponents.reduce((a, c) => a + c.size, 0);
-    const pctUsed = (usedSize / hullSpec.maxSize) * 100;
 
     const addComponent = (comp: ShipComponent) => {
         if (usedSize + comp.size > hullSpec.maxSize) return;
@@ -80,8 +79,6 @@ export default function ShipDesign() {
         setDesignName('New Design');
     };
 
-    // Calculate Expanded Metrics
-    const totalThrust = selectedComponents.reduce((a, c) => a + (c.stats.thrust ?? 0), 0);
     // Derived Engineering Metrics
     const stats = useMemo(() => {
         const totalThrust = selectedComponents.filter(c => c.type === 'Engine').reduce((a, c) => a + (c.stats.thrust || 0), 0);
@@ -288,13 +285,13 @@ export default function ShipDesign() {
                         <div>
                             <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Signature</div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-blue)', fontFamily: 'var(--font-mono)' }}>
-                                {((selectedDesign ? selectedDesign.components.filter((c: any) => c.type === 'StealthHull').reduce((acc: number, c: any) => acc * (c.stats.signatureReduction ?? 1), 1) : stats.signatureReduction) * 100).toFixed(0)}%
+                                {((selectedDesign ? selectedDesign.components.filter((c: ShipComponent) => c.type === 'StealthHull').reduce((acc: number, c: ShipComponent) => acc * (c.stats.signatureReduction ?? 1), 1) : stats.signatureReduction) * 100).toFixed(0)}%
                             </div>
                         </div>
                         <div>
                             <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Sensor Res</div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>
-                                ×{(selectedDesign ? Math.max(1, ...selectedDesign.components.filter((c: any) => c.type === 'ActiveSensor').map((c: any) => c.stats.activeScanBoost || 1)) : stats.activeScanBoost).toFixed(1)}
+                                ×{(selectedDesign ? Math.max(1, ...selectedDesign.components.filter((c: ShipComponent) => c.type === 'ActiveSensor').map((c: ShipComponent) => c.stats.activeScanBoost || 1)) : stats.activeScanBoost).toFixed(1)}
                             </div>
                         </div>
                         <div>
@@ -306,7 +303,7 @@ export default function ShipDesign() {
                         <div>
                             <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ground DPS</div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-orange)', fontFamily: 'var(--font-mono)' }}>
-                                {(selectedDesign ? selectedDesign.components.filter((c: any) => c.type === 'Bombardment').reduce((acc: number, c: any) => acc + (c.stats.groundDefensesDamage || 0) * (c.stats.rof || 0), 0) : stats.groundDps).toFixed(1)}
+                                {(selectedDesign ? selectedDesign.components.filter((c: ShipComponent) => c.type === 'Bombardment').reduce((acc: number, c: ShipComponent) => acc + (c.stats.groundDefensesDamage || 0) * (c.stats.rof || 0), 0) : stats.groundDps).toFixed(1)}
                             </div>
                         </div>
                         <div>

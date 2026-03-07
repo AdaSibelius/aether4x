@@ -8,7 +8,7 @@
  * - It processes active projects, applies research points from colonies, and unlocks new technologies upon completion.
  * - Uses `TECH_TREE` definitions to validate prerequisites.
  */
-import type { GameState, Empire, Technology, TechCategory, GameEvent, EventType, TechBonuses } from '../types';
+import type { Empire, Technology, TechCategory, GameEvent, EventType, TechBonuses } from '../types';
 import { generateId } from '../utils/id';
 import { RNG } from '../utils/rng';
 

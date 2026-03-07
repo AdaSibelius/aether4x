@@ -1,5 +1,5 @@
-import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, BodyType, AtmosphereType, CelestialType, CelestialSubtype } from '../types';
-import { generateMinerals, generatePlanets } from './galaxy';
+import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, AtmosphereType, CelestialType, CelestialSubtype } from '../types';
+import { generatePlanets } from './galaxy';
 import { RNG } from '../utils/rng';
 
 // ─── Real Star Catalog ───────────────────────────────────────────────────────
@@ -207,7 +207,7 @@ function buildPlanetFromTemplate(temp: BodyTemplate, parentId: string, empireId?
     };
 }
 
-function createSolPlanets(rng: RNG): Planet[] {
+function createSolPlanets(): Planet[] {
     return SOL_PLANETS.map(temp => buildPlanetFromTemplate(temp, 'star_0', 'empire_player'));
 }
 
@@ -261,7 +261,7 @@ export function generateRealSpaceGalaxy(): Galaxy {
 
         const isSol = i === 0;
         const planets = isSol
-            ? createSolPlanets(rng)
+            ? createSolPlanets()
             : generatePlanets(rng, entry.name, entry.spectral, entry.luminosity);
 
         return {

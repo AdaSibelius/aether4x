@@ -1,11 +1,11 @@
 ---
 name: babylonjs_react
-description: How to successfully use BabylonJS within React for Nebula4X
+description: How to successfully use BabylonJS within React for Aether4X
 ---
 
 # BabylonJS + React Integration Guide for AI Agents
 
-This guide documents the critical architecture, "gotchas", and best practices for developing and modifying the 3D visual engine in Nebula4X using `@babylonjs/core` and `react-babylonjs`.
+This guide documents the critical architecture, "gotchas", and best practices for developing and modifying the 3D visual engine in Aether4X using `@babylonjs/core` and `react-babylonjs`.
 
 ## Core Technologies
 - `@babylonjs/core`: The underlying WebGL/WebGPU 3D rendering engine.

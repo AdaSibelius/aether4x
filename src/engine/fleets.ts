@@ -8,13 +8,12 @@
  * - `GameState.empires[id].fleets` and `GameState.ships` are frequently modified.
  * - Freight and migration actions generate transactions via `economy_ledger.ts`.
  */
-import type { GameState, GameEvent, Fleet, Ship, Vec2, Empire, Star, Planet, Colony, ShipOrder, ShipComponent } from '../types';
+import type { GameState, GameEvent, Fleet, Vec2, Empire, ShipOrder } from '../types';
 import { RNG } from '../utils/rng';
 import { makeEvent } from './events';
 import { getAdmiralBonuses } from './officers';
 import { getEmpireTechBonuses } from './research';
 import { generateId } from '../utils/id';
-import { BALANCING } from './constants';
 import {
     transferWithLedger,
     createTreasuryAccount,
@@ -93,7 +92,7 @@ function settleFreightFee(params: {
             payer,
             companyAccount,
             contribution,
-            reason as any, // Cast to any to avoid strict reason code check if necessary, or ensure codes match
+            reason,
             { ...metadata, reasonDetail: `${category}: ${description}` },
             rng
         );

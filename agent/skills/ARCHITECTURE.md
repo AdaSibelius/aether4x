@@ -1,18 +1,18 @@
 ---
 name: Architecture
-description: Mandatory design contract and system ownership map for Nebula4X. Cross-reference this before proposing any code changes or new features.
+description: Mandatory design contract and system ownership map for Aether4X. Cross-reference this before proposing any code changes or new features.
 ---
 
-# Nebula4X System Architecture
+# Aether4X System Architecture
 
 ## Overview
-Nebula4X is a deterministic, tick-based grand strategy simulation built with Next.js, React, and a custom TypeScript simulation engine. The architecture enforces strict unidirectional data flow and separates visual presentation from deep economic and physics simulations.
+Aether4X is a deterministic, tick-based grand strategy simulation built with Next.js, React, and a custom TypeScript simulation engine. The architecture enforces strict unidirectional data flow and separates visual presentation from deep economic and physics simulations.
 
 ---
 
 ## System Ownership & Responsibilities
 
-A core design tenet of Nebula4X is strict separation of concerns. Future developers and agents must adhere to the boundaries defined below to prevent regressions and desyncs.
+A core design tenet of Aether4X is strict separation of concerns. Future developers and agents must adhere to the boundaries defined below to prevent regressions and desyncs.
 
 ### 1. The Simulation Engine (`src/engine/`)
 **Owner of:** All game logic, economic balancing, physics, RNG, and canonical state mutations.
@@ -38,7 +38,7 @@ A core design tenet of Nebula4X is strict separation of concerns. Future develop
 
 - **Data Fetching:** Components selectively subscribe to narrow slices of the `gameStore` to ensure high-performance rendering.
 - **Interactions:** User inputs dispatch intents to the store. For instance, clicking "Extract Aether" doesn't manually increment an inventory; it dispatches an order, and the Engine handles the extraction over time.
-- **Key Modules:** `GalaxyMap` (PixiJS/WebGL viewport), `ColonyManager` (economic dashboards), `Economy` (macro-level corporate reporting).
+- **Key Modules:** `SystemMapBabylon` (BabylonJS viewport), `ColonyManager` (economic dashboards), `Economy` (macro-level corporate reporting).
 
 ### 4. Domain Contracts (`src/types/`)
 **Owner of:** The structural definition of the universe.

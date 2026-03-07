@@ -7,6 +7,7 @@ const TICKS_TO_CLAIM = 30 * 86400; // 30 days of continuous presence
  * Evaluates control and sovereignty over star systems.
  */
 export function tickBorders(state: GameState, dt: number, rng: RNG): GameEvent[] {
+    void rng;
     const events: GameEvent[] = [];
 
     for (const star of Object.values(state.galaxy.stars)) {

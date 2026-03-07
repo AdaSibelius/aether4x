@@ -1,6 +1,6 @@
-# Nebula4X Architecture Overview
+# Aether4X Architecture Overview
 
-This document outlines the core architecture of the Nebula4X simulation engine, state management, and the "Simulation Contract" that ensures determinism and reliability.
+This document outlines the core architecture of the Aether4X simulation engine, state management, and the "Simulation Contract" that ensures determinism and reliability.
 
 ## Simulation Lifecycle
 

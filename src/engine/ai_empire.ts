@@ -9,7 +9,7 @@
  * - Mutates `GameState.colonies[id].productionQueue` to queue buildings.
  * - Mutates `GameState.empires[id].fleets` and `GameState.ships` when ordering builds or colonizing.
  */
-import type { GameState, Empire, Fleet, Planet, Colony, GameEvent } from '../types';
+import type { GameState, Empire, Colony, GameEvent, ProductionItemType } from '../types';
 import { RNG } from '../utils/rng';
 import { evaluateDiplomacy } from './diplomacy';
 import { generateId } from '../utils/id';
@@ -34,7 +34,7 @@ export function tickAIEmpire(state: GameState, empire: Empire, rng: RNG, dt: num
 
     // Evaluate posture periodically (e.g., every 30 days)
     if (state.turn - empire.aiState.lastEvaluationTick > 30 * 86400) {
-        evaluateStrategicPosture(state, empire, rng, events);
+        evaluateStrategicPosture(empire);
         evaluateDiplomacy(state, empire, rng, events);
         empire.aiState.lastEvaluationTick = state.turn;
     }
@@ -46,7 +46,7 @@ export function tickAIEmpire(state: GameState, empire: Empire, rng: RNG, dt: num
     return events;
 }
 
-function evaluateStrategicPosture(state: GameState, empire: Empire, rng: RNG, events: GameEvent[]) {
+function evaluateStrategicPosture(empire: Empire) {
     if (!empire.aiState) return;
 
     // Very basic placeholder logic for posture
@@ -76,7 +76,7 @@ function manageColonies(state: GameState, empire: Empire, rng: RNG, dt: number, 
             // Don't queue things if queue is already long
             if (colony.productionQueue.length >= 2) continue;
 
-            let targetType: string | null = null;
+            let targetType: ProductionItemType | null = null;
 
             // Priority 1: Do we have enough industry to even support an empire?
             if (colony.factories < 5) {
@@ -106,7 +106,7 @@ function manageColonies(state: GameState, empire: Empire, rng: RNG, dt: number, 
                     if (!colony.productionQueue.some(i => i.type === 'Shipyard')) {
                         colony.productionQueue.push({
                             id: generateId('build', rng),
-                            type: 'Shipyard' as any,
+                            type: 'Shipyard',
                             name: spec.name,
                             quantity: 1,
                             progress: 0,
@@ -118,7 +118,7 @@ function manageColonies(state: GameState, empire: Empire, rng: RNG, dt: number, 
                     if (!colony.productionQueue.some(i => i.type === targetType)) {
                         colony.productionQueue.push({
                             id: generateId('build', rng),
-                            type: targetType as any,
+                            type: targetType,
                             name: spec.name,
                             quantity: 1,
                             progress: 0,

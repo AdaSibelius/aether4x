@@ -1,8 +1,7 @@
-import type { GameState, GameEvent, Fleet, Ship, Empire, Colony } from '../types';
+import type { GameState, GameEvent, Fleet, Ship, Colony } from '../types';
 import type { ShipComponent, ShipDesign } from '../types/fleet';
 import { RNG } from '../utils/rng';
 import { makeEvent } from './events';
-import { generateId } from '../utils/id';
 import { BALANCING } from './constants';
 
 // ─── Battle Simulation Types ──────────────────────────────────────────────────

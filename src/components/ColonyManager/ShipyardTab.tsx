@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { Colony, Empire, ProductionItem, ProductionItemType } from '@/types';
-import { calcEffectiveRates } from './ColonyManager';
 import { STRUCTURE_BP_COST, STRUCTURE_MINERAL_COST } from './ColonyManager';
 import styles from './ColonyManager.module.css';
 
-export default function ShipyardTab({ colony, rates, updateColony, empire }: {
+export default function ShipyardTab({ colony, updateColony, empire }: {
     colony: Colony;
-    rates: ReturnType<typeof calcEffectiveRates>;
     updateColony: (patch: Partial<Colony>) => void;
     empire: Empire;
 }) {

@@ -1,6 +1,6 @@
 # Agent Interaction Protocol
 
-Welcome to the Nebula 4X codebase! If you are an autonomous AI Agent assigned to build or debug features, you MUST read this document and any applicable skills before making architectural or logic changes.
+Welcome to the Aether4X codebase! If you are an autonomous AI Agent assigned to build or debug features, you MUST read this document and any applicable skills before making architectural or logic changes.
 
 ## 1. Core Architecture
 All agents must review `agent/skills/ARCHITECTURE.md` before making any changes. This document outlines the absolute boundaries between the simulation engine (`src/engine`), the state store (`src/store`), and the React UI layer (`src/components`). **Do not violate these boundaries.**

@@ -1,7 +1,7 @@
 import { Scenario, ScenarioResult } from './types';
 import { setupNewGame } from '../engine/setup';
 import { advanceTick } from '../engine/time';
-import { GameState, Company } from '../types';
+import { GameState, CompanyType } from '../types';
 
 export const SectorHealthAudit: Scenario = {
     name: 'Sector Health Audit',
@@ -15,12 +15,12 @@ export const SectorHealthAudit: Scenario = {
         const earth = Object.values(state.colonies).find(c => c.name === 'Earth')!;
 
         // Ensure we have a mix of all corporation types
-        const types: any[] = ['Transport', 'Extraction', 'Manufacturing', 'Agricultural', 'Commercial'];
+        const types: CompanyType[] = ['Transport', 'Extraction', 'Manufacturing', 'Agricultural', 'Commercial'];
 
         // Clear existing companies to have a controlled start
         empire.companies = [];
 
-        types.forEach((type, i) => {
+        types.forEach((type) => {
             const corpId = `corp_${type.toLowerCase()}`;
             empire.companies.push({
                 id: corpId,
@@ -49,7 +49,6 @@ export const SectorHealthAudit: Scenario = {
         return state;
     },
     run: async (state: GameState, ticks: number): Promise<ScenarioResult> => {
-        const results: Record<string, any> = {};
         const startTime = Date.now();
 
         for (let i = 0; i < ticks; i++) {
@@ -57,7 +56,6 @@ export const SectorHealthAudit: Scenario = {
 
             // Log every year (365 days)
             if (i % 365 === 0) {
-                const year = i / 365;
                 // Periodic reporting could be added here if needed
             }
         }
@@ -65,7 +63,7 @@ export const SectorHealthAudit: Scenario = {
         const empire = Object.values(state.empires)[0];
         const sectors = ['Transport', 'Extraction', 'Manufacturing', 'Agricultural', 'Commercial'];
 
-        const sectorHealth: Record<string, any> = {};
+        const sectorHealth: Record<string, { count: number; totalWealth: number; avgWealth: number; totalValuation: number }> = {};
         sectors.forEach(type => {
             const comps = empire.companies.filter(c => c.type === type);
             const totalWealth = comps.reduce((sum, c) => sum + c.wealth, 0);

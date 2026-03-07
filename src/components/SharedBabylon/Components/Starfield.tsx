@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { Effect } from '@babylonjs/core';
-import { useScene } from 'react-babylonjs';
 
 interface StarfieldProps {
     seed?: string;

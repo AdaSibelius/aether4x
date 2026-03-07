@@ -1,7 +1,7 @@
 import { Officer } from './officer';
 import { Fleet, ShipDesign } from './fleet';
 import { GameEvent } from './base';
-import { EmpireResearch, ResearchProject } from './research';
+import { EmpireResearch } from './research';
 
 export interface Empire {
     id: string;

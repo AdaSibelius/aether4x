@@ -32,8 +32,6 @@ export default function DebugOverlay() {
                 {activeView === 'System' && selectedStarId && (
                     <g className={styles.licenseLayer}>
                         {(() => {
-                            const star = game.galaxy.stars[selectedStarId];
-                            const planetCount = star?.planets.length || 0;
                             const companyLicenses = game.empires[game.playerEmpireId].companies.filter(c =>
                                 c.explorationLicenseIds.includes(selectedStarId)
                             );

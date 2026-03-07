@@ -1,10 +1,10 @@
 ---
 name: UI Design Reference
-description: Design standards for Nebula4X tables based on the Industrial Ledger style.
+description: Design standards for Aether4X tables based on the Industrial Ledger style.
 ---
-# Nebula4X UI Design Reference: Tables
+# Aether4X UI Design Reference: Tables
 
-All data tables in Nebula4X should follow the "Industrial Ledger" design patterns established in the Colony Manager to ensure a consistent, high-fidelity, and strategic aesthetic.
+All data tables in Aether4X should follow the "Industrial Ledger" design patterns established in the Colony Manager to ensure a consistent, high-fidelity, and strategic aesthetic.
 
 ## 1. Typography & Hierarchy
 

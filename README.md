@@ -28,12 +28,15 @@ Deterministic behavior is non-negotiable for simulation code paths.
 
 ## Key scripts
 
-- `npm run dev` — start the Next.js app locally.
-- `npm run build` — production build.
-- `npm run start` — run production server.
-- `npm run lint` — static lint checks.
-- `npm run test:scenario <ScenarioName> <Ticks> <Seed>` — run a registered deterministic scenario (e.g., `LogisticsValidation 3650 12345`).
-- `npx tsx src/scripts/verify_determinism.ts` — explicit determinism drift check.
+- `npm run dev` - start the Next.js app locally.
+- `npm run build` - production build.
+- `npm run start` - run production server.
+- `npm run lint` - static lint checks.
+- `npm run lint:agent` - lint focused on simulation/state/scenario code used in agent preflight.
+- `npm run typecheck` - TypeScript check with no emit.
+- `npm run test:scenario <ScenarioName> <Ticks> <Seed>` - run a registered deterministic scenario (e.g., `LogisticsValidation 3650 12345`).
+- `npm run test:determinism` - explicit determinism drift check.
+- `npm run agent:preflight` - baseline AI-agent validation sequence.
 
 ## Validation expectations
 

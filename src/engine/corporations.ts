@@ -269,7 +269,7 @@ export function tickCorporations(next: GameState, empire: Empire, rng: RNG, dt: 
 
                     const sy = empireColonies
                         .filter(c => c.shipyards.some(sy => sy.activeBuilds.length < sy.slipways))
-                        .sort((a, b) => (a.id === company.homeColonyId ? -1 : 1))[0]
+                        .sort((a) => (a.id === company.homeColonyId ? -1 : 1))[0]
                         ?.shipyards.find(s => s.activeBuilds.length < s.slipways);
 
                     if (sy && (highMigrationDemand || validTradePair)) {

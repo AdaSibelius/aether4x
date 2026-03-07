@@ -1,4 +1,4 @@
-import type { GameState, Fleet, Empire } from '../types';
+import type { GameState, Fleet } from '../types';
 import { getEmpireTechBonuses } from './research';
 
 // ─── Constants ───────────────────────────────────────────────────────────────

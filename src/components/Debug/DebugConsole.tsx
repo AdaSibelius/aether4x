@@ -7,20 +7,30 @@ import styles from './DebugConsole.module.css';
 import SimLogger from '@/utils/logger';
 import BattleSimulator from './BattleSimulator';
 
+type ExposedEntityType = 'Colony' | 'Company' | 'Fleet' | 'Empire' | 'Full';
+type SnapshotSummary = { id: string; name: string; turn: number; date: Date };
+type DebugApi = {
+    getState: () => unknown;
+    getEntity: (type: string, id: string) => unknown;
+    snapshot: (name: string) => void;
+    advance: () => void;
+    warp: (days: number) => void;
+};
+
 export default function DebugConsole() {
     const { showDebugConsole, toggleDebugConsole } = useUIStore();
     const [activeTab, setActiveTab] = useState<'Game Master' | 'State Management' | 'Entity Inspector' | 'Combat Sim'>('Game Master');
     const [showState, setShowState] = useState(false);
     const [snapshotName, setSnapshotName] = useState('');
     const [isTracing, setIsTracing] = useState(false);
-    const [selectedEntity, setSelectedEntity] = useState<{ type: 'Colony' | 'Company' | 'Fleet' | 'Empire' | 'Full', id: string }>({ type: 'Full', id: '' });
+    const [selectedEntity, setSelectedEntity] = useState<{ type: ExposedEntityType, id: string }>({ type: 'Full', id: '' });
 
     const { game, debug, snapshots, createSnapshot, loadSnapshot, deleteSnapshot, switchPlayerEmpire } = useGameStore();
     const { selectedColonyId } = useUIStore();
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            (window as any).aetherAPI = {
+            (window as Window & { aetherAPI?: DebugApi }).aetherAPI = {
                 getState: () => useGameStore.getState().game,
                 getEntity: (type: string, id: string) => {
                     const game = useGameStore.getState().game;
@@ -172,7 +182,7 @@ export default function DebugConsole() {
                             </button>
                         </div>
                         <div className={styles.snapList}>
-                            {snapshots.map((s: any) => (
+                            {snapshots.map((s: SnapshotSummary) => (
                                 <div key={s.id} className={styles.snapItem}>
                                     <div className={styles.snapInfo}>
                                         <div className={styles.snapName}>{s.name}</div>
@@ -293,7 +303,7 @@ export default function DebugConsole() {
                             className="form-control"
                             style={{ fontSize: 11, background: 'var(--bg-card)' }}
                             value={selectedEntity.type}
-                            onChange={e => setSelectedEntity({ ...selectedEntity, type: e.target.value as any })}
+                            onChange={e => setSelectedEntity({ ...selectedEntity, type: e.target.value as ExposedEntityType })}
                         >
                             <option value="Full">Global State</option>
                             <option value="Colony">Colony</option>
@@ -329,8 +339,8 @@ export default function DebugConsole() {
                                 if (selectedEntity.type === 'Fleet') return game.empires[game.playerEmpireId].fleets.find(f => f.id === selectedEntity.id);
                                 return game;
                             })()
-                            , (key, value) => {
-                                if (key === 'history') return `[...${value.length} snapshots]`;
+                            , (key, value: unknown) => {
+                                if (key === 'history' && Array.isArray(value)) return `[...${value.length} snapshots]`;
                                 return value;
                             }, 2)}</pre>
                     </div>
