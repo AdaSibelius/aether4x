@@ -213,7 +213,7 @@ function pickTraits(rng: RNG, role: OfficerRole, count: number): string[] {
 }
 
 export function createOfficer(role: OfficerRole, empireBonuses: Record<string, number> = {}, seed?: number): Officer {
-    const s = seed ?? (Date.now() + (++_officerCounter) * 7919);
+    const s = seed ?? ((++_officerCounter) * 7919);
     const rng = new RNG(s);
     const name = generateOfficerName(rng);
 

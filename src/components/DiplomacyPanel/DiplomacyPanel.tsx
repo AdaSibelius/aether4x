@@ -1,11 +1,10 @@
 import { useGameStore } from '@/store/gameStore';
 import { useUIStore } from '@/store/uiStore';
-import { Empire } from '@/types';
 import styles from './DiplomacyPanel.module.css';
 
 export default function DiplomacyPanel() {
     const { game } = useGameStore();
-    const { activeView } = useUIStore();
+    useUIStore();
 
     if (!game) return null;
 
@@ -18,10 +17,13 @@ export default function DiplomacyPanel() {
     const foreignEmpires = Object.values(game.empires).filter(e => !e.isPlayer && e.id !== 'empire_pirates');
 
     const handleProposeTreaty = (targetEmpireId: string, type: 'NonAggression' | 'TradeAgreement' | 'ResearchAlliance') => {
+        void targetEmpireId;
+        void type;
         // @pending (Phase 4b): Implement diplomacy dispatch actions
     };
 
     const handleDeclareWar = (targetEmpireId: string) => {
+        void targetEmpireId;
         // @pending (Phase 4b): Implement diplomacy dispatch actions
     };
 

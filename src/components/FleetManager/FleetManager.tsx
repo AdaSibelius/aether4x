@@ -3,7 +3,9 @@ import { useGameStore } from '@/store/gameStore';
 import { getPlanetPosition } from '@/engine/fleets';
 import { useUIStore } from '@/store/uiStore';
 import { RosterShell, SidebarSection, RosterGroup, RosterItem, MainArea } from '@/components/Roster/Roster';
-import { calculateFleetSignature, getFleetSensorRange, toggleActiveScan, getSignatureTier } from '@/engine/detection';
+import { calculateFleetSignature, getFleetSensorRange, getSignatureTier } from '@/engine/detection';
+import { generateId } from '@/utils/id';
+import type { ShipOrder, ShipComponent } from '@/types';
 import styles from './FleetManager.module.css';
 
 export default function FleetManager() {
@@ -28,12 +30,6 @@ export default function FleetManager() {
 
 
     const selectedFleet = fleets.find(f => f.id === selectedFleetId);
-
-    // Diagnostic for transfer dropdown
-    if (selectedFleet) {
-        const matchingFleets = fleets.filter(f => f.id !== selectedFleet.id && f.currentStarId === selectedFleet.currentStarId);
-
-    }
 
     return (
         <RosterShell>
@@ -190,7 +186,7 @@ export default function FleetManager() {
                                             {(selectedFleet.shipIds.reduce((acc: number, sid: string) => {
                                                 const s = game.ships[sid];
                                                 const d = empire.designLibrary.find(d => d.id === s?.designId);
-                                                return acc + (d?.components.reduce((cAcc: number, comp: any) => cAcc + (comp.stats.fuelPerTick || 0), 0) || 0);
+                                                return acc + (d?.components.reduce((cAcc: number, comp: ShipComponent) => cAcc + (comp.stats.fuelPerTick || 0), 0) || 0);
                                             }, 0) * 86400).toFixed(1)} / day
                                         </div>
                                     </div>
@@ -295,7 +291,7 @@ export default function FleetManager() {
                                             disabled={!targetPlanetId}
                                             onClick={() => {
                                                 const star = game.galaxy.stars[selectedFleet.currentStarId];
-                                                const payload: any = { type: orderType, targetPlanetId };
+                                                const payload: ShipOrder = { id: generateId('order'), type: orderType, targetPlanetId };
                                                 if (orderType === 'Transport') {
                                                     payload.cargoAction = cargoAction;
                                                     payload.resourceName = resourceName;
@@ -320,7 +316,7 @@ export default function FleetManager() {
                                                 <button
                                                     key={jp.id}
                                                     className="btn btn-secondary"
-                                                    onClick={() => useGameStore.getState().updateFleet(empire.id, selectedFleet.id, { orders: [{ type: 'Jump', targetStarId: jp.targetStarId } as any] })}
+                                                    onClick={() => useGameStore.getState().updateFleet(empire.id, selectedFleet.id, { orders: [{ id: generateId('order'), type: 'Jump', targetStarId: jp.targetStarId }] })}
                                                 >
                                                     Jump: {dest?.name ?? 'Unknown'}
                                                 </button>

@@ -17,6 +17,9 @@ interface Props {
     height?: number;
 }
 
+type TooltipEntry = { color: string; name: string; value: number; payload: { dateLabel: string } };
+type TooltipPayload = { active?: boolean; payload?: TooltipEntry[] };
+
 export default function InvestmentHistoryChart({ history, height = 200 }: Props) {
     if (!history || history.length < 2) {
         return (
@@ -48,7 +51,7 @@ export default function InvestmentHistoryChart({ history, height = 200 }: Props)
         education: snap.educationIndex || 0
     }));
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
+    const CustomTooltip = ({ active, payload }: TooltipPayload) => {
         if (active && payload && payload.length) {
             return (
                 <div style={{
@@ -59,7 +62,7 @@ export default function InvestmentHistoryChart({ history, height = 200 }: Props)
                     boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                 }}>
                     <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>{payload[0].payload.dateLabel}</div>
-                    {payload.map((entry: any, index: number) => (
+                    {payload.map((entry, index) => (
                         <div key={index} style={{ color: entry.color, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                             <span>{entry.name}:</span>
                             <span style={{ fontWeight: 600 }}>{entry.value.toLocaleString()}</span>

@@ -24,15 +24,15 @@ Expected signals:
 
 ## 3) Deterministic scenario regression
 
-Run the registered logistics regression scenario with fixed inputs:
+Run a registered long-horizon deterministic scenario with fixed inputs:
 
 ```bash
-npx tsx src/scenarios/run.ts LogisticsValidation 3650 12345
+npm run test:scenario MarsIsolation 3650 12345
 ```
 
 Expected signals:
 - **Pass**:
-  - Log output includes `Scenario Logistics Validation PASSED` (or equivalent pass log).
+  - Log output includes `Scenario Mars Isolation PASSED` (or equivalent pass log).
   - Command exits with code `0`.
   - Metric summary JSON is printed.
 - **Fail**:
@@ -42,7 +42,7 @@ Expected signals:
 ## 4) Determinism drift check
 
 ```bash
-npx tsx src/scripts/verify_determinism.ts
+npm run test:determinism
 ```
 
 Expected signals:

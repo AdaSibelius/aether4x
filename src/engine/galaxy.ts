@@ -1,4 +1,4 @@
-import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, BodyType, AtmosphereType, CelestialType, CelestialSubtype } from '../types';
+import type { Galaxy, Star, Planet, JumpPoint, Mineral, SpectralType, AtmosphereType, CelestialType, CelestialSubtype } from '../types';
 import { RNG } from '../utils/rng';
 
 // ─── Name Generation ─────────────────────────────────────────────────────────

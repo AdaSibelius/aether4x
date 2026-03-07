@@ -62,8 +62,15 @@ export function createExternalAccount(label: string): MonetaryAccount {
         id: `external:${label}`,
         label: `external:${label}`,
         getBalance: () => Infinity,
-        applyDelta: (_d) => { /* external — no balance to track */ },
+        applyDelta: () => { /* external — no balance to track */ },
     };
+}
+
+function mapLabelToAccountType(label: string): 'treasury' | 'colonyPrivateWealth' | 'companyWealth' | 'external' {
+    if (label.startsWith('treasury:')) return 'treasury';
+    if (label.startsWith('colony_pw:')) return 'colonyPrivateWealth';
+    if (label.startsWith('company:')) return 'companyWealth';
+    return 'external';
 }
 
 // ─── Transfer Primitive ───────────────────────────────────────────────────────
@@ -127,8 +134,8 @@ export function transferWithLedger(
     game.stats.monetaryLedger.push({
         source: from.id,
         sink: to.id,
-        sourceType: (from.label.split(':')[0] as any), // Best effort cast
-        sinkType: (to.label.split(':')[0] as any),
+        sourceType: mapLabelToAccountType(from.label),
+        sinkType: mapLabelToAccountType(to.label),
         amount: settled,
         reason: reasonCode,
         tick: game.turn,

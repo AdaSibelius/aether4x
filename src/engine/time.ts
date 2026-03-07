@@ -1,11 +1,10 @@
 import type {
-    GameState, Empire, Colony, Ship, Fleet, GameEvent, EventType,
-    TickLength, SpeciesId, Company, CompanyType, EmpireSnapshot, ColonySnapshot
+    GameState
 } from '../types';
 import { RNG } from '../utils/rng';
 import { tickEmpire } from './empire_logic';
 import { tickAetherHarvesting } from './colonies';
-import { tickFleets, getPlanetPosition } from './fleets';
+import { tickFleets } from './fleets';
 import { updateVisibility } from './detection';
 import { tickBorders } from './border';
 

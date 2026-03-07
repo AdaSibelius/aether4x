@@ -302,7 +302,7 @@ export default function ShipVisualizer({ design, width = 200, height = 120 }: Pr
             });
 
             // Sensors
-            sensors.forEach((_, i) => {
+            sensors.forEach(() => {
                 ctx.save();
                 const sX = isDirigible ? 0 : hullLength * 0.2;
                 const sY = isDirigible ? -hullWidth - 5 : 0;

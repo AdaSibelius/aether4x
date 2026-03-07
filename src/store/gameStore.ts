@@ -10,6 +10,16 @@ import { useUIStore } from './uiStore';
 import SimLogger from '@/utils/logger';
 import { idbStorage } from './storage';
 
+function generateSessionSeed(): number {
+    const cryptoApi = globalThis.crypto;
+    if (cryptoApi?.getRandomValues) {
+        const value = new Uint32Array(1);
+        cryptoApi.getRandomValues(value);
+        return value[0] % 999999;
+    }
+    return 123456;
+}
+
 interface GameStore {
     game: GameState | null;
     isRunning: boolean;    // auto-advance timer active
@@ -57,7 +67,7 @@ export const useGameStore = create<GameStore>()(
             isRunning: false,
 
             newGame: (playerName: string, seed?: number, realSpace?: boolean) => {
-                const gameSeed = seed ?? Math.floor(Math.random() * 999999);
+                const gameSeed = seed ?? generateSessionSeed();
                 const game = setupNewGame(playerName, gameSeed, realSpace);
                 set({ game, isRunning: false });
             },
@@ -321,7 +331,7 @@ export const useGameStore = create<GameStore>()(
                     if (company && design && colony && colony.shipyards.length > 0) {
                         const sy = colony.shipyards[0];
                         sy.activeBuilds.push({
-                            id: `item_${Date.now()}`,
+                            id: generateId('item'),
                             type: 'Ship',
                             name: design.name,
                             designId: design.id,

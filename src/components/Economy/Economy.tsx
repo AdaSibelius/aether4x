@@ -15,7 +15,7 @@ import styles from './Economy.module.css';
 
 export default function EconomyView() {
     const game = useGameStore(s => s.game);
-    const { selectCompany, setView } = useUIStore();
+    useUIStore();
     const [activeTab, setActiveTab] = useState<'Ledger' | 'Logistics' | 'Market'>('Ledger');
     const [selectedColonyId, setSelectedColonyId] = useState<string | undefined>(undefined);
 
@@ -355,8 +355,8 @@ export default function EconomyView() {
                                             <YAxis stroke="var(--text-muted)" tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
                                             <RechartsTooltip
                                                 contentStyle={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-color)', borderRadius: '8px' }}
-                                                formatter={(value: any) => [`${Math.floor(Number(value) || 0).toLocaleString()} W`]}
-                                                labelFormatter={(label: any) => `Turn ${Math.floor(Number(label) || 0) / 86400}`}
+                                                formatter={(value: unknown) => [`${Math.floor(Number(value) || 0).toLocaleString()} W`]}
+                                                labelFormatter={(label: unknown) => `Turn ${Math.floor(Number(label) || 0) / 86400}`}
                                             />
                                             <Area type="monotone" dataKey="treasury" name="Treasury" stackId="1" stroke="var(--accent-blue)" fill="var(--accent-blue)" fillOpacity={0.6} />
                                             <Area type="monotone" dataKey="privateWealth" name="Civilian Wealth" stackId="1" stroke="var(--accent-green)" fill="var(--accent-green)" fillOpacity={0.6} />

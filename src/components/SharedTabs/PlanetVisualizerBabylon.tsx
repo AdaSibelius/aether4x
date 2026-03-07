@@ -23,7 +23,8 @@ function RotatingMesh({ children }: { children: React.ReactNode }) {
 }
 
 export default function PlanetVisualizerBabylon({ body, orbitalParent }: PlanetVisualizerBabylonProps) {
-    const isStar = (body as any).type === 'Star' || 'spectralType' in body;
+    void orbitalParent;
+    const isStar = (body as { type?: string }).type === 'Star' || 'spectralType' in body;
     const bodyScale = 10;
 
     return (

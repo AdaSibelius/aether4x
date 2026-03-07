@@ -1,11 +1,11 @@
 ---
-name: Nebula 4X Combat Engine Guide
-description: Documentation on how the fleet pursuit, engagement, and combat resolution mechanics work in Nebula 4X, specifically highlighting bugs to avoid when designing AI factions.
+name: Aether4X Combat Engine Guide
+description: Documentation on how the fleet pursuit, engagement, and combat resolution mechanics work in Aether4X, specifically highlighting bugs to avoid when designing AI factions.
 ---
 
-# Nebula 4X Combat Engine Guide (For AI Agents)
+# Aether4X Combat Engine Guide (For AI Agents)
 
-This document explains the mechanics of the Nebula 4X fleet combat engine. It is written specifically for AI agents to understand how fleet pursuit, engagement, and combat resolution function, highlighting several critical architectural fixes that were necessary to make NPC AI (like Pirates) behave correctly.
+This document explains the mechanics of the Aether4X fleet combat engine. It is written specifically for AI agents to understand how fleet pursuit, engagement, and combat resolution function, highlighting several critical architectural fixes that were necessary to make NPC AI (like Pirates) behave correctly.
 
 If you are modifying fleet behavior or debugging why a fleet is "not attacking," "flying away," or "following at a distance," look closely at the **Key Mechanics & Fixes** below.
 

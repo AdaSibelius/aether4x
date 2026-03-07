@@ -1,8 +1,7 @@
 'use client';
 import { useGameStore } from '@/store/gameStore';
-import { useUIStore } from '@/store/uiStore';
 import { TECH_TREE, TECH_CATEGORIES, getAvailableTechs } from '@/engine/research';
-import type { TechCategory, Officer, ResearchProject, Technology } from '@/types';
+import type { TechCategory, ResearchProject, Technology } from '@/types';
 import TechTreeVisualizer from './TechTreeVisualizer';
 import { useState } from 'react';
 import styles from './Research.module.css';

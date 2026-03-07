@@ -82,7 +82,7 @@ export const Economy50YearRun: Scenario = {
             colony.history = [];
         }
         for (const ship of Object.values(saveableState.ships)) {
-            (ship as any).history = [];
+            (ship as { history?: unknown[] }).history = [];
         }
 
         for (const empire of Object.values(saveableState.empires)) {

@@ -222,17 +222,7 @@ export default function CelestialBodiesView() {
             >
                 {isStarSelected ? (
                     <div className={styles.tabContentContainer}>
-                        <PlanetVisualizer
-                            planet={{
-                                id: star.id,
-                                name: star.name,
-                                type: 'Star',
-                                spectralType: star.spectralType,
-                                subtype: 'MainSequence',
-                                bodyType: 'MainSequence',
-                                atmosphere: 'None',
-                            } as any}
-                        />
+                        <PlanetVisualizer planet={star} />
                     </div>
                 ) : (
                     <>

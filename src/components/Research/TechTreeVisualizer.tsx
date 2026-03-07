@@ -17,7 +17,7 @@ const CARD_HEIGHT = 120;
 
 export default function TechTreeVisualizer({ technologies, completedTechs, availableTechs, activeTechIds, onSelect }: Props) {
     // 1. Calculate Positions based on Tier and within-tier index
-    const nodes = technologies.map((tech, i) => {
+    const nodes = technologies.map((tech) => {
         const tierNodes = technologies.filter(t => t.tier === tech.tier);
         const tierIndex = tierNodes.indexOf(tech);
 
@@ -78,7 +78,6 @@ export default function TechTreeVisualizer({ technologies, completedTechs, avail
                     const isDone = completedTechs.has(node.id);
                     const isAvail = availableTechs.has(node.id);
                     const isActive = activeTechIds.has(node.id);
-                    const isLocked = !isDone && !isAvail;
 
                     let statusClass = styles.nodeLocked;
                     if (isDone) statusClass = styles.nodeDone;

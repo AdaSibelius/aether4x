@@ -1,17 +1,7 @@
-import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { useUIStore } from '@/store/uiStore';
 import styles from './SystemMap.module.css';
 import SystemMapBabylon from './SystemMapBabylon';
-
-const BODY_COLORS: Record<string, string> = {
-    Terrestrial: '#4a8fa8', GasGiant: '#c07834', IceGiant: '#5a8fba',
-    Dwarf: '#7a7a8a', AsteroidBelt: '#8a7a5a',
-};
-const ATMO_COLORS: Record<string, string> = {
-    Breathable: '#69f0ae', Thin: '#b0c4d8', Dense: '#e8c84a',
-    Toxic: '#ff9800', Corrosive: '#ff5252', None: '#4a5a6a',
-};
 
 export default function SystemMap() {
     const game = useGameStore(s => s.game);

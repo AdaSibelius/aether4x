@@ -6,10 +6,9 @@ import CompanyHQGenerator from './CompanyHQGenerator';
 import PortraitGenerator from '../Officers/PortraitGenerator';
 import styles from './Economy.module.css';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area,
-    BarChart, Bar, Legend, Cell
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area,
+    BarChart, Bar, Legend
 } from 'recharts';
-import { CompanyStrategy } from '@/types';
 import { getAccountName } from '@/utils/economy_format';
 
 export default function CompanyDetailsView({ isEmbedded }: { isEmbedded?: boolean }) {
@@ -53,14 +52,6 @@ export default function CompanyDetailsView({ isEmbedded }: { isEmbedded?: boolea
         }
     };
 
-    const onUpdateStrategy = (strat: CompanyStrategy) => {
-        const nextGame = structuredClone(game);
-        const e = nextGame.empires[nextGame.playerEmpireId];
-        const c = e.companies?.find(comp => comp.id === company.id);
-        if (c) c.strategy = strat;
-        useGameStore.setState({ game: nextGame });
-    };
-
     // Prepare chart data
     const chartData = company.history.map(h => ({
         date: new Date(h.date).toLocaleDateString(),
@@ -71,11 +62,6 @@ export default function CompanyDetailsView({ isEmbedded }: { isEmbedded?: boolea
     }));
 
     // Transaction summary for pie/bar?
-    const txSummary = [
-        { name: 'Revenue', value: company.history[company.history.length - 1]?.revenue || 0, color: '#3498db' },
-        { name: 'Expenses', value: company.history[company.history.length - 1]?.expenses || 0, color: '#e74c3c' }
-    ];
-
     return (
         <div className={styles.container} style={isEmbedded ? { padding: 24, background: 'transparent', border: 'none' } : {}}>
             {!isEmbedded && (

@@ -4,20 +4,20 @@ import { useGameStore } from '@/store/gameStore';
 import { useUIStore } from '@/store/uiStore';
 import { STRUCTURE_BP_COST, STRUCTURE_MINERAL_COST } from '@/engine/colonies';
 export { STRUCTURE_BP_COST, STRUCTURE_MINERAL_COST };
-import type { Colony, ColonyPolicy, ColonyType, LaborAllocation, Planet, ProductionItemType, Officer, Empire } from '@/types';
+import type { Colony, ColonyPolicy, ColonyType, Planet, ProductionItemType, Officer, Empire } from '@/types';
 import { SurfaceTab, AtmosphereTab } from '@/components/SharedTabs/SharedTabs';
 import { getGovernorBonuses } from '@/engine/officers';
 import PortraitGenerator from '@/components/Officers/PortraitGenerator';
 import { SPECIES } from '@/engine/species';
 import { BALANCING } from '@/engine/constants';
-import { canHostBuildings, isBodyHabitable } from '@/engine/galaxy';
+import { canHostBuildings } from '@/engine/galaxy';
 import { RosterShell, SidebarSection, RosterGroup, RosterItem, MainArea } from '@/components/Roster/Roster';
 import { calculateColonyBudget } from '@/engine/finances';
 import { getAccountName } from '@/utils/economy_format';
 import styles from './ColonyManager.module.css';
 import ShipyardTab from './ShipyardTab';
 import InvestmentHistoryChart from './InvestmentHistoryChart';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend as RechartsLegend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 // Simple ID generator for UI items to avoid impurity in render
 const generateSimId = () => `item_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -662,14 +662,13 @@ function LaborReport({ report, staffing, population }: {
 
 // ─── Tab 2: Industry ─────────────────────────────────────────────────────────
 
-function IndustryTab({ colony, rates, planet, updateColony, empire }: {
+function IndustryTab({ colony, rates, planet, updateColony }: {
     colony: Colony;
     rates: ReturnType<typeof calcEffectiveRates>;
     planet: Planet | null;
     updateColony: (patch: Partial<Colony>) => void;
-    empire: Empire;
 }) {
-    const [addQty, setAddQty] = useState(1);
+    const addQty = 1;
 
     const addToQueue = (type: ProductionItemType, qty?: number) => {
         const existing = BUILDABLE_STRUCTURES.find(b => b.type === type)!;
@@ -972,14 +971,12 @@ function IndustryTab({ colony, rates, planet, updateColony, empire }: {
 
 // ─── Tab 3: Population ────────────────────────────────────────────────────────
 
-function PopulationTab({ colony, rates, planet }: {
+function PopulationTab({ colony, rates }: {
     colony: Colony;
     rates: ReturnType<typeof calcEffectiveRates>;
-    planet: Planet | null;
 }) {
     const segments = colony.populationSegments ?? [];
     const pop = colony.population ?? 0;
-    const alloc = colony.laborAllocation ?? { industry: 30, mining: 20, research: 15, construction: 15, agriculture: 5, commerce: 15 };
     const unemployedPct = (rates.laborReport.unemployed / pop) * 100;
     const maxPop = colony.maxPopulation ?? 15000;
 
@@ -1235,7 +1232,6 @@ function PopulationTab({ colony, rates, planet }: {
     );
 }
 
-const SPECIES_MAP = SPECIES;
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -1363,10 +1359,10 @@ export default function ColonyManager() {
                         <OverviewTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} governor={empire?.officers.find(o => o.id === colony.governorId) ?? null} />
                     )}
                     {activeTab === 'Population' && (
-                        <PopulationTab colony={colony} rates={rates} planet={planet} />
+                        <PopulationTab colony={colony} rates={rates} />
                     )}
-                    {activeTab === 'Industry' && empire && <IndustryTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} empire={empire} />}
-                    {activeTab === 'Shipyards' && empire && <ShipyardTab colony={colony} rates={rates} updateColony={updateColony} empire={empire} />}
+                    {activeTab === 'Industry' && empire && <IndustryTab colony={colony} rates={rates} planet={planet} updateColony={updateColony} />}
+                    {activeTab === 'Shipyards' && empire && <ShipyardTab colony={colony} updateColony={updateColony} empire={empire} />}
                     {activeTab === 'History' && (
                         <div className={styles.ledgerSection}>
                             <div className={styles.panel} style={{ marginTop: 10 }}>

@@ -2,7 +2,6 @@ import { GameState } from '../types';
 import { setupNewGame } from '../engine/setup';
 import { advanceTick } from '../engine/time';
 import { Scenario, ScenarioResult } from './types';
-import SimLogger from '../utils/logger';
 
 /**
  * MARS ISOLATION

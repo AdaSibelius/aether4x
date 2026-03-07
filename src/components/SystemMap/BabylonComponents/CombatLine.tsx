@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useScene } from 'react-babylonjs';
 import { Vector3, Color3, MeshBuilder, StandardMaterial, LinesMesh } from '@babylonjs/core';
 

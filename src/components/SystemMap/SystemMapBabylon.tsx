@@ -8,7 +8,9 @@ import {
     AbstractMesh,
     Color3,
     PointerEventTypes,
+    PointerInfo,
 } from '@babylonjs/core';
+import type { AdvancedDynamicTexture } from '@babylonjs/gui';
 import { useGameStore } from '@/store/gameStore';
 import { useUIStore } from '@/store/uiStore';
 import { getPlanetPosition } from '@/engine/fleets';
@@ -27,7 +29,7 @@ export interface ClickTarget {
 }
 
 interface ClickManagerProps {
-    onSceneClick: (targets: ClickTarget[], e: any) => void;
+    onSceneClick: (targets: ClickTarget[], e: PointerInfo) => void;
 }
 
 function ClickManager({ onSceneClick }: ClickManagerProps) {
@@ -78,7 +80,7 @@ function ClickManager({ onSceneClick }: ClickManagerProps) {
                     }
                 }
 
-                onSceneClick(validTargets, pi.event);
+                onSceneClick(validTargets, pi);
             }
         });
 
@@ -100,7 +102,7 @@ export default function SystemMapBabylon({ onContextMenu }: SystemMapBabylonProp
     const { selectedStarId, selectedPlanetId, selectedFleetId, selectPlanet, selectFleet } = useUIStore();
 
     const [meshes, setMeshes] = useState<Record<string, AbstractMesh>>({});
-    const [uiLayer, setUiLayer] = useState<any>(null);
+    const [uiLayer, setUiLayer] = useState<AdvancedDynamicTexture | null>(null);
 
     const star = selectedStarId ? game?.galaxy.stars[selectedStarId] : null;
 
@@ -114,8 +116,8 @@ export default function SystemMapBabylon({ onContextMenu }: SystemMapBabylonProp
         });
     }, []);
 
-    const handleSceneClick = useCallback((targets: ClickTarget[], e: any) => {
-        const nativeEvent = e.event || e.pointerEvent || e.nativeEvent || e;
+    const handleSceneClick = useCallback((targets: ClickTarget[], e: PointerInfo) => {
+        const nativeEvent = e.event;
 
         if (!targets || targets.length === 0) {
             selectPlanet(null);

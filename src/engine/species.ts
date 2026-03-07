@@ -1,4 +1,4 @@
-import type { SpeciesDefinition, SpeciesId, AtmosphereType, Planet, PopulationSegment } from '../types';
+import type { SpeciesDefinition, SpeciesId, Planet } from '../types';
 
 // ─── Species Definitions ─────────────────────────────────────────────────────
 
